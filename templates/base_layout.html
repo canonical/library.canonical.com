@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>
+    {% block title%}Canonical Reference Library{% endblock%}
+  </title>
+
+  <script src="https://assets.ubuntu.com/v1/703e23c9-lazysizes+noscript+native-loading.5.1.2.min.js" defer></script>
+
+  <link rel="preconnect" href="https://www.google-analytics.com">
+  <link rel="preconnect" href="https://www.gstatic.com">
+
+  <!-- link rel="stylesheet"-->
+  <link rel="stylesheet" href="{{ versioned_static('css/styles.css') }}" />
+
+  <!-- Google Analytics and Google Optimize -->
+  <script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-1018242-59', 'auto', {'allowLinker': true});
+  ga('require', 'GTM-WVQJJBD');
+  ga('require', 'linker');
+  ga('linker:autoLink', ['conjure-up.io', 'login.ubuntu.com', 'www.ubuntu.com',
+  'ubuntu.com','cn.ubuntu.com',
+  'design.ubuntu.com', 'maas.io', 'canonical.com', 'landscape.canonical.com',
+  'pages.ubuntu.com', 'tutorials.ubuntu.com', 'docs.ubuntu.com']);
+  </script>
+  <!-- End Google Analytics and Google Optimize -->
+
+  <!-- Google Tag Manager -->
+  <script>(function (w, d, s, l, i) {
+      w[l] = w[l] || []; w[l].push({
+        'gtm.start':
+          new Date().getTime(), event: 'gtm.js'
+      }); var f = d.getElementsByTagName(s)[0],
+        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+          'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+    })(window, document, 'script', 'dataLayer', 'GTM-TDV3PRK');</script>
+  <!-- End Google Tag Manager -->
+
+
+  <link rel="icon" type="image/png" href="https://assets.ubuntu.com/v1/3ba2d831-cof-favicon-16x16.ico" sizes="16x16" />
+  <link rel="icon" type="image/png" href="https://assets.ubuntu.com/v1/2c6276dc-cof-favicon-32x32.ico" sizes="32x32" />
+
+  <link rel="preload" as="font" type="font/woff2" href="https://assets.ubuntu.com/v1/e8c07df6-Ubuntu-L_W.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="https://assets.ubuntu.com/v1/7f100985-Ubuntu-Th_W.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="https://assets.ubuntu.com/v1/f8097dea-Ubuntu-LI_W.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="https://assets.ubuntu.com/v1/fff37993-Ubuntu-R_W.woff2" crossorigin>
+
+  <meta name="description" content="{% block description %}Canonical Reference Library is single source of information for all corporate knowledge with Canonical{% endblock %}">
+  <meta name="theme-color" content="#E95420">
+  <meta name="twitter:account_id" content="4503599627481511">
+  <meta name="twitter:site" content="@ubuntu">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="http://canonical.reference-library.com">
+  <meta property="og:site_name" content="canonical.reference-library.com">
+  <meta name="twitter:title" content="{% if title %}{{ title }} | Canonical Reference Library{% else %}Canonical Reference Library{% endif %}">
+  <meta name="twitter:description" content="{% if description %}{{ description }}{% else %}Canonical Reference Library is single source of information for all corporate knowledge with Canonical.{% endif %}">
+  <meta property="og:title" content="{% if title %}{{ title }} | Canonical Reference Library{% else %}Canonical Reference Library{% endif %}">
+  <meta property="og:description" content="{% if description %}{{ description }}{% else %}Canonical Reference Library is single source of information for all corporate knowledge with Canonical{% endif %}">
+</head>
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TDV3PRK" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+  {% include "partial/_navigation.html" %}
+  <div id="main">
+    {% block content %}{% endblock content %}
+  </div>
+  {% include "partial/_footer.html" %}
+</body>
+</html>

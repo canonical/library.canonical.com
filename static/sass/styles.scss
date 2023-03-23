@@ -1,0 +1,10 @@
+// Import scss settings
+@import "settings";
+
+// Import Vanilla
+@import "vanilla-framework";
+@include vanilla;
+
+// Import cookie policy
+@import "@canonical/cookie-policy/build/css/cookie-policy";
+
