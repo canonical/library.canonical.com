@@ -12,15 +12,9 @@ Canonical Reference Library is single source of information for all corporate kn
 <main id="main-content">
   <section class="p-strip">
     <div class="u-fixed-width">
-      <h1>Hello world</h1>
-      <ul>
-      {% for item in items %}
-        <li><a href="/document/{{item.id}}">{{item.name}}</a></li>
-      {% endfor %}
-      </ul>
+      {{ document | safe }}
     </div>
   </section>
 </main>
 
-
-{% endblock %}
+{% endblock content %}

@@ -15,7 +15,9 @@
     "start": "yarn run build && concurrently --raw 'yarn run watch' 'yarn run serve'",
     "test": "yarn run lint-scss && yarn run lint-python && yarn run test-python",
     "test-python": "python3 -m unittest discover tests",
-    "test-js": "jest"
+    "test-js": "jest",
+    "check-prettier": "prettier -c 'static/js/**/*.{js,jsx,ts,tsx}' 'static/sass/**/*.scss'",
+    "format-prettier": "prettier -w 'static/js/**/*.{js,jsx,ts,tsx}' 'static/sass/**/*.scss'"
   },
   "dependencies": {
     "@canonical/cookie-policy": "3.4.0",
