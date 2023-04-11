@@ -8,16 +8,50 @@ Canonical Reference Library is single source of information for all corporate kn
 {% block meta_copydoc %}{% endblock %}
 
 {% block content %}
+{% macro create_navigation(nav_items, expandable=False, expanded=False) %}
+  <ul class="p-side-navigation__list">
+    {% for element in nav_items %}
+    <li class="p-side-navigation__item">
+      <a
+        class="p-side-navigation__link {% if element.children %}is-expandable{% endif %}"
+        href=""
+        {% if element.children %}aria-expanded="false"{% endif %}
+      >{{ element.name }}</a>
+
+      {% if element.children %}
+          <button class="p-side-navigation__expand" aria-expanded="false" aria-label="show submenu for "></button>
+      {% endif %}
+      {{ create_navigation(element.children, expandable) }}
+    </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
 
 <main id="main-content">
   <section class="p-strip">
     <div class="u-fixed-width">
       <h1>Hello world</h1>
-      <ul>
-      {% for item in items %}
-        <li><a href="/document/{{item.id}}">{{item.name}}</a></li>
-      {% endfor %}
-      </ul>
+      <nav data-js="navigation" class="p-side-navigation" id="">
+        <a href="#" class="p-side-navigation__toggle js-drawer-toggle" aria-controls="">
+          Toggle side navigation
+        </a>
+        <div class="p-side-navigation__overlay js-drawer-toggle" aria-controls=""></div>
+        <div class="p-side-navigation__drawer">
+          <div class="p-side-navigation__drawer-header">
+            <a href="#" class="p-side-navigation__toggle--in-drawer js-drawer-toggle" aria-controls="">
+              Toggle side navigation
+            </a>
+          </div>
+          {% for nav_group in items %}
+            {% if nav_group.name %}
+              <h3 class="p-side-navigation__heading--linked">
+                {{ nav_group.name }}
+              </h3>
+            {% endif %}
+            {{ create_navigation(nav_group.children, expandable=True) }}
+          {% endfor %}
+        </div>
+      </nav>
     </div>
   </section>
 </main>

@@ -11,7 +11,7 @@ from webapp.settings import SERVICE_ACCOUNT_INFO
 class Drive:
     def __init__(self):
         scopes = [
-            "https://www.googleapis.com/auth/drive.readonly",
+            "https://www.googleapis.com/auth/drive",
         ]
         credentials = service_account.Credentials.from_service_account_info(
             SERVICE_ACCOUNT_INFO, scopes=scopes
@@ -20,20 +20,24 @@ class Drive:
             "drive", "v3", credentials=credentials, cache_discovery=False
         )
 
-    def get_first_10_documents(self):
-        """GETs the first 10 items availiable to the service account"""
+    def get_hierarchy(self):
 
         try:
             results = (
                 self.service.files()
-                .list(pageSize=10, fields="nextPageToken, files(id, name)")
+                .list(
+                    spaces='drive',
+                    fields='nextPageToken, '
+                    'files(id, name, parents)',)
                 .execute()
             )
             items = results.get("files", [])
         except HttpError as error:
             print(f"An error occurred: {error}")
 
-        return items
+        hierarchy = self.create_hierarchy(items)
+
+        return hierarchy
 
     def get_html(self, document_id):
         """GETs a specific document based off its ID"""
@@ -48,3 +52,20 @@ class Drive:
         html = fh.getvalue().decode("utf-8")
 
         return html
+
+
+    def create_hierarchy(self, document_list):
+        object_map = {obj['id']: {'name': obj['name'], 'id': obj['id'], 'children': []} for obj in document_list}
+        root_objects = []
+
+        for obj in document_list:
+            if 'parents' in obj:
+                for parent_id in obj['parents']:
+                    if parent_id in object_map:
+                        object_map[parent_id]['children'].append(object_map[obj['id']])
+                        break
+            else:
+                root_objects.append(object_map[obj['id']])
+
+        return root_objects
+

@@ -20,7 +20,8 @@ session = talisker.requests.get_session()
 
 @app.route("/")
 def index():
-    items = drive.get_first_10_documents()
+    items = drive.get_hierarchy()
+
 
     return flask.render_template("index.html", items=items)
 

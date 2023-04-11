@@ -51,6 +51,7 @@ _site/
 .*.hash
 .envrc
 .env.local
+.env.local2
 env/
 env[23]/
 .venv/
