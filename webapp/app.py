@@ -5,6 +5,7 @@ from canonicalwebteam.flask_base.app import FlaskBase
 
 from webapp.googledrive import Drive
 from webapp.parser import Parser
+from webapp.navigation import Navigation
 
 drive = Drive()
 
@@ -20,9 +21,9 @@ session = talisker.requests.get_session()
 
 @app.route("/")
 def index():
-    items = drive.get_first_10_documents()
+    navigation = Navigation(drive).hierarchy
 
-    return flask.render_template("index.html", items=items)
+    return flask.render_template("index.html", navigation=navigation)
 
 
 @app.route("/document/<document_id>")

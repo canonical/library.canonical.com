@@ -23,5 +23,5 @@ class Parser:
 
     def parse_metadata(self):
         table = self.html.select_one("table")
-
-        table.decompose()
+        if table:
+            table.decompose()

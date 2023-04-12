@@ -11,7 +11,7 @@ from webapp.settings import SERVICE_ACCOUNT_INFO
 class Drive:
     def __init__(self):
         scopes = [
-            "https://www.googleapis.com/auth/drive.readonly",
+            "https://www.googleapis.com/auth/drive",
         ]
         credentials = service_account.Credentials.from_service_account_info(
             SERVICE_ACCOUNT_INFO, scopes=scopes
@@ -20,13 +20,19 @@ class Drive:
             "drive", "v3", credentials=credentials, cache_discovery=False
         )
 
-    def get_first_10_documents(self):
-        """GETs the first 10 items availiable to the service account"""
-
+    def get_document_list(self):
         try:
             results = (
                 self.service.files()
-                .list(pageSize=10, fields="nextPageToken, files(id, name)")
+                .list(
+                    q="trashed=false",
+                    corpora="allDrives",
+                    supportsTeamDrives=True,
+                    includeItemsFromAllDrives=True,
+                    spaces="drive",
+                    fields="nextPageToken, "
+                    "files(id, name, parents, mimeType)",
+                )
                 .execute()
             )
             items = results.get("files", [])

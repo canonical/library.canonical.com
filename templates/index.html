@@ -8,16 +8,60 @@ Canonical Reference Library is single source of information for all corporate kn
 {% block meta_copydoc %}{% endblock %}
 
 {% block content %}
+{% macro create_navigation(nav_items, expandable=False, expanded=False) %}
+  <ul class="p-side-navigation__list">
+    {% for element in nav_items %}
+    <li class="p-side-navigation__item">
+      {% if not element.children %}
+      <a
+        class="p-side-navigation__link {% if element.children %}is-expandable{% endif %}"
+        href="/document/{{element.id}}"
+        {% if element.children %}aria-expanded="false"{% endif %}
+      >{{ element.name }}</a>
+
+      {% elif element.children %}
+          <p class="p-side-navigation__link u-no-margin--bottom p-heading--5">{{ element.name }}</p>
+          <button class="p-side-navigation__expand" aria-expanded="false" aria-label="show submenu for "></button>
+      {% endif %}
+      {{ create_navigation(element.children, expandable) }}
+    </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
 
 <main id="main-content">
   <section class="p-strip">
-    <div class="u-fixed-width">
-      <h1>Hello world</h1>
-      <ul>
-      {% for item in items %}
-        <li><a href="/document/{{item.id}}">{{item.name}}</a></li>
-      {% endfor %}
-      </ul>
+    <div class="row">
+      <aside class="col-3">
+        <nav data-js="navigation" class="p-side-navigation" id="">
+          <a href="#" class="p-side-navigation__toggle js-drawer-toggle" aria-controls="">
+            Toggle side navigation
+          </a>
+          <div class="p-side-navigation__overlay js-drawer-toggle" aria-controls=""></div>
+          <div class="p-side-navigation__drawer">
+            <div class="p-side-navigation__drawer-header">
+              <a href="#" class="p-side-navigation__toggle--in-drawer js-drawer-toggle" aria-controls="">
+                Toggle side navigation
+              </a>
+            </div>
+            {% for nav_group in navigation %}
+              {% if nav_group.name %}
+                {% if nav_group.mimeType == "document" %}
+                  <a class="p-side-navigation__link" href="/document/{{nav_group.id}}">{{ nav_group.name }}</a>
+                {% else %}
+                  <h3 class="p-side-navigation__heading">
+                    {{ nav_group.name }}
+                  </h3>
+                {% endif %}
+              {% endif %}
+              {{ create_navigation(nav_group.children, expandable=True) }}
+            {% endfor %}
+          </div>
+        </nav>
+      </aside>
+      <main class="col-9">
+        <h1>Hello world!</h1>
+      </main>
     </div>
   </section>
 </main>
