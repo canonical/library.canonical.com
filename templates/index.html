@@ -8,22 +8,22 @@ Canonical Reference Library is single source of information for all corporate kn
 {% block meta_copydoc %}{% endblock %}
 
 {% block content %}
-{% macro create_navigation(nav_items, expandable=False, expanded=False) %}
+{% macro create_navigation(nav_items, previous_slug, expandable=False, expanded=False) %}
   <ul class="p-side-navigation__list">
     {% for element in nav_items %}
     <li class="p-side-navigation__item">
-      {% if not element.children %}
+      {% if not nav_items[element].children and nav_items[element].mimeType == "document" %}
       <a
-        class="p-side-navigation__link {% if element.children %}is-expandable{% endif %}"
-        href="/document/{{element.id}}"
-        {% if element.children %}aria-expanded="false"{% endif %}
-      >{{ element.name }}</a>
+        class="p-side-navigation__link {% if nav_items[element].children %}is-expandable{% endif %}"
+        href="/{{previous_slug}}/{{nav_items[element].slug}}"
+        {% if nav_items[element].children %}aria-expanded="false"{% endif %}
+      >{{ nav_items[element].name }}</a>
 
-      {% elif element.children %}
-          <p class="p-side-navigation__link u-no-margin--bottom p-heading--5">{{ element.name }}</p>
+      {% elif nav_items[element].children %}
+          <p class="p-side-navigation__link u-no-margin--bottom p-heading--5">{{ nav_items[element].name }}</p>
           <button class="p-side-navigation__expand" aria-expanded="false" aria-label="show submenu for "></button>
       {% endif %}
-      {{ create_navigation(element.children, expandable) }}
+      {{ create_navigation(nav_items[element].children, previous_slug + "/" + nav_items[element].slug, expandable) }}
     </li>
     {% endfor %}
   </ul>
@@ -45,22 +45,22 @@ Canonical Reference Library is single source of information for all corporate kn
               </a>
             </div>
             {% for nav_group in navigation %}
-              {% if nav_group.name %}
-                {% if nav_group.mimeType == "document" %}
-                  <a class="p-side-navigation__link" href="/document/{{nav_group.id}}">{{ nav_group.name }}</a>
+              {% if navigation[nav_group].name %}
+                {% if navigation[nav_group].mimeType == "document" %}
+                  <a class="p-side-navigation__link" href="/{{navigation[nav_group].slug}}">{{ navigation[nav_group].name }}</a>
                 {% else %}
                   <h3 class="p-side-navigation__heading">
-                    {{ nav_group.name }}
+                    {{ navigation[nav_group].name }}
                   </h3>
                 {% endif %}
               {% endif %}
-              {{ create_navigation(nav_group.children, expandable=True) }}
+              {{ create_navigation(navigation[nav_group].children, navigation[nav_group].slug, expandable=True) }}
             {% endfor %}
           </div>
         </nav>
       </aside>
       <main class="col-9">
-        <h1>Hello world!</h1>
+        {{ document | safe }}
       </main>
     </div>
   </section>
