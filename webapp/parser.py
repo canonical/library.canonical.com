@@ -7,11 +7,7 @@ from webapp.googledrive import Drive
 class Parser:
     def __init__(self, google_drive: Drive, document_id: str):
         self.document_id = document_id
-
-        try:
-            raw_html = google_drive.get_html(document_id)
-        except Exception as e:
-            print(e)
+        raw_html = google_drive.get_html(document_id)
         self.html = BeautifulSoup(raw_html, features="html.parser")
         self.html = self.remove_attrs(self.html)
         self.parse_metadata()

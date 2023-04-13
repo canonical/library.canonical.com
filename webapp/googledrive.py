@@ -1,5 +1,7 @@
 import io
 
+from flask import abort
+
 from apiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -35,17 +37,25 @@ class Drive:
                 )
                 .execute()
             )
-            items = results.get("files", [])
-        except HttpError as error:
-            print(f"An error occurred: {error}")
+        except Exception as error:
+            err = "Error fetching document list."
+            print(f"{err}\n {error}")
+            abort(500, description=err)
+
+        items = results.get("files", [])
 
         return items
 
     def get_html(self, document_id):
-        """GETs a specific document based off its ID"""
-        request = self.service.files().export(
-            fileId=document_id, mimeType="text/html"
-        )
+        try:
+            request = self.service.files().export(
+                fileId=document_id, mimeType="text/html"
+            )
+        except Exception as error:
+            err = "Error, document not found."
+            print(f"{err}\n {error}")
+            abort(404, description=err)
+
         fh = io.BytesIO()
         downloader = MediaIoBaseDownload(fh, request)
         done = False

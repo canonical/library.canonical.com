@@ -13,27 +13,28 @@ app = FlaskBase(
     __name__,
     "canonical.reference-library.com",
     template_folder="../templates",
+    template_404="404.html",
+    template_500="500.html",
     static_folder="../static",
 )
 
 session = talisker.requests.get_session()
 
-
 @app.route("/")
-def index():
-    navigation = Navigation(drive)
-    document_id = navigation.hierarchy["home"]["id"]
-    soup = Parser(drive, document_id)
-
-    return flask.render_template(
-        "index.html", navigation=navigation.hierarchy, document=soup.html
-    )
-
-
 @app.route("/<path:path>")
-def document(path):
+def document(path=None):
     navigation = Navigation(drive)
-    document_id = get_page_id(path, navigation.hierarchy)
+
+    if not path:
+        document_id = navigation.hierarchy["home"]["id"]
+    else:
+        try:
+            document_id = get_page_id(path, navigation.hierarchy)
+        except Exception as e:
+            err = "Error, document does not exist."
+            print(f"{err}\n {e}")
+            flask.abort(404, description=err)
+
     soup = Parser(drive, document_id)
 
     return flask.render_template(

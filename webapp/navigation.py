@@ -3,10 +3,7 @@ from webapp.googledrive import Drive
 
 class Navigation:
     def __init__(self, google_drive: Drive):
-        try:
-            file_list = google_drive.get_document_list()
-        except Exception as e:
-            print(e)
+        file_list = google_drive.get_document_list()
         self.hierarchy = self.create_hierarchy(file_list)
 
     def create_hierarchy(self, objects):
