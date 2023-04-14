@@ -4,7 +4,6 @@ from flask import abort
 
 from apiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 
 from webapp.settings import SERVICE_ACCOUNT_INFO

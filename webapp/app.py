@@ -20,32 +20,35 @@ app = FlaskBase(
 
 session = talisker.requests.get_session()
 
+
 @app.route("/")
 @app.route("/<path:path>")
 def document(path=None):
     navigation = Navigation(drive)
 
     if not path:
-        document_id = navigation.hierarchy["home"]["id"]
+        document = navigation.hierarchy["home"]
     else:
         try:
-            document_id = get_page_id(path, navigation.hierarchy)
+            document = target_document(path, navigation.hierarchy)
         except Exception as e:
             err = "Error, document does not exist."
             print(f"{err}\n {e}")
             flask.abort(404, description=err)
 
-    soup = Parser(drive, document_id)
+    soup = Parser(drive, document["id"])
 
     return flask.render_template(
-        "index.html", navigation=navigation.hierarchy, document=soup.html
+        "index.html", navigation=navigation.hierarchy, html=soup.html
     )
 
 
-def get_page_id(path, navigation):
+def target_document(path, navigation):
     split_slug = path.split("/")
     target_page = navigation
     for index, slug in enumerate(split_slug):
         if len(split_slug) == index + 1:
-            return target_page[slug]["id"]
+            target_page[slug]["active"] = True
+            return target_page[slug]
+        target_page[slug]["expanded"] = True
         target_page = target_page[slug]["children"]

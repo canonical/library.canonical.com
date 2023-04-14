@@ -14,6 +14,8 @@ class Navigation:
             obj["children"] = {}
             obj["mimeType"] = obj["mimeType"].rpartition(".")[-1]
             obj["slug"] = "-".join(obj["name"].split(" ")).lower()
+            obj["active"] = False
+            obj["expanded"] = False
             object_dict[obj["id"]] = obj
 
         for obj in objects:
