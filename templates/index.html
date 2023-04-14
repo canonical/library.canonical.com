@@ -8,16 +8,59 @@ Canonical Reference Library is single source of information for all corporate kn
 {% block meta_copydoc %}{% endblock %}
 
 {% block content %}
+{% macro create_navigation(nav_items, previous_slug, expandable=False, expanded=False) %}
+  <ul class="p-side-navigation__list" {% if expanded %}aria-expanded="true"{% endif %}>
+    {% for element in nav_items %}
+    <li class="p-side-navigation__item">
+      {% if not nav_items[element].children and nav_items[element].mimeType == "document" %}
+      <a
+        class="p-side-navigation__link {% if nav_items[element].children %}is-expandable{% endif %}" {% if nav_items[element].active %}aria-current="page"{% endif%}
+        href="/{{previous_slug}}/{{nav_items[element].slug}}"
+      >{{ nav_items[element].name }}</a>
+
+      {% elif nav_items[element].children %}
+          <p class="p-side-navigation__link u-no-margin--bottom p-heading--5">{{ nav_items[element].name }}</p>
+          <button class="p-side-navigation__expand" {% if nav_items[element].expanded %}aria-expanded="true"{% endif %} aria-label="show submenu for "></button>
+      {% endif %}
+      {{ create_navigation(nav_items[element].children, previous_slug + "/" + nav_items[element].slug, expandable=nav_items[element].expanded) }}
+    </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
 
 <main id="main-content">
   <section class="p-strip">
-    <div class="u-fixed-width">
-      <h1>Hello world</h1>
-      <ul>
-      {% for item in items %}
-        <li><a href="/document/{{item.id}}">{{item.name}}</a></li>
-      {% endfor %}
-      </ul>
+    <div class="row">
+      <aside class="col-3">
+        <nav data-js="navigation" class="p-side-navigation" id="">
+          <a href="#" class="p-side-navigation__toggle js-drawer-toggle" aria-controls="">
+            Toggle side navigation
+          </a>
+          <div class="p-side-navigation__overlay js-drawer-toggle" aria-controls=""></div>
+          <div class="p-side-navigation__drawer">
+            <div class="p-side-navigation__drawer-header">
+              <a href="#" class="p-side-navigation__toggle--in-drawer js-drawer-toggle" aria-controls="">
+                Toggle side navigation
+              </a>
+            </div>
+            {% for nav_group in navigation %}
+              {% if navigation[nav_group].name %}
+                {% if navigation[nav_group].mimeType == "document" %}
+                  <a class="p-side-navigation__link" href="/{{navigation[nav_group].slug}}" {% if navigation[nav_group].active %}aria-current="page"{% endif%}>{{ navigation[nav_group].name }}</a>
+                {% else %}
+                  <h3 class="p-side-navigation__heading">
+                    {{ navigation[nav_group].name }}
+                  </h3>
+                {% endif %}
+              {% endif %}
+              {{ create_navigation(navigation[nav_group].children, navigation[nav_group].slug, expandable=True) }}
+            {% endfor %}
+          </div>
+        </nav>
+      </aside>
+      <main class="col-9">
+        {{ html | safe }}
+      </main>
     </div>
   </section>
 </main>
