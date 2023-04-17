@@ -6,6 +6,7 @@ from canonicalwebteam.flask_base.app import FlaskBase
 from webapp.googledrive import Drive
 from webapp.parser import Parser
 from webapp.navigation import Navigation
+from webapp.sso import init_sso
 
 drive = Drive()
 
@@ -19,6 +20,8 @@ app = FlaskBase(
 )
 
 session = talisker.requests.get_session()
+
+init_sso(app)
 
 
 @app.route("/")
