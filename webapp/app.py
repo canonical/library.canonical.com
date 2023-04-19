@@ -27,7 +27,7 @@ def document(path=None):
     navigation = Navigation(drive)
 
     if not path:
-        document = navigation.hierarchy["home"]
+        document = navigation.hierarchy["index"]
     else:
         try:
             document = target_document(path, navigation.hierarchy)
@@ -36,7 +36,7 @@ def document(path=None):
             print(f"{err}\n {e}")
             flask.abort(404, description=err)
 
-    soup = Parser(drive, document["id"])
+    soup = Parser(drive, document["id"], navigation.object_dict)
 
     return flask.render_template(
         "index.html", navigation=navigation.hierarchy, html=soup.html
