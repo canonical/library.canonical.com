@@ -8,10 +8,15 @@ env:
   - name: SENTRY_DSN
     value: https://3c9a25a1976d4a97981997bb5a1ca7b4@sentry.is.canonical.com//28
 
-  - name: SEARCH_API_KEY
+  - name: PRIVATE_KEY_ID
     secretKeyRef:
-      key: google-custom-search-key
-      name: google-api
+      key: private-key-id
+      name: library-canonical-com
+
+  - name: PRIVATE_KEY
+    secretKeyRef:
+      key: private-key
+      name: library-canonical-com
 
 # Overrides for production
 production:
@@ -21,11 +26,6 @@ production:
       rewrite ^ https://library.canonical.com$request_uri? permanent;
     }
     more_set_headers "Link: <https://assets.ubuntu.com>; rel=preconnect; crossorigin, <https://assets.ubuntu.com>; rel=preconnect";
-  nginxServerSnippet: |
-    location ^~ /install/ {
-      rewrite ^/install/(.*).exe /ubuntu/library-canonical/releases/download/installer-$1/library-canonical-installer.exe break;
-      proxy_pass https://github.com/;
-    }
 
 # Overrides for staging
 staging:
@@ -33,8 +33,3 @@ staging:
   nginxConfigurationSnippet: |
     more_set_headers "X-Robots-Tag: noindex";
     more_set_headers "Link: <https://assets.ubuntu.com>; rel=preconnect; crossorigin, <https://assets.ubuntu.com>; rel=preconnect";
-  nginxServerSnippet: |
-    location /install/ {
-      rewrite ^/install/(.*).exe /ubuntu/library-canonical/releases/download/installer-$1/library-canonical-installer.exe break;
-      proxy_pass https://github.com/;
-    }
