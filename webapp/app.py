@@ -1,3 +1,4 @@
+import os
 import flask
 import talisker
 
@@ -7,6 +8,8 @@ from webapp.googledrive import Drive
 from webapp.parser import Parser
 from webapp.navigation import Navigation
 from webapp.sso import init_sso
+
+ROOT = os.getenv("ROOT_FOLDER")
 
 drive = Drive()
 
@@ -42,7 +45,7 @@ def document(path=None):
     soup = Parser(drive, document["id"], navigation.object_dict)
 
     return flask.render_template(
-        "index.html", navigation=navigation.hierarchy, html=soup.html
+        "index.html", navigation=navigation.hierarchy, html=soup.html, root_name=ROOT
     )
 
 
@@ -52,6 +55,10 @@ def target_document(path, navigation):
     for index, slug in enumerate(split_slug):
         if len(split_slug) == index + 1:
             target_page[slug]["active"] = True
-            return target_page[slug]
+            if target_page[slug]["mimeType"] == "folder":
+                target_page[slug]["expanded"] = True
+                return target_page[slug]["children"]["index"]
+            else:
+                return target_page[slug]
         target_page[slug]["expanded"] = True
         target_page = target_page[slug]["children"]

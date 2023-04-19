@@ -1,8 +1,9 @@
+import os
 from bs4 import BeautifulSoup
-
 
 from webapp.googledrive import Drive
 
+ROOT = os.getenv("ROOT_FOLDER")
 
 class Parser:
     def __init__(self, google_drive: Drive, document_id: str, nav_dict):
@@ -34,5 +35,6 @@ class Parser:
                 split_url = a["href"].split(google_doc_path)[1]
                 doc_id = split_url.split("/")[0]
                 if self.nav_dict.get(doc_id):
-                    a["href"] = self.nav_dict.get(doc_id)["full_path"]
+                    a["href"] = self.nav_dict.get(doc_id)["full_path"].split(f"/{ROOT}")[1]
+
         return soup

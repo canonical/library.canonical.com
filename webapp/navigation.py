@@ -1,5 +1,7 @@
 from webapp.googledrive import Drive
+import os
 
+ROOT = os.getenv("ROOT_FOLDER")
 
 class Navigation:
     def __init__(self, google_drive: Drive):
@@ -7,15 +9,17 @@ class Navigation:
         self.hierarchy = self.create_hierarchy(file_list)
         self.object_dict
 
+
+    def add_full_path(self, obj, path=""):
+        for key in obj.keys():
+            obj[key]["full_path"] = path + "/" + obj[key]["slug"]
+            if obj[key]["mimeType"] == "folder":
+                self.add_full_path(obj[key]["children"], obj[key]["full_path"])
+
+
     def create_hierarchy(self, objects):
         self.object_dict = {}
         root_objects = {}
-
-        def add_full_path(obj, path=""):
-            for key in obj.keys():
-                obj[key]["full_path"] = path + "/" + obj[key]["slug"]
-                if obj[key]["mimeType"] == "folder":
-                    add_full_path(obj[key]["children"], obj[key]["full_path"])
 
         for obj in objects:
             obj["children"] = {}
@@ -35,6 +39,6 @@ class Navigation:
                 else:
                     root_objects[obj["slug"]] = obj
 
-        add_full_path(root_objects)
+        self.add_full_path(root_objects)
 
-        return root_objects["library"]["children"]
+        return root_objects[ROOT]["children"]
