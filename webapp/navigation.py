@@ -1,7 +1,7 @@
 from webapp.googledrive import Drive
 import os
 
-ROOT = os.getenv("ROOT_FOLDER")
+ROOT = os.getenv("ROOT_FOLDER", "library")
 
 
 class Navigation:

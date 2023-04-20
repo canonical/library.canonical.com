@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 
 from webapp.googledrive import Drive
 
-ROOT = os.getenv("ROOT_FOLDER")
+ROOT = os.getenv("ROOT_FOLDER", "library")
 
 
 class Parser:
