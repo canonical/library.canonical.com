@@ -18,6 +18,26 @@ env:
       key: private-key
       name: library-canonical-com
 
+  - name: PROJECT_ID
+    secretKeyRef:
+      key: project-id
+      name: library-canonical-com
+
+  - name: CLIENT_EMAIL
+    secretKeyRef:
+      key: client-email
+      name: library-canonical-com
+
+  - name: CLIENT_ID
+    secretKeyRef:
+      key: client-id
+      name: library-canonical-com
+
+  - name: CLIENT__X509_CERT_URL
+    secretKeyRef:
+      key: client-x509-cert-url
+      name: library-canonical-com
+
 # Overrides for production
 production:
   replicas: 5
