@@ -2,8 +2,6 @@ domain: library.canonical.com
 
 image: prod-comms.ps5.docker-registry.canonical.com/library.canonical.com
 
-useProxy: true
-
 env:
   - name: SENTRY_DSN
     value: https://3c9a25a1976d4a97981997bb5a1ca7b4@sentry.is.canonical.com//28
