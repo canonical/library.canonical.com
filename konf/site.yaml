@@ -2,8 +2,6 @@ domain: library.canonical.com
 
 image: prod-comms.ps5.docker-registry.canonical.com/library.canonical.com
 
-useProxy: true
-
 env:
   - name: SENTRY_DSN
     value: https://3c9a25a1976d4a97981997bb5a1ca7b4@sentry.is.canonical.com//28
@@ -16,6 +14,26 @@ env:
   - name: PRIVATE_KEY
     secretKeyRef:
       key: private-key
+      name: library-canonical-com
+
+  - name: PROJECT_ID
+    secretKeyRef:
+      key: project-id
+      name: library-canonical-com
+
+  - name: CLIENT_EMAIL
+    secretKeyRef:
+      key: client-email
+      name: library-canonical-com
+
+  - name: CLIENT_ID
+    secretKeyRef:
+      key: client-id
+      name: library-canonical-com
+
+  - name: CLIENT__X509_CERT_URL
+    secretKeyRef:
+      key: client-x509-cert-url
       name: library-canonical-com
 
 # Overrides for production

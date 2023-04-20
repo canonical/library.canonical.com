@@ -9,7 +9,7 @@ from webapp.parser import Parser
 from webapp.navigation import Navigation
 from webapp.sso import init_sso
 
-ROOT = os.getenv("ROOT_FOLDER")
+ROOT = os.getenv("ROOT_FOLDER", "library")
 
 drive = Drive()
 
