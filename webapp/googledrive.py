@@ -55,11 +55,11 @@ class Drive:
             print(f"{err}\n {error}")
             abort(404, description=err)
 
-        fh = io.BytesIO()
-        downloader = MediaIoBaseDownload(fh, request)
+        file = io.BytesIO()
+        downloader = MediaIoBaseDownload(file, request)
         done = False
         while done is False:
             _, done = downloader.next_chunk()
-        html = fh.getvalue().decode("utf-8")
+        html = file.getvalue().decode("utf-8")
 
         return html

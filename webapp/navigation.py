@@ -3,19 +3,18 @@ import os
 
 ROOT = os.getenv("ROOT_FOLDER")
 
+
 class Navigation:
     def __init__(self, google_drive: Drive):
         file_list = google_drive.get_document_list()
         self.hierarchy = self.create_hierarchy(file_list)
         self.object_dict
 
-
     def add_full_path(self, obj, path=""):
         for key in obj.keys():
             obj[key]["full_path"] = path + "/" + obj[key]["slug"]
             if obj[key]["mimeType"] == "folder":
                 self.add_full_path(obj[key]["children"], obj[key]["full_path"])
-
 
     def create_hierarchy(self, objects):
         self.object_dict = {}
