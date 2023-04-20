@@ -1,3 +1,4 @@
+import os
 import flask
 import talisker
 
@@ -7,6 +8,8 @@ from webapp.googledrive import Drive
 from webapp.parser import Parser
 from webapp.navigation import Navigation
 from webapp.sso import init_sso
+
+ROOT = os.getenv("ROOT_FOLDER")
 
 drive = Drive()
 
@@ -29,29 +32,36 @@ init_sso(app)
 def document(path=None):
     navigation = Navigation(drive)
 
-    if not path:
-        document = navigation.hierarchy["index"]
-    else:
-        try:
-            document = target_document(path, navigation.hierarchy)
-        except Exception as e:
-            err = "Error, document does not exist."
-            print(f"{err}\n {e}")
-            flask.abort(404, description=err)
+    try:
+        document = target_document(path, navigation.hierarchy)
+    except Exception as e:
+        err = "Error, document does not exist."
+        print(f"{err}\n {e}")
+        flask.abort(404, description=err)
 
     soup = Parser(drive, document["id"], navigation.object_dict)
 
     return flask.render_template(
-        "index.html", navigation=navigation.hierarchy, html=soup.html
+        "index.html",
+        navigation=navigation.hierarchy,
+        html=soup.html,
+        root_name=ROOT,
     )
 
 
 def target_document(path, navigation):
+    if not path:
+        navigation["index"]["active"] = True
+        return navigation["index"]
     split_slug = path.split("/")
     target_page = navigation
     for index, slug in enumerate(split_slug):
         if len(split_slug) == index + 1:
             target_page[slug]["active"] = True
-            return target_page[slug]
+            if target_page[slug]["mimeType"] == "folder":
+                target_page[slug]["expanded"] = True
+                return target_page[slug]["children"]["index"]
+            else:
+                return target_page[slug]
         target_page[slug]["expanded"] = True
         target_page = target_page[slug]["children"]

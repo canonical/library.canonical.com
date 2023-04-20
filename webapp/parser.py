@@ -1,7 +1,9 @@
+import os
 from bs4 import BeautifulSoup
 
-
 from webapp.googledrive import Drive
+
+ROOT = os.getenv("ROOT_FOLDER")
 
 
 class Parser:
@@ -10,13 +12,17 @@ class Parser:
         self.nav_dict = nav_dict
         raw_html = google_drive.get_html(document_id)
         self.html = BeautifulSoup(raw_html, features="html.parser")
-        self.html = self.remove_attrs(self.html)
+        self.html = self.clean_html(self.html)
         self.html = self.parse_links(self.html)
         self.parse_metadata()
 
-    def remove_attrs(self, soup):
+    def clean_html(self, soup):
         for tag in soup.findAll(True):
-            del tag["style"]
+            if len(tag.contents) == 0:
+                tag.decompose()
+            else:
+                del tag["style"]
+                del tag["id"]
         return soup
 
     def parse_metadata(self):
@@ -34,5 +40,8 @@ class Parser:
                 split_url = a["href"].split(google_doc_path)[1]
                 doc_id = split_url.split("/")[0]
                 if self.nav_dict.get(doc_id):
-                    a["href"] = self.nav_dict.get(doc_id)["full_path"]
+                    a["href"] = self.nav_dict.get(doc_id)["full_path"].split(
+                        f"/{ROOT}"
+                    )[1]
+
         return soup
