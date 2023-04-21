@@ -1,28 +1,42 @@
+import json
 import os
 from bs4 import BeautifulSoup
 
 from webapp.googledrive import Drive
 
+f = open("webapp/config/bs4_ignores.json")
+bs4_ignores = json.load(f)
 ROOT = os.getenv("ROOT_FOLDER", "library")
 
 
 class Parser:
-    def __init__(self, google_drive: Drive, document_id: str, nav_dict):
-        self.document_id = document_id
+    def __init__(self, google_drive: Drive, doc_id: str, nav_dict, doc_name):
+        self.doc_id = doc_id
         self.nav_dict = nav_dict
-        raw_html = google_drive.get_html(document_id)
+        raw_html = google_drive.get_html(doc_id)
         self.html = BeautifulSoup(raw_html, features="html.parser")
-        self.html = self.clean_html(self.html)
+        self.html = self.clean_html(self.html, doc_name)
         self.html = self.parse_links(self.html)
         self.parse_metadata()
 
-    def clean_html(self, soup):
+    def clean_html(self, soup, doc_name):
+        soup.select_one("head").decompose()
+        soup.select_one("body").unwrap()
         for tag in soup.findAll(True):
-            if len(tag.contents) == 0:
-                tag.decompose()
-            else:
+            if tag.has_attr("style"):
+                tag_style = tag["style"]
+                for style, tag_name in bs4_ignores.items():
+                    if style in tag_style and not tag.find("a"):
+                        tag.wrap(soup.new_tag(tag_name))
                 del tag["style"]
-                del tag["id"]
+            del tag["id"]
+            if tag.name != "img" and len(tag.contents) == 0:
+                tag.decompose()
+        h1 = soup.select_one("h1")
+        if not h1:
+            inserted_h1 = soup.new_tag("h1")
+            inserted_h1.string = doc_name
+            soup.select_one("html").insert_before(inserted_h1)
         return soup
 
     def parse_metadata(self):
