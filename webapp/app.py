@@ -39,13 +39,16 @@ def document(path=None):
         print(f"{err}\n {e}")
         flask.abort(404, description=err)
 
-    soup = Parser(drive, document["id"], navigation.object_dict)
+    soup = Parser(
+        drive, document["id"], navigation.object_dict, document["name"]
+    )
 
     return flask.render_template(
         "index.html",
         navigation=navigation.hierarchy,
         html=soup.html,
         root_name=ROOT,
+        document_id=document["id"],
     )
 
 
