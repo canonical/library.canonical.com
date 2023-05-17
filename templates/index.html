@@ -76,6 +76,15 @@ Canonical Reference Library is single source of information for all corporate kn
         </nav>
       </aside>
       <main class="col-9">
+        {% if path is not none %}
+        <nav class="p-breadcrumbs" aria-label="Breadcrumbs">
+          <ol class="p-breadcrumbs__items">
+            {% for page in path.split("/")%}
+            <li class="p-breadcrumbs__item"><a href="/{% if loop.first %}{{ path.split("/")[0] }}{% else %}{{ path.split(page)[0] + page }}{% endif %}">{{page.split("-")|join(" ")|capitalize}}</a></li>
+            {% endfor %}
+          </ol>
+        </nav>
+        {% endif %}
         {{ html | safe }}
         <hr>
         <a href="https://docs.google.com/document/d/{{document_id}}">Contribute or make changes to this document&nbsp;&rsaquo;</a>

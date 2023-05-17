@@ -43,12 +43,14 @@ def document(path=None):
         drive, document["id"], navigation.object_dict, document["name"]
     )
 
+
     return flask.render_template(
         "index.html",
         navigation=navigation.hierarchy,
         html=soup.html,
         root_name=ROOT,
         document_id=document["id"],
+        path=path,
     )
 
 
