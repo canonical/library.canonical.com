@@ -9,5 +9,15 @@
 @import "@canonical/cookie-policy/build/css/cookie-policy";
 
 .p-side-navigation__primary-heading {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+
+  :after {
+    background: rgba(0,0,0,.1);
+    content: "";
+    height: 1px;
+    position: absolute;
+    right: 0;
+    bottom: -0.75rem;
+    left: 1.5rem;
+  }
 }
