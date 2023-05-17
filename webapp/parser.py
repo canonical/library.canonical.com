@@ -25,12 +25,12 @@ class Parser:
         for tag in soup.findAll(True):
             if tag.has_attr("style"):
                 tag_style = tag["style"]
-                for style, tag_name in bs4_ignores.items():
+                for style, tag_name in bs4_ignores["styles"].items():
                     if style in tag_style and not tag.find("a"):
                         tag.wrap(soup.new_tag(tag_name))
                 del tag["style"]
             del tag["id"]
-            if tag.name != "img" and len(tag.contents) == 0:
+            if tag.name not in bs4_ignores["tags"] and len(tag.contents) == 0:
                 tag.decompose()
         h1 = soup.select_one("h1")
         if not h1:
