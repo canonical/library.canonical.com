@@ -40,9 +40,9 @@ class Navigation:
 
         self.add_full_path(root_objects)
 
-        ordered_hierarcy = self.order_hierarchy(root_objects[ROOT]["children"])
+        ordered_hierarchy = self.order_hierarchy(root_objects[ROOT]["children"])
 
-        return ordered_hierarcy
+        return ordered_hierarchy
 
     def order_hierarchy(self, hierarchy):
         if "index" in hierarchy:
