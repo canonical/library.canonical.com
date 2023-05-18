@@ -40,7 +40,9 @@ class Navigation:
 
         self.add_full_path(root_objects)
 
-        ordered_hierarchy = self.order_hierarchy(root_objects[ROOT]["children"])
+        ordered_hierarchy = self.order_hierarchy(
+            root_objects[ROOT]["children"]
+        )
 
         return ordered_hierarchy
 
