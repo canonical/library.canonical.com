@@ -11,13 +11,13 @@
 .p-side-navigation__primary-heading {
   margin-bottom: 1.5rem;
 
-  :after {
-    background: rgba(0,0,0,.1);
+  ::after {
+    background: rgba(0 0 0 / 10%);
+    bottom: -0.75rem;
     content: "";
     height: 1px;
+    left: 1.5rem;
     position: absolute;
     right: 0;
-    bottom: -0.75rem;
-    left: 1.5rem;
   }
 }
