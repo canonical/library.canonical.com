@@ -7,3 +7,17 @@
 
 // Import cookie policy
 @import "@canonical/cookie-policy/build/css/cookie-policy";
+
+.p-side-navigation__primary-heading {
+  margin-bottom: 1.5rem;
+
+  ::after {
+    background: rgb(0 0 0 / 10%);
+    bottom: -0.75rem;
+    content: "";
+    height: 1px;
+    left: 1.5rem;
+    position: absolute;
+    right: 0;
+  }
+}

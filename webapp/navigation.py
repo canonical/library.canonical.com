@@ -40,4 +40,17 @@ class Navigation:
 
         self.add_full_path(root_objects)
 
-        return root_objects[ROOT]["children"]
+        ordered_hierarchy = self.order_hierarchy(
+            root_objects[ROOT]["children"]
+        )
+
+        return ordered_hierarchy
+
+    def order_hierarchy(self, hierarchy):
+        if "index" in hierarchy:
+            index_item = hierarchy.pop("index")
+        sorted_items = dict(sorted(hierarchy.items(), key=lambda x: x[0]))
+        sorted_hierarchy = {"index": index_item}
+        sorted_hierarchy.update(sorted_items)
+
+        return sorted_hierarchy

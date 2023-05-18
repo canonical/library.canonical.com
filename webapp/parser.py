@@ -47,6 +47,7 @@ class Parser:
     def parse_links(self, soup):
         external_path = "https://www.google.com/url?q="
         google_doc_path = "docs.google.com/document/d/"
+        url_garbage = "&sa=D"
         for a in soup.findAll("a", href=True):
             if a["href"].startswith(external_path):
                 a["href"] = a["href"].replace(external_path, "")
@@ -57,5 +58,7 @@ class Parser:
                     a["href"] = self.nav_dict.get(doc_id)["full_path"].split(
                         f"/{ROOT}"
                     )[1]
+            if url_garbage in a["href"]:
+                a["href"] = a["href"].split(url_garbage)[0]
 
         return soup
