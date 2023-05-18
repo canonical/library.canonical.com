@@ -22,7 +22,7 @@ Canonical Reference Library is single source of information for all corporate kn
         {% if nav_items[element]["children"]["index"] %}
           <a class="p-side-navigation__link is-expandable u-no-margin--bottom" href="/{{previous_slug}}/{{nav_items[element].slug}}" {% if nav_items[element].active %}aria-current="page"{% endif %}>{{ nav_items[element].name }}</a>
         {% else %}
-          <p class="p-side-navigation__title is-expandable u-no-margin--bottom">{{ nav_items[element].name }}</p>
+          <strong class="p-side-navigation__text is-expandable u-no-margin--bottom">{{ nav_items[element].name }}</strong>
         {% endif %}
         <button class="p-side-navigation__expand" {% if nav_items[element].expanded %}aria-expanded="true"{% endif %} aria-label="show submenu for "></button>
       {% endif %}
