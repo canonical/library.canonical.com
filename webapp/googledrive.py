@@ -2,11 +2,16 @@ import io
 
 from flask import abort
 
+from pymemcache.client.base import Client
+from cachetools import TTLCache, cached
+
 from apiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
 from webapp.settings import SERVICE_ACCOUNT_INFO
+
+cache = TTLCache(maxsize=100, ttl=1800)
 
 
 class Drive:
@@ -20,7 +25,9 @@ class Drive:
         self.service = build(
             "drive", "v3", credentials=credentials, cache_discovery=False
         )
+        self.client = Client(("localhost", 11211))
 
+    @cached(cache)
     def get_document_list(self):
         try:
             results = (
@@ -46,6 +53,10 @@ class Drive:
         return items
 
     def get_html(self, document_id):
+        html = self.client.get(document_id)
+        if html is not None:
+            return html.decode("utf-8")
+
         try:
             request = self.service.files().export(
                 fileId=document_id, mimeType="text/html"
@@ -61,5 +72,7 @@ class Drive:
         while done is False:
             _, done = downloader.next_chunk()
         html = file.getvalue().decode("utf-8")
+
+        self.client.set(document_id, html.encode("utf-8"))
 
         return html

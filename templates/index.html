@@ -22,7 +22,7 @@ Canonical Reference Library is single source of information for all corporate kn
         {% if nav_items[element]["children"]["index"] %}
           <a class="p-side-navigation__link is-expandable u-no-margin--bottom" href="/{{previous_slug}}/{{nav_items[element].slug}}" {% if nav_items[element].active %}aria-current="page"{% endif %}>{{ nav_items[element].name }}</a>
         {% else %}
-          <strong class="p-side-navigation__text is-expandable u-no-margin--bottom">{{ nav_items[element].name }}</strong>
+          <em class="p-side-navigation__text is-expandable u-no-margin--bottom">{{ nav_items[element].name }}</em>
         {% endif %}
         <button class="p-side-navigation__expand" {% if nav_items[element].expanded %}aria-expanded="true"{% endif %} aria-label="show submenu for "></button>
       {% endif %}
@@ -60,7 +60,7 @@ Canonical Reference Library is single source of information for all corporate kn
                       {% if navigation[nav_group]["children"]["index"] %}
                         <a class="p-side-navigation__link is-expandable u-no-margin--bottom" href="/{{navigation[nav_group].slug}}" {% if navigation[nav_group].active %}aria-current="page"{% endif %}>{{ navigation[nav_group].name }}</a>
                       {% else %}
-                        <strong class="p-side-navigation__text is-expandable u-no-margin--bottom">{{ navigation[nav_group].name }}</strong>
+                        <em class="p-side-navigation__text is-expandable u-no-margin--bottom">{{ navigation[nav_group].name }}</em>
                       {% endif %}
                       <button class="p-side-navigation__expand" {% if navigation[nav_group].expanded %}aria-expanded="true"{% endif %} aria-label="show submenu for "></button>
                     {% endif %}
@@ -95,6 +95,5 @@ Canonical Reference Library is single source of information for all corporate kn
     </div>
   </section>
 </main>
-
 
 {% endblock %}

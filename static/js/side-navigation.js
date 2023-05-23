@@ -119,7 +119,6 @@
   // Setup expandable side navigation
 
   var expandToggles = document.querySelectorAll(".p-side-navigation__expand");
-  var navigationLinks = document.querySelectorAll(".p-side-navigation__link");
 
   // setup default values of aria-expanded for the toggle button, list title and list itself
   const setup = (toggle) => {
@@ -155,6 +154,22 @@
     setup(toggle);
     toggle.addEventListener("click", (e) => {
       handleToggle(e);
+    });
+  });
+
+  // Throttle navigating link clicks
+  var navigationLinks = document.querySelectorAll(".p-side-navigation__link");
+
+  navigationLinks.forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      if (link.classList.contains("disabled")) {
+        e.preventDefault();
+      } else {
+        link.classList.add("disabled");
+        setTimeout(function () {
+          link.classList.remove("disabled");
+        }, 500);
+      }
     });
   });
 })();
