@@ -1,3 +1,5 @@
+import debounce from "./utility/debounce"
+
 (function () {
   /**
     Toggles the expanded/collapsed classed on side navigation element.
@@ -157,19 +159,15 @@
     });
   });
 
-  // Throttle navigating link clicks
+  // Debounce navigating link clicks
   var navigationLinks = document.querySelectorAll(".p-side-navigation__link");
 
-  navigationLinks.forEach(function (link) {
-    link.addEventListener("click", function (e) {
-      if (link.classList.contains("disabled")) {
-        e.preventDefault();
-      } else {
-        link.classList.add("disabled");
-        setTimeout(function () {
-          link.classList.remove("disabled");
-        }, 500);
-      }
+  navigationLinks.forEach((link) => {
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      debounce(function () {
+        window.location.href = link.href;
+      }, 500)();
     });
   });
 })();
