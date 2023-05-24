@@ -1,5 +1,4 @@
 from webapp.googledrive import Drive
-import os
 
 
 class Navigation:
