@@ -1,4 +1,4 @@
-import debounce from "./utility/debounce"
+import debounce from "./utility/debounce";
 
 (function () {
   /**
@@ -163,7 +163,7 @@ import debounce from "./utility/debounce"
   var navigationLinks = document.querySelectorAll(".p-side-navigation__link");
 
   navigationLinks.forEach((link) => {
-    link.addEventListener('click', function (event) {
+    link.addEventListener("click", function (event) {
       event.preventDefault();
       debounce(function () {
         window.location.href = link.href;
