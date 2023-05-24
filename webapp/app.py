@@ -38,7 +38,7 @@ def init_drive():
 @app.route("/")
 @app.route("/<path:path>")
 def document(path=None):
-    navigation = Navigation(init_drive())
+    navigation = Navigation(init_drive(), ROOT)
 
     try:
         document = target_document(path, navigation.hierarchy)
