@@ -76,7 +76,10 @@ class Parser:
 
     def parse_links(self):
         external_path = "https://www.google.com/url?q="
-        google_doc_paths = ["docs.google.com/document/d/", "docs.google.com/document/u/0/d/"]
+        google_doc_paths = [
+            "docs.google.com/document/d/",
+            "docs.google.com/document/u/0/d/",
+        ]
         trailing_garbage = "&sa=D&source=editors&ust="
         for a_tag in self.html.findAll("a", href=True):
             self.clean_external_links(a_tag, external_path)

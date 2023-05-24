@@ -1,6 +1,7 @@
 from webapp.googledrive import Drive
 import os
 
+
 class Navigation:
     def __init__(self, google_drive: Drive, root_folder: str):
         self.root_folder = root_folder.lower()
