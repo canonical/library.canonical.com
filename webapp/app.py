@@ -49,6 +49,7 @@ def document(path=None):
         html=soup.html,
         root_name=ROOT,
         document_id=document["id"],
+        path=path,
     )
 
 
