@@ -1,5 +1,8 @@
 {
-  "font-weight:700": "strong",
-  "font-style:italic": "em",
-  "text-decoration:underline": "u"
+  "styles": {
+    "font-weight:700": "strong",
+    "font-style:italic": "em",
+    "text-decoration:underline": "u"
+  },
+  "tags": ["img", "hr"]
 }
