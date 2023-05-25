@@ -1,7 +1,7 @@
 {
   "scripts": {
     "clean": "rm -rf node_modules yarn-error.log css static/css *.log *.sqlite _site/ build/",
-    "watch": "watch -p 'static/sass/**/*' -p 'static/js/**/*.js' -c 'yarn run build'",
+    "watch": "concurrently --kill-others --raw 'yarn run watch-scss' 'yarn run watch-js'",
     "watch-js": "webpack --watch",
     "watch-scss": "watch -p 'static/sass/**/*.scss' -c 'yarn run build-scss'",
     "build": "yarn run build-css && yarn run build-js",
