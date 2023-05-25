@@ -38,6 +38,9 @@ env:
 
 demo:
   env:
+    - name: OPENID_LAUNCHPAD_TEAM
+      value: canonical-content-people
+      
     - name: SENTRY_DSN
       value: https://3c9a25a1976d4a97981997bb5a1ca7b4@sentry.is.canonical.com//28
 
