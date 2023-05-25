@@ -37,38 +37,42 @@ env:
       name: library-canonical-com
 
 demo:
-  - name: SENTRY_DSN
-    value: https://3c9a25a1976d4a97981997bb5a1ca7b4@sentry.is.canonical.com//28
+  env:
+    - name: OPENID_LAUNCHPAD_TEAM
+      value: canonical-content-people
+      
+    - name: SENTRY_DSN
+      value: https://3c9a25a1976d4a97981997bb5a1ca7b4@sentry.is.canonical.com//28
 
-  - name: PRIVATE_KEY_ID
-    secretKeyRef:
-      key: private-key-id
-      name: library-canonical-com
+    - name: PRIVATE_KEY_ID
+      secretKeyRef:
+        key: private-key-id
+        name: library-canonical-com
 
-  - name: PRIVATE_KEY
-    secretKeyRef:
-      key: private-key
-      name: library-canonical-com
+    - name: PRIVATE_KEY
+      secretKeyRef:
+        key: private-key
+        name: library-canonical-com
 
-  - name: PROJECT_ID
-    secretKeyRef:
-      key: project-id
-      name: library-canonical-com
+    - name: PROJECT_ID
+      secretKeyRef:
+        key: project-id
+        name: library-canonical-com
 
-  - name: CLIENT_EMAIL
-    secretKeyRef:
-      key: client-email
-      name: library-canonical-com
+    - name: CLIENT_EMAIL
+      secretKeyRef:
+        key: client-email
+        name: library-canonical-com
 
-  - name: CLIENT_ID
-    secretKeyRef:
-      key: client-id
-      name: library-canonical-com
+    - name: CLIENT_ID
+      secretKeyRef:
+        key: client-id
+        name: library-canonical-com
 
-  - name: CLIENT__X509_CERT_URL
-    secretKeyRef:
-      key: client-x509-cert-url
-      name: library-canonical-com
+    - name: CLIENT__X509_CERT_URL
+      secretKeyRef:
+        key: client-x509-cert-url
+        name: library-canonical-com
 
 # Overrides for production
 production:
