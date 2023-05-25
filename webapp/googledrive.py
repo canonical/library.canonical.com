@@ -53,26 +53,30 @@ class Drive:
         return items
 
     def get_html(self, document_id):
-        html = self.client.get(document_id)
-        if html is not None:
-            return html.decode("utf-8")
-
         try:
-            request = self.service.files().export(
-                fileId=document_id, mimeType="text/html"
-            )
+            html = self.client.get(document_id)
+            if html is not None:
+                return html.decode("utf-8")
+
+            request = self.service.files().export(fileId=document_id, mimeType="text/html")
+
+            file = io.BytesIO()
+            downloader = MediaIoBaseDownload(file, request)
+            done = False
+            while done is False:
+                _, done = downloader.next_chunk()
+            html = file.getvalue().decode("utf-8")
+
+            if html:
+                self.client.set(document_id, html.encode("utf-8"))
+            else:
+                err = "Error, document not found."
+                print(f"{err}\n {error}")
+                abort(404, description=err)
+
+            return html
+
         except Exception as error:
-            err = "Error, document not found."
+            err = "Error retrieving HTML or caching document."
             print(f"{err}\n {error}")
-            abort(404, description=err)
-
-        file = io.BytesIO()
-        downloader = MediaIoBaseDownload(file, request)
-        done = False
-        while done is False:
-            _, done = downloader.next_chunk()
-        html = file.getvalue().decode("utf-8")
-
-        self.client.set(document_id, html.encode("utf-8"))
-
-        return html
+            abort(500, description=err)
