@@ -58,7 +58,9 @@ class Drive:
             if html is not None:
                 return html.decode("utf-8")
 
-            request = self.service.files().export(fileId=document_id, mimeType="text/html")
+            request = self.service.files().export(
+                fileId=document_id, mimeType="text/html"
+            )
 
             file = io.BytesIO()
             downloader = MediaIoBaseDownload(file, request)
@@ -71,7 +73,7 @@ class Drive:
                 self.client.set(document_id, html.encode("utf-8"))
             else:
                 err = "Error, document not found."
-                print(f"{err}\n {error}")
+                print(f"{err}\n")
                 abort(404, description=err)
 
             return html
