@@ -6,7 +6,7 @@
 
 - Check out this feature branch
 - Run the site using the command `./run serve`
-- View the site locally in your web browser at: http://0.0.0.0:8039/
+- View the site locally in your web browser at: http://0.0.0.0:8051/
 - Run through the following [QA steps](https://canonical-web-and-design.github.io/practices/workflow/qa-steps.html)
 - [List additional steps to QA the new features or prove the bug has been resolved]
 
