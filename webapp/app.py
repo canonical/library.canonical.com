@@ -14,7 +14,7 @@ ROOT = os.getenv("ROOT_FOLDER", "library")
 
 app = FlaskBase(
     __name__,
-    "canonical.reference-library.com",
+    "library.canonical.com",
     template_folder="../templates",
     template_404="404.html",
     template_500="500.html",
