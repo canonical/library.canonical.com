@@ -24,6 +24,7 @@ jobs:
 
       - name: Run image
         run: |
+          echo ${{secrets.PROJECT_ID}}
           docker run --env SECRET_KEY=insecure_secret_key --network host library-canonical-com &
           sleep 1
           curl --head --fail --retry-delay 1 --retry 30 --retry-connrefused http://localhost
