@@ -1,3 +1,5 @@
+import debounce from "./utility/debounce";
+
 (function () {
   /**
     Toggles the expanded/collapsed classed on side navigation element.
@@ -119,7 +121,6 @@
   // Setup expandable side navigation
 
   var expandToggles = document.querySelectorAll(".p-side-navigation__expand");
-  var navigationLinks = document.querySelectorAll(".p-side-navigation__link");
 
   // setup default values of aria-expanded for the toggle button, list title and list itself
   const setup = (toggle) => {
@@ -155,6 +156,18 @@
     setup(toggle);
     toggle.addEventListener("click", (e) => {
       handleToggle(e);
+    });
+  });
+
+  // Debounce navigating link clicks
+  var navigationLinks = document.querySelectorAll(".p-side-navigation__link");
+
+  navigationLinks.forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      debounce(function () {
+        window.location.href = link.href;
+      }, 500)();
     });
   });
 })();
