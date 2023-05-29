@@ -60,9 +60,7 @@ class Parser:
 
     def unwrap_spans(self, tag, span_containers):
         if tag.name in span_containers:
-            print("Container tag", tag)
             for span in tag.find_all("span"):
-                print("The final span", span)
                 span.unwrap()
 
     def insert_h1_if_missing(self, doc_name):
