@@ -56,8 +56,7 @@ def document(path=None):
         navigation=navigation.hierarchy,
         html=soup.html,
         root_name=ROOT,
-        document_id=document["id"],
-        path=path,
+        document=document,
     )
 
 

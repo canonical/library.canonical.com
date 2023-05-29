@@ -10,11 +10,27 @@ class Navigation:
         self.hierarchy = self.create_hierarchy(file_list)
         self.object_dict
 
-    def add_full_path(self, obj, path=""):
+    def add_path_context(self, obj, path="", breadcrumbs=None):
+        if breadcrumbs is None:
+            breadcrumbs = []
+
         for key in obj.keys():
-            obj[key]["full_path"] = path + "/" + obj[key]["slug"]
+            if obj[key]["slug"] == ROOT or obj[key]["slug"] == "index":
+                full_path = path
+                item_breadcrumbs = breadcrumbs
+            else:
+                full_path = path + "/" + obj[key]["slug"]
+                item_breadcrumbs = breadcrumbs + [
+                    {"name": obj[key]["name"], "path": full_path}
+                ]
+
+            obj[key]["full_path"] = full_path
+            obj[key]["breadcrumbs"] = item_breadcrumbs
+
             if obj[key]["mimeType"] == "folder":
-                self.add_full_path(obj[key]["children"], obj[key]["full_path"])
+                self.add_path_context(
+                    obj[key]["children"], full_path, item_breadcrumbs
+                )
 
     def create_hierarchy(self, objects):
         self.object_dict = {}
@@ -26,7 +42,6 @@ class Navigation:
             obj["slug"] = "-".join(obj["name"].split(" ")).lower()
             obj["active"] = False
             obj["expanded"] = False
-            obj["path"] = ""
             self.object_dict[obj["id"]] = obj
 
         for obj in objects:
@@ -38,7 +53,7 @@ class Navigation:
                 else:
                     root_objects[obj["slug"]] = obj
 
-        self.add_full_path(root_objects)
+        self.add_path_context(root_objects)
 
         ordered_hierarchy = self.order_hierarchy(
             root_objects[ROOT]["children"]
