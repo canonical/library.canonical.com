@@ -26,6 +26,7 @@ class Parser:
         self.parse_tags()
         self.remove_head()
         self.insert_h1_if_missing(doc_name)
+        self.generate_headings_map()
 
     def remove_head(self):
         head = self.html.select_one("head")
@@ -71,8 +72,19 @@ class Parser:
 
     def parse_metadata(self):
         table = self.html.select_one("table")
+        self.metadata = dict()
+
         if table:
+            rows = table.find_all("tr")
+            for row in rows:
+                columns = row.find_all("td")
+                key = columns[0].get_text(strip=True).replace(" ", "_").lower()
+                value = columns[1].get_text(strip=True)
+                self.metadata[key] = value
+
             table.decompose()
+
+        return self.metadata
 
     def parse_links(self):
         external_path = "https://www.google.com/url?q="
@@ -112,3 +124,30 @@ class Parser:
             else:
                 return all(self.tag_is_empty(child) for child in tag.contents)
         return False
+
+    def generate_headings_map(self):
+        self.headings_map = []
+        id_suffix = 1
+
+        headings = self.html.find_all(["h2", "h3"])
+
+        for tag in headings:
+            id_val = (
+                tag.text.lower()
+                .replace(" ", "-")
+                .replace("(", "")
+                .replace(")", "")
+                + "-"
+                + str(id_suffix)
+            )
+            tag["id"] = id_val
+            self.headings_map.append(
+                {
+                    "id": id_val,
+                    "name": tag.text,
+                    "level": int(tag.name[1]),
+                }
+            )
+            id_suffix = id_suffix + 1
+
+        return self.headings_map

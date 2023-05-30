@@ -8,16 +8,18 @@
 // Import cookie policy
 @import "@canonical/cookie-policy/build/css/cookie-policy";
 
-.p-side-navigation__primary-heading {
-  margin-bottom: 1.5rem;
+// Import site specific patterns and overrides
+@import "pattern-side-navigation";
+@include library-p-side-navigation;
 
-  ::after {
-    background: rgb(0 0 0 / 10%);
-    bottom: -0.75rem;
-    content: "";
-    height: 1px;
-    left: 1.5rem;
-    position: absolute;
-    right: 0;
-  }
+.is-sticky {
+  max-height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  right: 0;
+  top: 1rem;
+}
+
+.table-of-contents {
+  font-size: 0.9rem;
 }
