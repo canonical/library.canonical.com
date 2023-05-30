@@ -1,0 +1,19 @@
+@mixin library-p-side-navigation {
+  .p-side-navigation.is-sticky {
+    font-size: 0.9rem;
+    overflow-y: hidden;
+    top: 1rem;
+
+    .p-side-navigation__primary-heading {
+      margin-bottom: 0.5rem;
+    }
+
+    .p-side-navigation__list {
+      margin-bottom: 0.5rem;
+
+      &::after {
+        content: none;
+      }
+    }
+  }
+}

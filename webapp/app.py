@@ -54,6 +54,9 @@ def document(path=None):
         document["name"],
     )
 
+    document["metadata"] = soup.metadata
+    document["headings_map"] = soup.headings_map
+
     return flask.render_template(
         "index.html",
         navigation=navigation.hierarchy,

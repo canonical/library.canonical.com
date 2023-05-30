@@ -1,0 +1,9 @@
+{% if document_type == "How-to" %}
+<div class="p-status-label--information">{{document_type}}</div>
+{% elif document_type == "Explanation"%}
+<a href="https://diataxis.fr/explanation/">
+    <div class="p-status-label--caution">{{document_type}}</div>
+</a>
+{% else %}
+<div class="p-status-label">{{document_type}}</div>
+{% endif %}
