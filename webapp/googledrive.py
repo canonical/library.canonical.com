@@ -52,7 +52,7 @@ class Drive:
 
         return items
 
-    def get_html(self, document_id):
+    def fetch_document(self, document_id):
         try:
             html = self.client.get(document_id)
             if html is not None:
