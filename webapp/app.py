@@ -11,11 +11,10 @@ from webapp.sso import init_sso
 
 ROOT = os.getenv("ROOT_FOLDER", "library")
 
-drive = Drive()
 
 app = FlaskBase(
     __name__,
-    "canonical.reference-library.com",
+    "library.canonical.com",
     template_folder="../templates",
     template_404="404.html",
     template_500="500.html",
@@ -26,11 +25,20 @@ session = talisker.requests.get_session()
 
 init_sso(app)
 
+drive = None
+
+
+def init_drive():
+    global drive
+    if drive is None:
+        drive = Drive()
+    return drive
+
 
 @app.route("/")
 @app.route("/<path:path>")
 def document(path=None):
-    navigation = Navigation(drive)
+    navigation = Navigation(init_drive())
 
     try:
         document = target_document(path, navigation.hierarchy)
@@ -40,7 +48,7 @@ def document(path=None):
         flask.abort(404, description=err)
 
     soup = Parser(
-        drive, document["id"], navigation.object_dict, document["name"]
+        init_drive(), document["id"], navigation.object_dict, document["name"]
     )
 
     return flask.render_template(

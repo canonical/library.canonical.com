@@ -5,6 +5,43 @@ env:
   SECRET_KEY: local_development_fake_key
 
 jobs:
+  run-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build image
+        run: DOCKER_BUILDKIT=1 docker build --tag library-canonical-com .
+
+      - name: Run image
+        run: |
+          docker run --env SECRET_KEY=insecure_secret_key --network host library-canonical-com &
+          sleep 1
+          curl --head --fail --retry-delay 1 --retry 30 --retry-connrefused http://localhost
+
+  run-dotrun:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dotrun
+        uses: canonical/install-dotrun@main
+
+      - name: Install dependencies
+        run: /snap/bin/dotrun install
+
+      - name: Build assets
+        run: /snap/bin/dotrun build
+
+      - name: Run dotrun
+        run: |
+          /snap/bin/dotrun &
+          curl --head --fail --retry-delay 1 --retry 30 --retry-connrefused http://localhost:8051
+
   lint-python:
     runs-on: ubuntu-latest
 
