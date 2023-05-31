@@ -8,55 +8,57 @@ class Navigation:
     def __init__(self, google_drive: Drive):
         file_list = google_drive.get_document_list()
         self.hierarchy = self.create_hierarchy(file_list)
-        self.object_dict
 
-    def add_path_context(self, obj, path="", breadcrumbs=None):
+    def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
         if breadcrumbs is None:
             breadcrumbs = []
 
-        for key in obj.keys():
-            if obj[key]["slug"] == ROOT or obj[key]["slug"] == "index":
+        for key in hierarchy_obj.keys():
+            if (
+                hierarchy_obj[key]["slug"] == ROOT
+                or hierarchy_obj[key]["slug"] == "index"
+            ):
                 full_path = path
                 item_breadcrumbs = breadcrumbs
             else:
-                full_path = path + "/" + obj[key]["slug"]
+                full_path = path + "/" + hierarchy_obj[key]["slug"]
                 item_breadcrumbs = breadcrumbs + [
-                    {"name": obj[key]["name"], "path": full_path}
+                    {"name": hierarchy_obj[key]["name"], "path": full_path}
                 ]
 
-            obj[key]["full_path"] = full_path
-            obj[key]["breadcrumbs"] = item_breadcrumbs
+            hierarchy_obj[key]["full_path"] = full_path
+            hierarchy_obj[key]["breadcrumbs"] = item_breadcrumbs
 
-            if obj[key]["mimeType"] == "folder":
+            if hierarchy_obj[key]["mimeType"] == "folder":
                 self.add_path_context(
-                    obj[key]["children"], full_path, item_breadcrumbs
+                    hierarchy_obj[key]["children"], full_path, item_breadcrumbs
                 )
 
-    def create_hierarchy(self, objects):
-        self.object_dict = {}
-        root_objects = {}
+    def create_hierarchy(self, doc_objects):
+        self.doc_reference_dict = {}
+        doc_hierarchy = {}
 
-        for obj in objects:
-            obj["children"] = {}
-            obj["mimeType"] = obj["mimeType"].rpartition(".")[-1]
-            obj["slug"] = "-".join(obj["name"].split(" ")).lower()
-            obj["active"] = False
-            obj["expanded"] = False
-            self.object_dict[obj["id"]] = obj
+        for doc in doc_objects:
+            doc["children"] = {}
+            doc["mimeType"] = doc["mimeType"].rpartition(".")[-1]
+            doc["slug"] = "-".join(doc["name"].split(" ")).lower()
+            doc["active"] = False
+            doc["expanded"] = False
+            self.doc_reference_dict[doc["id"]] = doc
 
-        for obj in objects:
-            parent_ids = obj["parents"]
+        for doc in doc_objects:
+            parent_ids = doc["parents"]
             for parent_id in parent_ids:
-                parent_obj = self.object_dict.get(parent_id)
+                parent_obj = self.doc_reference_dict.get(parent_id)
                 if parent_obj is not None:
-                    parent_obj["children"][obj["slug"]] = obj
+                    parent_obj["children"][doc["slug"]] = doc
                 else:
-                    root_objects[obj["slug"]] = obj
+                    doc_hierarchy[doc["slug"]] = doc
 
-        self.add_path_context(root_objects)
+        self.add_path_context(doc_hierarchy)
 
         ordered_hierarchy = self.order_hierarchy(
-            root_objects[ROOT]["children"]
+            doc_hierarchy[ROOT]["children"]
         )
 
         return ordered_hierarchy
@@ -64,8 +66,8 @@ class Navigation:
     def order_hierarchy(self, hierarchy):
         if "index" in hierarchy:
             index_item = hierarchy.pop("index")
-        sorted_items = dict(sorted(hierarchy.items(), key=lambda x: x[0]))
-        sorted_hierarchy = {"index": index_item}
-        sorted_hierarchy.update(sorted_items)
+        ordered_items = dict(sorted(hierarchy.items(), key=lambda x: x[0]))
+        ordered_hierarchy = {"index": index_item}
+        ordered_hierarchy.update(ordered_items)
 
-        return sorted_hierarchy
+        return ordered_hierarchy

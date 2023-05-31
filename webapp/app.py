@@ -48,7 +48,10 @@ def document(path=None):
         flask.abort(404, description=err)
 
     soup = Parser(
-        init_drive(), document["id"], navigation.object_dict, document["name"]
+        init_drive(),
+        document["id"],
+        navigation.doc_reference_dict,
+        document["name"],
     )
 
     return flask.render_template(
