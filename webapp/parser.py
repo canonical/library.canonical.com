@@ -9,10 +9,10 @@ ROOT = os.getenv("ROOT_FOLDER", "library")
 
 class Parser:
     def __init__(
-        self, google_drive: Drive, doc_id: str, nav_dict, doc_name: str
+        self, google_drive: Drive, doc_id: str, doc_dict, doc_name: str
     ):
         self.doc_id = doc_id
-        self.nav_dict = nav_dict
+        self.doc_dict = doc_dict
         self.html = self.get_html(google_drive)
         self.process_html(doc_name)
 
@@ -95,8 +95,8 @@ class Parser:
             if google_doc_path in a_tag["href"]:
                 split_url = a_tag["href"].split(google_doc_path)[1]
                 doc_id = split_url.split("/")[0]
-                if self.nav_dict.get(doc_id):
-                    full_path = self.nav_dict.get(doc_id)["full_path"]
+                if self.doc_dict.get(doc_id):
+                    full_path = self.doc_dict.get(doc_id)["full_path"]
                     a_tag["href"] = full_path
 
     def remove_trailing_garbage(self, a_tag, trailing_garbage):

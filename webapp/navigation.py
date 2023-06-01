@@ -53,8 +53,10 @@ class Navigation:
             parent_obj = self.doc_reference_dict.get(parent_ids[0])
             if parent_obj is not None:
                 parent_obj["children"][doc["slug"]] = doc
-            else:
+            elif doc["slug"] == self.root_folder:
                 doc_hierarchy[doc["slug"]] = doc
+            elif doc["id"] in self.doc_reference_dict:
+                self.doc_reference_dict.pop(doc["id"])
 
         self.add_path_context(doc_hierarchy)
 
