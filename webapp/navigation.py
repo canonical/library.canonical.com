@@ -1,11 +1,10 @@
 from webapp.googledrive import Drive
-import os
-
-ROOT = os.getenv("ROOT_FOLDER", "library")
 
 
 class Navigation:
-    def __init__(self, google_drive: Drive):
+    def __init__(self, google_drive: Drive, root_folder: str):
+        self.root_folder = root_folder.lower()
+        self.doc_reference_dict = {}
         file_list = google_drive.get_document_list()
         self.hierarchy = self.create_hierarchy(file_list)
 
@@ -15,7 +14,7 @@ class Navigation:
 
         for key in hierarchy_obj.keys():
             if (
-                hierarchy_obj[key]["slug"] == ROOT
+                hierarchy_obj[key]["slug"] == self.root_folder
                 or hierarchy_obj[key]["slug"] == "index"
             ):
                 full_path = path
@@ -35,7 +34,6 @@ class Navigation:
                 )
 
     def create_hierarchy(self, doc_objects):
-        self.doc_reference_dict = {}
         doc_hierarchy = {}
 
         for doc in doc_objects:
@@ -44,30 +42,34 @@ class Navigation:
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
             doc["expanded"] = False
-            self.doc_reference_dict[doc["id"]] = doc
+            if (
+                len(doc["parents"][0]) > 20
+                or doc["name"].lower() == self.root_folder
+            ):
+                self.doc_reference_dict[doc["id"]] = doc
 
         for doc in doc_objects:
             parent_ids = doc["parents"]
-            for parent_id in parent_ids:
-                parent_obj = self.doc_reference_dict.get(parent_id)
-                if parent_obj is not None:
-                    parent_obj["children"][doc["slug"]] = doc
-                else:
-                    doc_hierarchy[doc["slug"]] = doc
+            parent_obj = self.doc_reference_dict.get(parent_ids[0])
+            if parent_obj is not None:
+                parent_obj["children"][doc["slug"]] = doc
+            elif doc["slug"] == self.root_folder:
+                doc_hierarchy[doc["slug"]] = doc
+            elif doc["id"] in self.doc_reference_dict:
+                self.doc_reference_dict.pop(doc["id"])
 
         self.add_path_context(doc_hierarchy)
 
         ordered_hierarchy = self.order_hierarchy(
-            doc_hierarchy[ROOT]["children"]
+            doc_hierarchy[self.root_folder]["children"]
         )
-
         return ordered_hierarchy
 
     def order_hierarchy(self, hierarchy):
         if "index" in hierarchy:
             index_item = hierarchy.pop("index")
-        ordered_items = dict(sorted(hierarchy.items(), key=lambda x: x[0]))
-        ordered_hierarchy = {"index": index_item}
-        ordered_hierarchy.update(ordered_items)
+            ordered_items = dict(sorted(hierarchy.items(), key=lambda x: x[0]))
+            ordered_hierarchy = {"index": index_item}
+            ordered_hierarchy.update(ordered_items)
 
-        return ordered_hierarchy
+            return ordered_hierarchy

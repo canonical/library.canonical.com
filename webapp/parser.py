@@ -9,10 +9,10 @@ ROOT = os.getenv("ROOT_FOLDER", "library")
 
 class Parser:
     def __init__(
-        self, google_drive: Drive, doc_id: str, nav_dict, doc_name: str
+        self, google_drive: Drive, doc_id: str, doc_dict, doc_name: str
     ):
         self.doc_id = doc_id
-        self.nav_dict = nav_dict
+        self.doc_dict = doc_dict
         self.html = self.get_html(google_drive)
         self.process_html(doc_name)
 
@@ -40,7 +40,7 @@ class Parser:
             self.remove_ids_from_tags(tag)
             self.convert_styles_to_tags(tag, bs4_ignores["styles"])
             self.remove_empty_tags(tag, bs4_ignores["tags"])
-            self.unwrap_spans(tag, bs4_ignores["span_containers"])
+            self.unwrap_spans(tag)
 
     def remove_ids_from_tags(self, tag):
         if tag.has_attr("id"):
@@ -58,10 +58,9 @@ class Parser:
         if tag.name not in ignored_tags and self.tag_is_empty(tag):
             tag.extract()
 
-    def unwrap_spans(self, tag, span_containers):
-        if tag.name in span_containers:
-            for span in tag.find_all("span"):
-                span.unwrap()
+    def unwrap_spans(self, tag):
+        for span in tag.find_all("span"):
+            span.unwrap()
 
     def insert_h1_if_missing(self, doc_name):
         h1 = self.html.select_one("h1")
@@ -77,27 +76,32 @@ class Parser:
 
     def parse_links(self):
         external_path = "https://www.google.com/url?q="
-        google_doc_path = "docs.google.com/document/d/"
-        url_garbage = "&sa=D"
-        for a in self.html.findAll("a", href=True):
-            self.clean_external_links(a, external_path)
-            self.process_google_doc_links(a, google_doc_path)
-            self.remove_url_garbage(a, url_garbage)
+        google_doc_paths = [
+            "docs.google.com/document/d/",
+            "docs.google.com/document/u/0/d/",
+        ]
+        trailing_garbage = "&sa=D&source=editors&ust="
+        for a_tag in self.html.findAll("a", href=True):
+            self.clean_external_links(a_tag, external_path)
+            self.process_google_doc_links(a_tag, google_doc_paths)
+            self.remove_trailing_garbage(a_tag, trailing_garbage)
 
-    def clean_external_links(self, tag, external_path):
-        if tag["href"].startswith(external_path):
-            tag["href"] = tag["href"].replace(external_path, "")
+    def clean_external_links(self, a_tag, external_path):
+        if a_tag["href"].startswith(external_path):
+            a_tag["href"] = a_tag["href"].replace(external_path, "")
 
-    def process_google_doc_links(self, tag, google_doc_path):
-        if google_doc_path in tag["href"]:
-            split_url = tag["href"].split(google_doc_path)[1]
-            doc_id = split_url.split("/")[0]
-            if self.nav_dict.get(doc_id):
-                tag["href"] = self.nav_dict.get(doc_id)["full_path"]
+    def process_google_doc_links(self, a_tag, google_doc_paths):
+        for google_doc_path in google_doc_paths:
+            if google_doc_path in a_tag["href"]:
+                split_url = a_tag["href"].split(google_doc_path)[1]
+                doc_id = split_url.split("/")[0]
+                if self.doc_dict.get(doc_id):
+                    full_path = self.doc_dict.get(doc_id)["full_path"]
+                    a_tag["href"] = full_path
 
-    def remove_url_garbage(self, tag, url_garbage):
-        if url_garbage in tag["href"]:
-            tag["href"] = tag["href"].split(url_garbage)[0]
+    def remove_trailing_garbage(self, a_tag, trailing_garbage):
+        if trailing_garbage in a_tag["href"]:
+            a_tag["href"] = a_tag["href"].split(trailing_garbage)[0]
 
     def tag_is_empty(self, tag):
         if isinstance(tag, NavigableString):
