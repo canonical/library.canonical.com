@@ -36,11 +36,11 @@ class Parser:
         with open("webapp/config/bs4_ignores.json") as f:
             bs4_ignores = json.load(f)
 
-        for tag in self.html.findAll(lambda tag: tag.name != "span"):
-            self.remove_ids_from_tags(tag)
+        for tag in self.html.findAll(True):
             self.convert_styles_to_tags(tag, bs4_ignores["styles"])
-            self.remove_empty_tags(tag, bs4_ignores["tags"])
+            self.remove_ids_from_tags(tag)
             self.unwrap_spans(tag)
+            self.remove_empty_tags(tag, bs4_ignores["tags"])
 
     def remove_ids_from_tags(self, tag):
         if tag.has_attr("id"):
@@ -59,8 +59,8 @@ class Parser:
             tag.extract()
 
     def unwrap_spans(self, tag):
-        for span in tag.find_all("span"):
-            span.unwrap()
+        if tag.name == "span" and not tag.has_attr("style"):
+            tag.unwrap()
 
     def insert_h1_if_missing(self, doc_name):
         h1 = self.html.select_one("h1")
