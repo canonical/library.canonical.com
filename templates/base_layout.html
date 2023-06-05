@@ -64,14 +64,12 @@
   <meta property="og:title" content="{% if title %}{{ title }} | Canonical Reference Library{% else %}Canonical Reference Library{% endif %}">
   <meta property="og:description" content="{% if description %}{{ description }}{% else %}Canonical Reference Library is single source of information for all corporate knowledge with Canonical{% endif %}">
 </head>
-<body class="l-site">
+<body>
   <!-- Google Tag Manager (noscript) -->
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TDV3PRK" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
-  {% include "partial/_navigation.html" %}
-  <div id="main">
-    {% block content %}{% endblock content %}
-  </div>
-  {% include "partial/_footer.html" %}
+  {% include "_partial/_navigation.html" %}
+  {% block content %}{% endblock content %}
+  {% include "_partial/_footer.html" %}
 </body>
 </html>

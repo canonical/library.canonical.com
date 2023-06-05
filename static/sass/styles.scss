@@ -12,7 +12,7 @@
 @import "pattern-side-navigation";
 @include library-p-side-navigation;
 
-.is-sticky {
+.p-table-of-contents.is-sticky {
   max-height: 100vh;
   overflow-y: auto;
   position: sticky;
@@ -20,6 +20,11 @@
   top: 1rem;
 }
 
-.table-of-contents {
-  font-size: 0.9rem;
+.sticky-footer {
+  bottom: 0;
+  width: 100%;
+}
+
+.p-side-navigation.is-sticky {
+  height: 100%;
 }
