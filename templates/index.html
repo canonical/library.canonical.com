@@ -99,7 +99,7 @@ Canonical Reference Library is single source of information for all corporate kn
           </div>
         </nav>
       </aside>
-      <main class="col-7 col-medium-4">
+      <main class="col-7 col-medium-6 col-order-large-1 col-order-medium-2 col-order-small-2">
         {% if document["breadcrumbs"]|length > 1 %}
         <nav class="p-breadcrumbs" aria-label="Breadcrumbs">
           <ol class="p-breadcrumbs__items">
@@ -121,54 +121,53 @@ Canonical Reference Library is single source of information for all corporate kn
         <hr>
         <a href="https://docs.google.com/document/d/{{document.id}}">Suggest changes&nbsp;&rsaquo;</a>
       </main>
-      <aside class="col-2 col-medium-2">
-        <div class="p-table-of-contents is-sticky">
-          <div class="p-table-of-contents__section">
-            {% if document["metadata"]["type"] %}
-              <div class="u-sv2">
-                {% with document_type = document["metadata"]["type"] %}
-                  {% include "partial/_doc-type.html" %}
-                {% endwith%}
-              </div>
-              <hr>
-            {% endif %}
-            {% if document["headings_map"] %}
-              <nav class="p-table-of-contents__nav" aria-label="Table of contents">
-                <h2 class="p-table-of-contents__header">Contents</h2>
-                {% set ns = namespace(parent_active=False) %}
-                <ul class="p-list u-no-margin--left">
-                {% for heading in document["headings_map"] %}
-                  {% if heading.level == 2 %}
-                    {% if ns.parent_active %}
-                      </ul>
-                    </li>
-                    {% endif %}
-                    <li class="p-list__item u-no-padding">
-                      <a class="p-table-of-contents__link" href="#{{ heading.id }}">{{ heading.name }}</a>
-                      <ul class="p-list" style="margin-left: 0.5rem">
-                    {% set ns.parent_active = true %}
-                  {% else %}
-                    <li class="p-list__item u-no-padding"><a class="p-table-of-contents__link" href="#{{ heading.id }}">{{ heading.name }}</a></li>
-                  {% endif %}
-                {% endfor %}
-                {% if ns.parent_active %}
-                  </ul>
-                </li>
-                {% endif %}
-                </ul>
-                <hr>
-              </nav>
-            {% endif %}
-            <p>
-              <a href="https://docs.google.com/document/d/{{document["id"]}}">
-                Suggest changes&nbsp;&rsaquo;
-              </a>
-            </p>
 
-            {% if document["metadata"]["review_date"] %}
-            <p>Requires review: {{document["metadata"]["review_date"]}}, by {{document["metadata"]["authors"] or "Unknown"}}</p>
-            {% endif %}
-          </div>
+      <aside class="col-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1">
+        <div class="table-of-contents is-sticky">
+          {% if document["metadata"]["type"] %}
+            <div class="u-sv2">
+              {% with document_type = document["metadata"]["type"] %}
+                {% include "partial/_doc-type.html" %}
+              {% endwith%}
+            </div>
+            <hr>
+          {% endif %}
+          {% if document["headings_map"] %}
+            <nav aria-label="Table of contents">
+              <h2 class="p-heading--5">Contents</h2>
+              {% set ns = namespace(parent_active=False) %}
+              <ul class="p-list u-no-margin--left">
+              {% for heading in document["headings_map"] %}
+                {% if heading.level == 2 %}
+                  {% if ns.parent_active %}
+                    </ul>
+                  </li>
+                  {% endif %}
+                  <li class="p-list__item u-no-padding">
+                    <a href="#{{ heading.id }}">{{ heading.name }}</a>
+                    <ul class="p-list" style="margin-left: 0.5rem">
+                  {% set ns.parent_active = true %}
+                {% else %}
+                  <li class="p-list__item u-no-padding"><a href="#{{ heading.id }}">{{ heading.name }}</a></li>
+                {% endif %}
+              {% endfor %}
+              {% if ns.parent_active %}
+                </ul>
+              </li>
+              {% endif %}
+              </ul>
+              <hr>
+            </nav>
+          {% endif %}
+          <p>
+            <a href="https://docs.google.com/document/d/{{document["id"]}}">
+              Suggest changes&nbsp;&rsaquo;
+            </a>
+          </p>
+
+          {% if document["metadata"]["review_date"] %}
+          <p>Requires review: {{document["metadata"]["review_date"]}}, by {{document["metadata"]["authors"] or "Unknown"}}</p>
+          {% endif %}
         </div>
       </aside>
     </div>
