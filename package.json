@@ -3,7 +3,7 @@
     "clean": "rm -rf node_modules yarn-error.log css static/css *.log *.sqlite _site/ build/",
     "watch": "concurrently --kill-others --raw 'yarn run watch-scss' 'yarn run watch-js'",
     "watch-js": "webpack --watch",
-    "watch-scss": "watch -p 'static/sass/**/*.scss' -c 'yarn run build-scss'",
+    "watch-scss": "watch -p 'static/sass/**/*.scss' -c 'yarn run build-css'",
     "build": "yarn run build-css && yarn run build-js",
     "build-css": "sass static/sass/styles.scss static/css/styles.css --load-path=node_modules --style=compressed && postcss --map false --use autoprefixer --replace 'static/css/**/*.css'",
     "build-js": "yarn run webpack",

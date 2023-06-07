@@ -45,7 +45,7 @@ Canonical Reference Library is single source of information for all corporate kn
 
 <aside class="l-full-width__sidebar">
   <nav id="navigation" class="p-side-navigation is-sticky">
-    <div class="u-fixed-width">
+    <div class="u-fixed-width p-strip u-hide--large u-no-padding--bottom">
       <a href="#" class="p-side-navigation__toggle u-no-margin--bottom js-drawer-toggle" aria-controls="">
         Toggle side navigation
       </a>
@@ -103,9 +103,9 @@ Canonical Reference Library is single source of information for all corporate kn
 <div class="l-full-width">
   <main class="l-main p-strip is-shallow">
     <div class="row">
-      <div class="col-9">
+      <div class="col-9 col-medium-6 col-order-large-1 col-order-medium-2 col-order-small-2">
         {% if document["breadcrumbs"]|length > 1 %}
-          {% with page_list = document["breadcrumbs"] %}
+          {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1adcrumbs"] %}
             {% include "_partial/_breadcrumbs.html" %}
           {% endwith %}
         {% endif %}
@@ -115,7 +115,7 @@ Canonical Reference Library is single source of information for all corporate kn
         <hr>
         <a href="https://docs.google.com/document/d/{{document.id}}">Suggest changes&nbsp;&rsaquo;</a>
       </div>
-      <aside class="col-3">
+      <aside class="col-3 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1">
         {% with document = document %}
           {% include "_partial/_table-of-content.html" %}
         {% endwith %}
@@ -123,6 +123,5 @@ Canonical Reference Library is single source of information for all corporate kn
     </div>
   </main>
 </div>
-
 
 {% endblock %}
