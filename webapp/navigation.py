@@ -35,8 +35,13 @@ class Navigation:
 
     def create_hierarchy(self, doc_objects):
         doc_hierarchy = {}
-
         for doc in doc_objects:
+            # If a document has now parent (shortcut) then we attach it
+            # to the root folder
+            if "parents" not in doc:
+                print("parents not there")
+                doc["parents"] = doc_objects[0]["parents"]
+
             doc["children"] = {}
             doc["mimeType"] = doc["mimeType"].rpartition(".")[-1]
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
