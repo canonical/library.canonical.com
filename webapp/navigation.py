@@ -39,29 +39,29 @@ class Navigation:
             # If a document has now parent (shortcut) then we attach it
             # to the root folder
             if "parents" not in doc:
-                print("parents not there")
-                doc["parents"] = doc_objects[0]["parents"]
+                doc["parents"] = None
 
             doc["children"] = {}
             doc["mimeType"] = doc["mimeType"].rpartition(".")[-1]
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
             doc["expanded"] = False
-            if (
+            if doc["parents"] and (
                 len(doc["parents"][0]) > 20
                 or doc["name"].lower() == self.root_folder
             ):
                 self.doc_reference_dict[doc["id"]] = doc
 
         for doc in doc_objects:
-            parent_ids = doc["parents"]
-            parent_obj = self.doc_reference_dict.get(parent_ids[0])
-            if parent_obj is not None:
-                parent_obj["children"][doc["slug"]] = doc
-            elif doc["slug"] == self.root_folder:
-                doc_hierarchy[doc["slug"]] = doc
-            elif doc["id"] in self.doc_reference_dict:
-                self.doc_reference_dict.pop(doc["id"])
+            if doc["parents"]:
+                parent_ids = doc["parents"]
+                parent_obj = self.doc_reference_dict.get(parent_ids[0])
+                if parent_obj is not None:
+                    parent_obj["children"][doc["slug"]] = doc
+                elif doc["slug"] == self.root_folder:
+                    doc_hierarchy[doc["slug"]] = doc
+                elif doc["id"] in self.doc_reference_dict:
+                    self.doc_reference_dict.pop(doc["id"])
 
         self.add_path_context(doc_hierarchy)
 
