@@ -58,10 +58,10 @@ Canonical Reference Library is single source of information for all corporate kn
             Toggle side navigation
           </a>
         </div>
-        {% for nav_group in navigation %}
-          {% if (navigation[nav_group].name and not navigation[nav_group].name|lower == "index" and navigation[nav_group].children) 
-          or (navigation[nav_group].mimeType == "document" and not navigation[nav_group].name|lower == "index") %}
-            <ul class="p-side-navigation__list">
+        <ul class="p-side-navigation__list">
+          {% for nav_group in navigation %}
+            {% if (navigation[nav_group].name and not navigation[nav_group].name|lower == "index" and navigation[nav_group].children) 
+            or (navigation[nav_group].mimeType == "document" and not navigation[nav_group].name|lower == "index") %}
               <li class="p-side-navigation__item">
               {% if navigation[nav_group].mimeType == "document" %}
                 <a
@@ -89,13 +89,13 @@ Canonical Reference Library is single source of information for all corporate kn
               {{ create_navigation(navigation[nav_group].children, navigation[nav_group].slug, expandable=True,
               expanded=navigation[nav_group].expanded) }}
               </li>
-            </ul>
-          {% elif navigation[nav_group].mimeType == "document" and navigation[nav_group].name|lower == "index" %}
-            <div class="p-side-navigation__primary-heading">
-              <a class="p-side-navigation__link p-muted-heading" {% if navigation[nav_group].active %}aria-current="page"{% endif%} href="/"><strong>{{root_name}}</strong></a>
-            </div>
-          {% endif %}
-        {% endfor %}
+            {% elif navigation[nav_group].mimeType == "document" and navigation[nav_group].name|lower == "index" %}
+              <div class="p-side-navigation__primary-heading">
+                <a class="p-side-navigation__link p-muted-heading" {% if navigation[nav_group].active %}aria-current="page"{% endif%} href="/"><strong>{{root_name}}</strong></a>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </ul>
       </div>
     </div>
   </nav>
@@ -103,7 +103,7 @@ Canonical Reference Library is single source of information for all corporate kn
 <div class="l-full-width">
   <main class="l-main p-strip is-shallow">
     <div class="row">
-      <div class="col-9 col-medium-6 col-order-large-1 col-order-medium-2 col-order-small-2">
+      <div class="content-body col-9 col-medium-6 col-order-large-1 col-order-medium-2 col-order-small-2">
         {% if document["breadcrumbs"]|length > 1 %}
           {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1adcrumbs"] %}
             {% include "_partial/_breadcrumbs.html" %}

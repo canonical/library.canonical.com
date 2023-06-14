@@ -3312,10 +3312,10 @@ vanilla-framework@3.11.1:
     sass "1.58.0"
     yaml "1.10.2"
 
-vanilla-framework@3.14.0:
-  version "3.14.0"
-  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-3.14.0.tgz#c5b94d7e2e3ef2d3c9f24091b7efc4abf8054cf9"
-  integrity sha512-06Vr2nhjU72N9IivwCLcd7FgqFNopkiHfzANJUCNdvs8FkbTjIB7fcsFgJ6O76KnOBsEiAoJAssRkTh9x3a2jw==
+vanilla-framework@4.0.0-alpha.2:
+  version "4.0.0-alpha.2"
+  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.0.0-alpha.2.tgz#2539ba7faa9c1aca2cb194cd835a1c944b3fb2bd"
+  integrity sha512-7ZFEjt9NoonL5ln22M8SBeok90a0KSaOKr564eRC8BPeKDWTc4XnBbVS4Nm5VtIVxGUKi0H4DlyYDEVSQT4efQ==
 
 verbalize@^0.1.2:
   version "0.1.2"

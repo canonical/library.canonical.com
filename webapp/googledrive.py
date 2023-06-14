@@ -4,7 +4,7 @@ import os
 from flask import abort
 
 from pymemcache.client.base import Client
-from cachetools import TTLCache, cached
+from cachetools import TTLCache
 
 from apiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build

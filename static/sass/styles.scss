@@ -12,19 +12,32 @@
 @import "pattern-side-navigation";
 @include library-p-side-navigation;
 
-.p-table-of-contents.is-sticky {
+body {
+  min-height: 100vh;
+  position: relative;
+}
+
+.content-body {
+  padding-bottom: 182px;
+
+  @media screen and (min-width: $breakpoint-large) {
+    padding-bottom: 252px;
+  }
+}
+
+.table-of-contents.is-sticky {
   max-height: 100vh;
   overflow-y: auto;
   position: sticky;
   right: 0;
-  top: 1rem;
-}
-
-.sticky-footer {
-  bottom: 0;
-  width: 100%;
+  top: 2.5rem;
 }
 
 .p-side-navigation.is-sticky {
   height: 100%;
+}
+
+.l-footer--sticky {
+  bottom: 0;
+  position: absolute;
 }
