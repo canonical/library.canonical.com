@@ -1,4 +1,5 @@
 import io
+import os
 
 from flask import abort
 
@@ -10,6 +11,8 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
 from webapp.settings import SERVICE_ACCOUNT_INFO
+
+TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 
 cache = TTLCache(maxsize=100, ttl=1800)
 
@@ -34,9 +37,10 @@ class Drive:
                 self.service.files()
                 .list(
                     q="trashed=false",
-                    corpora="allDrives",
+                    corpora="teamDrive",
                     supportsTeamDrives=True,
                     includeItemsFromAllDrives=True,
+                    teamDriveId=TARGET_DRIVE,
                     spaces="drive",
                     fields="nextPageToken, "
                     "files(id, name, parents, mimeType)",
@@ -49,7 +53,6 @@ class Drive:
             abort(500, description=err)
 
         items = results.get("files", [])
-
         return items
 
     def fetch_document(self, document_id):
