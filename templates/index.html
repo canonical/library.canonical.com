@@ -14,7 +14,7 @@ Canonical Reference Library is single source of information for all corporate kn
       {% for element in nav_items %}
         {% if (nav_items[element].mimeType == "document" and not nav_items[element].name|lower == "index") or (nav_items[element].children and nav_items[element].mimeType == "folder") %}
           <li class="p-side-navigation__item">
-            {% if nav_items[element].mimeType == "document" %}
+            {% if nav_items[element].mimeType == "document" or (nav_items[element]["children"]|length == 1 and nav_items[element]["children"]["index"]) %}
               <a
                 class="p-side-navigation__link {% if nav_items[element].children %}is-expandable{% endif %}" {% if nav_items[element].active %}aria-current="page"{% endif %}
                 href="/{{previous_slug}}/{{nav_items[element].slug}}"
@@ -100,9 +100,10 @@ Canonical Reference Library is single source of information for all corporate kn
     </div>
   </nav>
 </aside>
+
 <div class="l-full-width">
-  <main class="l-main p-strip is-shallow">
-    <div class="row">
+  <main class="l-main">
+    <div class="row p-strip is-shallow">
       <div class="content-body col-9 col-medium-6 col-order-large-1 col-order-medium-2 col-order-small-2">
         {% if document["breadcrumbs"]|length > 1 %}
           {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1adcrumbs"] %}
