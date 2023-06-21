@@ -63,10 +63,11 @@ class Navigation:
                 elif doc["id"] in self.doc_reference_dict:
                     self.doc_reference_dict.pop(doc["id"])
 
+
         ordered_hierarchy = self.order_hierarchy(
             doc_hierarchy[self.root_folder]["children"]
         )
-
+        
         self.add_path_context(doc_hierarchy)
 
         return ordered_hierarchy
