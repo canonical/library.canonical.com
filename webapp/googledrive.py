@@ -4,7 +4,7 @@ import os
 from flask import abort
 
 from pymemcache.client.base import Client
-from cachetools import TTLCache
+from cachetools import TTLCache, cached
 
 from apiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build
@@ -30,7 +30,7 @@ class Drive:
         )
         self.client = Client(("localhost", 11211))
 
-    # @cached(cache)
+    @cached(cache)
     def get_document_list(self):
         try:
             results = (
