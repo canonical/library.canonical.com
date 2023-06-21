@@ -31,6 +31,14 @@ body {
   position: sticky;
   right: 0;
   top: 2.5rem;
+
+  li {
+    margin-top: 0.3rem;
+  }
+
+  ul.p-list ul.p-list  {
+    margin-left: 1rem;
+  }
 }
 
 .p-side-navigation.is-sticky {
@@ -40,4 +48,10 @@ body {
 .l-footer--sticky {
   bottom: 0;
   position: absolute;
+}
+
+// XXX - can be removed once we have a custom logo&logo-title
+.p-navigation__logo-title {
+  font-size: 1rem;
+  line-height: 1.5rem;
 }

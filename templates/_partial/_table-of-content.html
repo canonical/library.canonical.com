@@ -20,7 +20,7 @@
           {% endif %}
           <li class="p-list__item u-no-padding">
             <a class="p-table-of-contents__link" href="#{{ heading.id }}">{{ heading.name }}</a>
-            <ul class="p-list" style="margin-left: 0.5rem">
+            <ul class="p-list">
           {% set ns.parent_active = true %}
         {% else %}
           <li class="p-list__item u-no-padding"><a class="p-table-of-contents__link" href="#{{ heading.id }}">{{ heading.name }}</a></li>
