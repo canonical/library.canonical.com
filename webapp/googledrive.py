@@ -74,12 +74,11 @@ class Drive:
 
             if html:
                 self.client.set(document_id, html.encode("utf-8"))
+                return html
             else:
                 err = "Error, document not found."
                 print(f"{err}\n")
                 abort(404, description=err)
-
-            return html
 
         except Exception as error:
             err = "Error retrieving HTML or caching document."

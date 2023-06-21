@@ -9,97 +9,120 @@ Canonical Reference Library is single source of information for all corporate kn
 
 {% block content %}
 {% macro create_navigation(nav_items, previous_slug, expandable=False, expanded=False) %}
-  <ul class="p-side-navigation__list" {% if expanded %}aria-expanded="true"{% endif %}>
-    {% for element in nav_items %}
-    <li class="p-side-navigation__item">
-      {% if nav_items[element].mimeType == "document" and not nav_items[element].name|lower == "index" %}
-      <a
-        class="p-side-navigation__link {% if nav_items[element].children %}is-expandable{% endif %}" {% if nav_items[element].active %}aria-current="page"{% endif%}
-        href="/{{previous_slug}}/{{nav_items[element].slug}}"
-      >{{ nav_items[element].name }}</a>
-
-      {% elif nav_items[element].children and nav_items[element].mimeType == "folder" %}
-        {% if nav_items[element]["children"]["index"] %}
-          <a class="p-side-navigation__link is-expandable u-no-margin--bottom" href="/{{previous_slug}}/{{nav_items[element].slug}}" {% if nav_items[element].active %}aria-current="page"{% endif %}>{{ nav_items[element].name }}</a>
-        {% else %}
-          <em class="p-side-navigation__text is-expandable u-no-margin--bottom">{{ nav_items[element].name }}</em>
+  {% if nav_items %}
+    <ul class="p-side-navigation__list" {% if expanded %}aria-expanded="true"{% endif %}>
+      {% for element in nav_items %}
+        {% if (nav_items[element].mimeType == "document" and not nav_items[element].name|lower == "index") or (nav_items[element].children and nav_items[element].mimeType == "folder") %}
+          <li class="p-side-navigation__item">
+            {% if nav_items[element].mimeType == "document" or (nav_items[element]["children"]|length == 1 and nav_items[element]["children"]["index"]) %}
+              <a
+                class="p-side-navigation__link {% if nav_items[element].children %}is-expandable{% endif %}" {% if nav_items[element].active %}aria-current="page"{% endif %}
+                href="/{{previous_slug}}/{{nav_items[element].slug}}"
+              >{{ nav_items[element].name }}</a>
+            {% elif nav_items[element].children %}
+              {% if nav_items[element]["children"]["index"] %}
+                <a 
+                  class="p-side-navigation__link is-expandable u-no-margin--bottom" 
+                  href="/{{previous_slug}}/{{nav_items[element].slug}}" 
+                  {% if nav_items[element].active %}aria-current="page"{% endif %}
+                >{{ nav_items[element].name }}</a>
+              {% else %}
+                <em class="p-side-navigation__text is-expandable u-no-margin--bottom">{{ nav_items[element].name }}</em>
+              {% endif %}
+              <button 
+                class="p-side-navigation__expand" 
+                {% if nav_items[element].expanded %}aria-expanded="true"{% endif %} 
+                aria-label="show submenu for "
+              ></button>
+            {% endif %}
+            {{ create_navigation(nav_items[element].children, previous_slug + "/" + nav_items[element].slug, expandable=nav_items[element].expanded, expanded=nav_items[element].expanded) }}
+          </li>
         {% endif %}
-        <button class="p-side-navigation__expand" {% if nav_items[element].expanded %}aria-expanded="true"{% endif %} aria-label="show submenu for "></button>
-      {% endif %}
-      {{ create_navigation(nav_items[element].children, previous_slug + "/" + nav_items[element].slug, expandable=nav_items[element].expanded, expanded=nav_items[element].expanded) }}
-    </li>
-    {% endfor %}
-  </ul>
+      {% endfor %}
+    </ul>
+  {% endif %}
 {% endmacro %}
 
-<main id="main-content">
-  <section class="p-strip">
-    <div class="row">
-      <aside class="col-3">
-        <nav data-js="navigation" class="p-side-navigation" id="">
-          <a href="#" class="p-side-navigation__toggle js-drawer-toggle" aria-controls="">
+<aside class="l-full-width__sidebar">
+  <nav id="navigation" class="p-side-navigation is-sticky">
+    <div class="u-fixed-width p-strip u-hide--large u-no-padding--bottom">
+      <a href="#" class="p-side-navigation__toggle u-no-margin--bottom js-drawer-toggle" aria-controls="">
+        Toggle side navigation
+      </a>
+    </div>
+    <div class="p-side-navigation__overlay js-drawer-toggle" aria-controls="side-navigation-drawer" aria-expanded="false"></div>
+    <div class="p-side-navigation__drawer">
+      <div class="p-strip is-shallow">
+        <div class="p-side-navigation__drawer-header">
+          <a href="#" class="p-side-navigation__toggle--in-drawer js-drawer-toggle" aria-controls="">
             Toggle side navigation
           </a>
-          <div class="p-side-navigation__overlay js-drawer-toggle" aria-controls=""></div>
-          <div class="p-side-navigation__drawer">
-            <div class="p-side-navigation__drawer-header">
-              <a href="#" class="p-side-navigation__toggle--in-drawer js-drawer-toggle" aria-controls="">
-                Toggle side navigation
-              </a>
-            </div>
-            {% for nav_group in navigation %}
-              {% if navigation[nav_group].name and not navigation[nav_group].name|lower == "index" %}
-                <ul class="p-side-navigation__list">
-                  <li class="p-side-navigation__item">
-                    {% if navigation[nav_group].mimeType == "document" %}
-                      <a
-                        class="p-side-navigation__link {% if navigation[nav_group].children %}is-expandable{% endif %}" {% if navigation[nav_group].active %}aria-current="page"{% endif%}
-                        href="/{{previous_slug}}/{{navigation[nav_group].slug}}"
-                      >{{ navigation[nav_group].name }}</a>
-                    {% elif navigation[nav_group].children and navigation[nav_group].mimeType == "folder" %}
-                      {% if navigation[nav_group]["children"]["index"] %}
-                        <a class="p-side-navigation__link is-expandable u-no-margin--bottom" href="/{{navigation[nav_group].slug}}" {% if navigation[nav_group].active %}aria-current="page"{% endif %}>{{ navigation[nav_group].name }}</a>
-                      {% else %}
-                        <em class="p-side-navigation__text is-expandable u-no-margin--bottom">{{ navigation[nav_group].name }}</em>
-                      {% endif %}
-                      <button class="p-side-navigation__expand" {% if navigation[nav_group].expanded %}aria-expanded="true"{% endif %} aria-label="show submenu for "></button>
-                    {% endif %}
-                    {{ create_navigation(navigation[nav_group].children, navigation[nav_group].slug, expandable=True,
-                    expanded=navigation[nav_group].expanded) }}
-                  </li>
-                </ul>
-              {% elif navigation[nav_group].mimeType == "document" and navigation[nav_group].name|lower == "index" %}
-                <div class="p-side-navigation__primary-heading">
-                  <a class="p-side-navigation__link p-muted-heading" {% if navigation[nav_group].active %}aria-current="page"{% endif%} href="/"><strong>{{root_name}}</strong></a>
-                </div>
-              {% endif %}
-            {% endfor %}
-          </div>
-        </nav>
-      </aside>
-      <main class="col-9">
-        {% if document["breadcrumbs"]|length > 1 %}
-          <nav class="p-breadcrumbs" aria-label="Breadcrumbs">
-            <ol class="p-breadcrumbs__items">
-              {% for page in document["breadcrumbs"] %}
-                <li class="p-breadcrumbs__item">
-                  {% if not loop.last %}
-                    <a href="{{ page.path }}">{{ page.name }}</a>
-                  {% else %}
-                    {{ page.name }}
-                  {% endif %}
-                </li>
-              {% endfor %}
-            </ol>
-          </nav>
-        {% endif %}
-        {{ html | safe }}
-        <hr>
-        <a href="https://docs.google.com/document/d/{{document.id}}">Contribute or make changes to this document&nbsp;&rsaquo;</a>
         </div>
-      </main>
+        <ul class="p-side-navigation__list">
+          {% for nav_group in navigation %}
+            {% if (navigation[nav_group].name and not navigation[nav_group].name|lower == "index" and navigation[nav_group].children) 
+            or (navigation[nav_group].mimeType == "document" and not navigation[nav_group].name|lower == "index") %}
+              <li class="p-side-navigation__item">
+              {% if navigation[nav_group].mimeType == "document" %}
+                <a
+                  class="p-side-navigation__link {% if navigation[nav_group].children %}is-expandable{% endif %}" 
+                  {% if navigation[nav_group].active %}aria-current="page"{% endif%}
+                  href="/{{previous_slug}}/{{navigation[nav_group].slug}}"
+                >{{ navigation[nav_group].name }}</a>
+              {% elif navigation[nav_group].children and navigation[nav_group].mimeType == "folder" %}
+                {% if navigation[nav_group]["children"]["index"] %}
+                  <a 
+                    class="p-side-navigation__link is-expandable u-no-margin--bottom" 
+                    href="/{{navigation[nav_group].slug}}" 
+                    {% if navigation[nav_group].active %}aria-current="page"{% endif %}
+                  >{{ navigation[nav_group].name }}</a>
+                {% else %}
+                  <em class="p-side-navigation__text is-expandable u-no-margin--bottom"
+                  >{{ navigation[nav_group].name }}</em>
+                {% endif %}
+                <button  
+                  class="p-side-navigation__expand" 
+                  {% if navigation[nav_group].expanded %}aria-expanded="true"{% endif %} 
+                  aria-label="show submenu for "
+                ></button>
+              {% endif %}
+              {{ create_navigation(navigation[nav_group].children, navigation[nav_group].slug, expandable=True,
+              expanded=navigation[nav_group].expanded) }}
+              </li>
+            {% elif navigation[nav_group].mimeType == "document" and navigation[nav_group].name|lower == "index" %}
+              <div class="p-side-navigation__primary-heading">
+                <a class="p-side-navigation__link p-muted-heading" {% if navigation[nav_group].active %}aria-current="page"{% endif%} href="/"><strong>{{root_name}}</strong></a>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
     </div>
-  </section>
-</main>
+  </nav>
+</aside>
+
+<div class="l-full-width">
+  <main class="l-main">
+    <div class="row p-strip is-shallow">
+      <div class="content-body col-9 col-medium-6 col-order-large-1 col-order-medium-2 col-order-small-2">
+        {% if document["breadcrumbs"]|length > 1 %}
+          {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1adcrumbs"] %}
+            {% include "_partial/_breadcrumbs.html" %}
+          {% endwith %}
+        {% endif %}
+
+        {{ html | safe }}
+
+        <hr>
+        <a href="https://docs.google.com/document/d/{{document.id}}">Suggest changes&nbsp;&rsaquo;</a>
+      </div>
+      <aside class="col-3 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1">
+        {% with document = document %}
+          {% include "_partial/_table-of-content.html" %}
+        {% endwith %}
+      </aside>
+    </div>
+  </main>
+</div>
 
 {% endblock %}

@@ -63,18 +63,41 @@ class Navigation:
                 elif doc["id"] in self.doc_reference_dict:
                     self.doc_reference_dict.pop(doc["id"])
 
-        self.add_path_context(doc_hierarchy)
-
         ordered_hierarchy = self.order_hierarchy(
             doc_hierarchy[self.root_folder]["children"]
         )
+
+        self.add_path_context(doc_hierarchy)
+
         return ordered_hierarchy
 
     def order_hierarchy(self, hierarchy):
+        def remove_pre(text):
+            if "-" in text:
+                idx = text.index("-")
+                if text[:idx].isdigit():
+                    index = idx + 1
+                    return text[index:]
+            return text
+
         if "index" in hierarchy:
             index_item = hierarchy.pop("index")
             ordered_items = dict(sorted(hierarchy.items(), key=lambda x: x[0]))
             ordered_hierarchy = {"index": index_item}
-            ordered_hierarchy.update(ordered_items)
+
+            updated_dict = {}
+            for key, item in ordered_items.items():
+                new_key = remove_pre(key)
+                if isinstance(item, dict):
+                    if "slug" in item:
+                        item["slug"] = remove_pre(item["slug"])
+                    if "name" in item:
+                        item["name"] = remove_pre(item["name"])
+                    if item["id"] in self.doc_reference_dict:
+                        ref_item = self.doc_reference_dict.get(item["id"])
+                        ref_item["name"] = remove_pre(ref_item["name"])
+                updated_dict[new_key] = item
+
+            ordered_hierarchy.update(updated_dict)
 
             return ordered_hierarchy

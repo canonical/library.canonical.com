@@ -4,5 +4,6 @@
     "font-style:italic": "em",
     "text-decoration:underline": "u"
   },
-  "tags": ["img", "hr"]
+  "tags": ["img", "hr", "p"],
+  "span_containers": ["p", "h1", "h2", "h3", "h4", "h5", "h6"]
 }

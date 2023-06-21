@@ -8,16 +8,50 @@
 // Import cookie policy
 @import "@canonical/cookie-policy/build/css/cookie-policy";
 
-.p-side-navigation__primary-heading {
-  margin-bottom: 1.5rem;
+// Import site specific patterns and overrides
+@import "pattern-side-navigation";
+@include library-p-side-navigation;
 
-  ::after {
-    background: rgb(0 0 0 / 10%);
-    bottom: -0.75rem;
-    content: "";
-    height: 1px;
-    left: 1.5rem;
-    position: absolute;
-    right: 0;
+body {
+  min-height: 100vh;
+  position: relative;
+}
+
+.content-body {
+  padding-bottom: 182px;
+
+  @media screen and (min-width: $breakpoint-large) {
+    padding-bottom: 252px;
   }
+}
+
+.table-of-contents.is-sticky {
+  max-height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  right: 0;
+  top: 2.5rem;
+
+  li {
+    margin-top: 0.3rem;
+  }
+
+  ul.p-list ul.p-list {
+    margin-left: 1rem;
+  }
+}
+
+.p-side-navigation.is-sticky {
+  height: 100%;
+}
+
+.l-footer--sticky {
+  bottom: 0;
+  position: absolute;
+}
+
+// XXX - can be removed once we have a custom logo&logo-title
+.p-navigation__logo-title {
+  font-size: 1rem;
+  line-height: 1.5rem;
 }
