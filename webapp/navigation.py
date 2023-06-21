@@ -76,7 +76,8 @@ class Navigation:
             if "-" in text:
                 idx = text.index("-")
                 if text[:idx].isdigit():
-                    return text[idx + 1 :]
+                    index = idx + 1
+                    return text[index:]
             return text
 
         if "index" in hierarchy:
