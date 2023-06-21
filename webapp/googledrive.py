@@ -57,9 +57,9 @@ class Drive:
 
     def fetch_document(self, document_id):
         try:
-            # html = self.client.get(document_id)
-            # if html is not None:
-            #     return html.decode("utf-8")
+            html = self.client.get(document_id)
+            if html is not None:
+                return html.decode("utf-8")
 
             request = self.service.files().export(
                 fileId=document_id, mimeType="text/html"
@@ -73,7 +73,7 @@ class Drive:
             html = file.getvalue().decode("utf-8")
 
             if html:
-                # self.client.set(document_id, html.encode("utf-8"))
+                self.client.set(document_id, html.encode("utf-8"))
                 return html
             else:
                 err = "Error, document not found."
