@@ -43,7 +43,7 @@ class Drive:
                     includeItemsFromAllDrives=True,
                     spaces="drive",
                     fields="files(id, name, parents, mimeType)",
-                    pageSize=1000
+                    pageSize=1000,
                 )
                 .execute()
             )
