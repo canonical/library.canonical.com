@@ -30,7 +30,7 @@ class Drive:
         )
         self.client = Client(("localhost", 11211))
 
-    # @cached(cache)
+    @cached(cache)
     def get_document_list(self):
         try:
             results = (
