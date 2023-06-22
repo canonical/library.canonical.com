@@ -37,13 +37,13 @@ class Drive:
                 self.service.files()
                 .list(
                     q="trashed=false",
-                    corpora="teamDrive",
-                    supportsTeamDrives=True,
+                    corpora="drive",
+                    driveId=TARGET_DRIVE,
+                    supportsAllDrives=True,
                     includeItemsFromAllDrives=True,
-                    teamDriveId=TARGET_DRIVE,
                     spaces="drive",
-                    fields="nextPageToken, "
-                    "files(id, name, parents, mimeType)",
+                    fields="files(id, name, parents, mimeType)",
+                    pageSize=1000
                 )
                 .execute()
             )

@@ -8,10 +8,6 @@
 // Import cookie policy
 @import "@canonical/cookie-policy/build/css/cookie-policy";
 
-// Import site specific patterns and overrides
-@import "pattern-side-navigation";
-@include library-p-side-navigation;
-
 body {
   min-height: 100vh;
   position: relative;
