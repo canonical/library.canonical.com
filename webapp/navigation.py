@@ -1,3 +1,5 @@
+import copy
+
 from webapp.googledrive import Drive
 
 
@@ -5,8 +7,10 @@ class Navigation:
     def __init__(self, google_drive: Drive, root_folder: str):
         self.root_folder = root_folder.lower()
         self.doc_reference_dict = {}
+        self.doc_hierarchy = {}
         file_list = google_drive.get_document_list()
-        self.hierarchy = self.create_hierarchy(file_list)
+        doc_objects_copy = copy.deepcopy(file_list)
+        self.hierarchy = self.create_hierarchy(doc_objects_copy)
 
     def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
         if breadcrumbs is None:
@@ -34,7 +38,6 @@ class Navigation:
                 )
 
     def create_hierarchy(self, doc_objects):
-        doc_hierarchy = {}
         for doc in doc_objects:
             # If a document has now parent (shortcut) then we attach it
             # to the root folder
@@ -59,15 +62,15 @@ class Navigation:
                 if parent_obj is not None:
                     parent_obj["children"][doc["slug"]] = doc
                 elif doc["slug"] == self.root_folder:
-                    doc_hierarchy[doc["slug"]] = doc
+                    self.doc_hierarchy[doc["slug"]] = doc
                 elif doc["id"] in self.doc_reference_dict:
                     self.doc_reference_dict.pop(doc["id"])
 
         ordered_hierarchy = self.order_hierarchy(
-            doc_hierarchy[self.root_folder]["children"]
+            self.doc_hierarchy[self.root_folder]["children"]
         )
 
-        self.add_path_context(doc_hierarchy)
+        self.add_path_context(self.doc_hierarchy)
 
         return ordered_hierarchy
 
