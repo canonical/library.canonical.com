@@ -5,30 +5,25 @@
 Canonical Reference Library is single source of information for all corporate knowledge with Canonical
 {% endblock %}
 
-{% block meta_copydoc %}{% endblock %}
-
 {% block content %}
 {% macro create_navigation(nav_items, previous_slug, expandable=False, expanded=False) %}
   {% if nav_items %}
     <ul class="p-side-navigation__list" {% if expanded %}aria-expanded="true"{% endif %}>
       {% for element in nav_items %}
-        {% if (nav_items[element].mimeType == "document" and not nav_items[element].name|lower == "index") or (nav_items[element].children and nav_items[element].mimeType == "folder") %}
+        {% if (nav_items[element].mimeType == "document" and not nav_items[element].name|lower == "index") 
+        or (nav_items[element].children and nav_items[element]["children"]["index"]) %}
           <li class="p-side-navigation__item">
             {% if nav_items[element].mimeType == "document" or (nav_items[element]["children"]|length == 1 and nav_items[element]["children"]["index"]) %}
               <a
                 class="p-side-navigation__link {% if nav_items[element].children %}is-expandable{% endif %}" {% if nav_items[element].active %}aria-current="page"{% endif %}
                 href="/{{previous_slug}}/{{nav_items[element].slug}}"
               >{{ nav_items[element].name }}</a>
-            {% elif nav_items[element].children %}
-              {% if nav_items[element]["children"]["index"] %}
-                <a 
-                  class="p-side-navigation__link is-expandable u-no-margin--bottom" 
-                  href="/{{previous_slug}}/{{nav_items[element].slug}}" 
-                  {% if nav_items[element].active %}aria-current="page"{% endif %}
-                >{{ nav_items[element].name }}</a>
-              {% else %}
-                <em class="p-side-navigation__text is-expandable u-no-margin--bottom">{{ nav_items[element].name }}</em>
-              {% endif %}
+            {% elif nav_items[element].children and nav_items[element]["children"]["index"] %}
+              <a 
+                class="p-side-navigation__link is-expandable u-no-margin--bottom" 
+                href="/{{previous_slug}}/{{nav_items[element].slug}}" 
+                {% if nav_items[element].active %}aria-current="page"{% endif %}
+              >{{ nav_items[element].name }}</a>
               <button 
                 class="p-side-navigation__expand" 
                 {% if nav_items[element].expanded %}aria-expanded="true"{% endif %} 
@@ -60,7 +55,7 @@ Canonical Reference Library is single source of information for all corporate kn
         </div>
         <ul class="p-side-navigation__list">
           {% for nav_group in navigation %}
-            {% if (navigation[nav_group].name and not navigation[nav_group].name|lower == "index" and navigation[nav_group].children) 
+            {% if (navigation[nav_group].children and navigation[nav_group]["children"]["index"]) 
             or (navigation[nav_group].mimeType == "document" and not navigation[nav_group].name|lower == "index") %}
               <li class="p-side-navigation__item">
               {% if navigation[nav_group].mimeType == "document" %}
@@ -69,17 +64,12 @@ Canonical Reference Library is single source of information for all corporate kn
                   {% if navigation[nav_group].active %}aria-current="page"{% endif%}
                   href="/{{previous_slug}}/{{navigation[nav_group].slug}}"
                 >{{ navigation[nav_group].name }}</a>
-              {% elif navigation[nav_group].children and navigation[nav_group].mimeType == "folder" %}
-                {% if navigation[nav_group]["children"]["index"] %}
-                  <a 
-                    class="p-side-navigation__link is-expandable u-no-margin--bottom" 
-                    href="/{{navigation[nav_group].slug}}" 
-                    {% if navigation[nav_group].active %}aria-current="page"{% endif %}
-                  >{{ navigation[nav_group].name }}</a>
-                {% else %}
-                  <em class="p-side-navigation__text is-expandable u-no-margin--bottom"
-                  >{{ navigation[nav_group].name }}</em>
-                {% endif %}
+              {% elif navigation[nav_group].children and navigation[nav_group]["children"]["index"] %}
+                <a 
+                  class="p-side-navigation__link is-expandable u-no-margin--bottom" 
+                  href="/{{navigation[nav_group].slug}}" 
+                  {% if navigation[nav_group].active %}aria-current="page"{% endif %}
+                >{{ navigation[nav_group].name }}</a>
                 <button  
                   class="p-side-navigation__expand" 
                   {% if navigation[nav_group].expanded %}aria-expanded="true"{% endif %} 
