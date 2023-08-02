@@ -2,7 +2,6 @@ import unittest
 
 from webapp.app import app
 
-
 class TestRoutes(unittest.TestCase):
     def setUp(self):
         """
@@ -22,7 +21,7 @@ class TestRoutes(unittest.TestCase):
         When given the index URL,
         we should return a 200 status code
         """
-        response = self.app.get("/")
+        response = self.app.get('/')
         self.assertEqual(response.status_code, 200)
 
     def test_not_found(self):
@@ -34,5 +33,5 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
