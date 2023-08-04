@@ -36,5 +36,34 @@ class TestParser(unittest.TestCase):
             )
             self.soup = self.parser.html
 
+    def test_insert_h1_if_missing_with_h1_present(self):
+        """
+        Create an 'h1' tag and check that it is not replaced
+        """
+        h1_tag = self.soup.new_tag("h1")
+        h1_tag.string = "Existing heading"
+        self.soup.body.insert(0, h1_tag)
+
+        self.parser.insert_h1_if_missing("New heading")
+
+        self.assertEqual(
+            h1_tag.string,
+            "Existing heading",
+            "Existing 'h1' tag should not be modified.",
+        )
+
+    def test_insert_h1_if_missing_without_h1(self):
+        """
+        Check if an 'h1' tag is inserted when it's missing
+        based on the mock_doc_dict parsed into the Parser
+        """
+        h1_tag = self.soup.select_one("h1")
+        self.assertIsNotNone(h1_tag, "'h1' tag should be inserted.")
+        self.assertEqual(
+            h1_tag.string,
+            "Mock document",
+            "Inserted 'h1' tag has incorrect content.",
+        )
+
 if __name__ == "__main__":
     unittest.main()
