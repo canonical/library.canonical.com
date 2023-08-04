@@ -242,7 +242,7 @@ class TestParser(unittest.TestCase):
         """
         tag = self.soup.new_tag("p", style="font-weight: 700;")
         self.soup.body.insert(1, tag)
-        
+
         self.parser.convert_styles_to_tags(tag, self.bs4_ignores["styles"])
 
         converted_tag = self.soup.select_one("p")
@@ -253,6 +253,25 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(
             parent_tag.name, "strong", "Style should be converted to a wrapping tag."
+        )
+
+    def test_italic_style_is_converted_to_tag(self):
+        """
+        Check italic style is converted to a wrapper tag
+        """
+        tag = self.soup.new_tag("p", style="font-style: italic;")
+        self.soup.body.insert(1, tag)
+        
+        self.parser.convert_styles_to_tags(tag, self.bs4_ignores["styles"])
+
+        converted_tag = self.soup.select_one("p")
+        has_style = hasattr(converted_tag, "style")
+        parent_tag = converted_tag.parent
+        self.assertTrue(
+            has_style, "Style should be removed"
+        )
+        self.assertEqual(
+            parent_tag.name, "em", "Style should be converted to a wrapping tag."
         )
 
 if __name__ == "__main__":
