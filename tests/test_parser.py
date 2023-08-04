@@ -65,5 +65,17 @@ class TestParser(unittest.TestCase):
             "Inserted 'h1' tag has incorrect content.",
         )
 
+    def test_images_are_parsed(self):
+        """
+        Check if image is present in soup and src is
+        not empty
+        """
+        is_valid = False
+        img_tag = self.soup.find("img")
+        if img_tag and img_tag.get("src"):
+            is_valid = True
+
+        self.assertTrue(is_valid, "Images should exist and have and src value")
+        
 if __name__ == "__main__":
     unittest.main()
