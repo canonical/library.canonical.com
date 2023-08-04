@@ -24,9 +24,7 @@ class TestParser(unittest.TestCase):
             "12345": {"full_path": "/full/mock/path", "name": "Mock document"}
         }
         self.mock_doc_name = "Mock document"
-        # Monkey-patch the Parser class to use the custom 
-        # function get_static_html instead of the original 
-        # get_html method
+        # Inject custom HTML
         with patch.object(Parser, "get_html", get_html_mock):
             self.parser = Parser(
                 self.mock_drive,
@@ -98,6 +96,48 @@ class TestParser(unittest.TestCase):
             a_tag["href"],
             "http://example.com",
             "External link should be cleaned.",
+        )
+
+    def test_docs_links_link_internally(self):
+        """
+        Check that docs links link internally
+        """
+        a_tag = self.soup.new_tag(
+            "a", href="docs.google.com/document/u/0/d/example12345/edit"
+        )
+        self.soup.body.append(a_tag)
+
+        # Monkey patch doc_dict
+        original_doc_dict = self.parser.doc_dict
+        self.parser.doc_dict = {"example12345": {"full_path": "/example/full/path"}}
+
+        google_doc_paths = [
+            "docs.google.com/document/d/",
+            "docs.google.com/document/u/0/d/",
+        ]
+        self.parser.process_google_doc_links(a_tag, google_doc_paths)
+
+        self.assertEqual(
+            a_tag["href"],
+            "/example/full/path",
+            "Docs links should be converted to internal links.",
+        )
+
+    def test_trailing_garbage_is_removed(self):
+        """
+        Check that trailing garbage is removed
+        """
+        a_tag = self.soup.new_tag(
+            "a", href="http://example.com/&sa=D&source=editors&ust=GARBAGE"
+        )
+        self.soup.body.append(a_tag)
+        
+        self.parser.parse_links()
+
+        self.assertEqual(
+            a_tag["href"],
+            "http://example.com/",
+            "Trailing garbage should be removed.",
         )
 
     def test_generate_headings_map(self):
