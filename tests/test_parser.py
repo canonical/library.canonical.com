@@ -76,6 +76,13 @@ class TestParser(unittest.TestCase):
             is_valid = True
 
         self.assertTrue(is_valid, "Images should exist and have and src value")
+
+    def test_head_tag_removed(self):
+        """
+        Check if the 'head' tag is removed from the soup
+        """
+        head_tag = self.soup.find("head")
+        self.assertIsNone(head_tag, "The 'head' tag should be removed.")
         
 if __name__ == "__main__":
     unittest.main()
