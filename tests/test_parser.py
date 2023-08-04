@@ -382,5 +382,6 @@ class TestParser(unittest.TestCase):
             "Element should not be wrapped in a span element",
         )
 
+
 if __name__ == "__main__":
     unittest.main()
