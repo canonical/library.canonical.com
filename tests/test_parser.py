@@ -163,5 +163,59 @@ class TestParser(unittest.TestCase):
             metadata, expected_metadata, "Metadata is not parsed correctly."
         )
 
+    def test_non_empty_tag(self):
+        """
+        Check if tag_is_empty returns False for a non-empty tag
+        """
+        tag = self.soup.new_tag("p")
+        tag.string = "Some text"
+
+        self.assertFalse(
+            self.parser.tag_is_empty(tag),
+            "tag_is_empty should return False for non-empty tag.",
+        )
+
+    def test_empty_tags(self):
+        """
+        Check if tag_is_empty returns True for an empty tag
+        """
+        tag = self.soup.new_tag("p")
+
+        self.assertTrue(
+            self.parser.tag_is_empty(tag),
+            "tag_is_empty should return True for an empty tag.",
+        )
+
+    def test_nested_empty_tags(self):
+        """
+        Check if tag_is_empty returns True for a tag with empty 
+        child tags
+        """
+        parent_tag = self.soup.new_tag("ul")
+        child_tag1 = self.soup.new_tag("li")
+        child_tag2 = self.soup.new_tag("li")
+        parent_tag.append(child_tag1)
+        parent_tag.append(child_tag2)
+
+        self.assertTrue(
+            self.parser.tag_is_empty(parent_tag),
+            "tag_is_empty should return True for a tag with empty child tags.",
+        )
+
+    def test_mixed_empty_and_non_empty_tags(self):
+        """
+        Check if tag_is_empty correctly handles a tag with mixed 
+        content (text and child tags)
+        """
+        tag = self.soup.new_tag("div")
+        tag.string = "Some text"
+        child_tag = self.soup.new_tag("p")
+        tag.append(child_tag)
+
+        self.assertFalse(
+            self.parser.tag_is_empty(tag),
+            "tag_is_empty should return False for a tag with mixed content.",
+        )
+
 if __name__ == "__main__":
     unittest.main()
