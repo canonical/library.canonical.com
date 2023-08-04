@@ -24,7 +24,9 @@ class TestParser(unittest.TestCase):
             "12345": {"full_path": "/full/mock/path", "name": "Mock document"}
         }
         self.mock_doc_name = "Mock document"
-        # Inject custom HTML
+        # Monkey-patch the Parser class to use the custom 
+        # function get_static_html instead of the original 
+        # get_html method
         with patch.object(Parser, "get_html", get_html_mock):
             self.parser = Parser(
                 self.mock_drive,
