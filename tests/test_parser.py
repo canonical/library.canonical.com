@@ -99,6 +99,32 @@ class TestParser(unittest.TestCase):
             "http://example.com",
             "External link should be cleaned.",
         )
+
+    def test_generate_headings_map(self):
+        """
+        Check that a heading map is created with all h2
+        and h3 headings
+        """
+        h2_tag = self.soup.new_tag("h2")
+        h2_tag.string = "Heading"
+        self.soup.body.append(h2_tag)
+
+        h3_tag = self.soup.new_tag("h3")
+        h3_tag.string = "Subheading"
+        self.soup.body.append(h3_tag)
+
+        self.parser.generate_headings_map()
+
+        expected_map = [
+            {"id": "heading-1", "name": "Heading", "level": 2},
+            {"id": "subheading-2", "name": "Subheading", "level": 3},
+        ]
+
+        self.assertEqual(
+            self.parser.headings_map,
+            expected_map,
+            "Headings map is not generated correctly.",
+        )
         
 if __name__ == "__main__":
     unittest.main()
