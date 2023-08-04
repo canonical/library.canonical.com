@@ -67,7 +67,7 @@ jobs:
       
       - name: Create secrets file for dotrun
         run:
-          cat ${{ secrets.SECRETS_FILE }} | base64 -d > .env.local
+          echo "${{ secrets.SECRETS_FILE }}" | base64 -d > .env.local
 
       - name: Run tests with coverage
         run: /snap/bin/dotrun exec coverage run --source=. -m unittest discover tests
