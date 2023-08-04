@@ -306,6 +306,23 @@ class TestParser(unittest.TestCase):
             parent_tag.name, "em", "Style should be converted to a wrapping tag."
         )
 
+    def test_spans_are_unwrapped(self):
+        """
+        Check that an element will have wrapping spans removed
+        """
+        parent_tag = self.soup.new_tag("span")
+        child_tag1 = self.soup.new_tag("p")
+        parent_tag.insert(1, child_tag1)
+
+        self.parser.parse_tags()
+
+        parent_tag = child_tag1.parent
+
+        self.assertEqual(
+            parent_tag.name,
+            "span",
+            "Element should not be wrapped in a span element",
+        )
 
 if __name__ == "__main__":
     unittest.main()
