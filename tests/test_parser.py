@@ -83,6 +83,22 @@ class TestParser(unittest.TestCase):
         """
         head_tag = self.soup.find("head")
         self.assertIsNone(head_tag, "The 'head' tag should be removed.")
+
+    def test_parse_links_clean_external_links(self):
+        """
+        Check that external links are cleaned correctly
+        """
+        a_tag = self.soup.new_tag(
+            "a", href="https://www.google.com/url?q=http://example.com"
+        )
+        self.soup.body.append(a_tag)
+        self.parser.parse_links()
+
+        self.assertEqual(
+            a_tag["href"],
+            "http://example.com",
+            "External link should be cleaned.",
+        )
         
 if __name__ == "__main__":
     unittest.main()
