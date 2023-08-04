@@ -298,7 +298,6 @@ class TestParser(unittest.TestCase):
         """
         tag = self.soup.new_tag("p", style="text-decoration: underline;")
         self.soup.body.insert(1, tag)
-
         self.parser.convert_styles_to_tags(tag, self.bs4_ignores["styles"])
 
         converted_tag = self.soup.select_one("p")
