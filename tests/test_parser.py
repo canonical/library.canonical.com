@@ -217,6 +217,38 @@ class TestParser(unittest.TestCase):
             "tag_is_empty should return False for a tag with mixed content.",
         )
 
+    def test_remove_empty_tags(self):
+        """
+        Check if empty tags are removed correctly
+        """
+        empty_tags = ["div", "span"]
+        for empty_tag in empty_tags:
+            tag = self.soup.new_tag(empty_tag)
+            self.soup.body.insert(1, tag)
+
+        self.parser.parse_tags()
+
+        for empty_tag in empty_tags:
+            removed_tag = self.soup.select_one(empty_tag)
+            self.assertEqual(
+                removed_tag, None, f"{empty_tag} tag should be removed."
+            )
+
+    def test_remove_empty_tags_with_non_empty_tags(self):
+        """
+        Check if non-empty tags are not removed
+        """
+        tag = self.soup.new_tag("p")
+        tag.string = "Non-empty paragraph"
+        self.soup.body.append(tag)
+
+        self.parser.parse_tags()
+
+        p_tag = self.soup.select_one("p")
+        self.assertNotEqual(
+            p_tag, None, "Non-empty tag should not be removed."
+        ) 
+
     def test_underline_style_is_converted_to_tag(self):
         """
         Check underline style is converted to a wrapper tag
@@ -273,6 +305,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(
             parent_tag.name, "em", "Style should be converted to a wrapping tag."
         )
+
 
 if __name__ == "__main__":
     unittest.main()
