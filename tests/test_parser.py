@@ -217,5 +217,24 @@ class TestParser(unittest.TestCase):
             "tag_is_empty should return False for a tag with mixed content.",
         )
 
+    def test_underline_style_is_converted_to_tag(self):
+        """
+        Check underline style is converted to a wrapper tag
+        """
+        tag = self.soup.new_tag("p", style="text-decoration: underline;")
+        self.soup.body.insert(1, tag)
+        
+        self.parser.convert_styles_to_tags(tag, self.bs4_ignores["styles"])
+
+        converted_tag = self.soup.select_one("p")
+        has_style = hasattr(converted_tag, "style")
+        parent_tag = converted_tag.parent
+        self.assertTrue(
+            has_style, "Style should be removed"
+        )
+        self.assertEqual(
+            parent_tag.name, "u", "Style should be converted to a new tag."
+        )
+
 if __name__ == "__main__":
     unittest.main()
