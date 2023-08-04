@@ -125,6 +125,43 @@ class TestParser(unittest.TestCase):
             expected_map,
             "Headings map is not generated correctly.",
         )
-        
+
+    def test_parse_metadata_without_table(self):
+        """
+        Check if metadata parsing works correctly when there
+        is no 'table' tag
+        """
+        metadata = self.parser.metadata
+
+        self.assertEqual(
+            metadata,
+            {},
+            "Metadata should be an empty dictionary when there is no 'table'.",
+        )
+
+    def test_parse_metadata_with_table(self):
+        """
+        Create a 'table' tag with some metadata and check if
+        the metadata is parsed correctly
+        """
+        table_tag = self.soup.new_tag("table")
+        row1 = self.soup.new_tag("tr")
+        row1_key = self.soup.new_tag("td")
+        row1_key.string = "Author"
+        row1_value = self.soup.new_tag("td")
+        row1_value.string = "John Doe"
+        row1.append(row1_key)
+        row1.append(row1_value)
+        table_tag.append(row1)
+
+        self.soup.body.append(table_tag)
+
+        metadata = self.parser.parse_metadata()
+
+        expected_metadata = {"author": "John Doe"}
+        self.assertEqual(
+            metadata, expected_metadata, "Metadata is not parsed correctly."
+        )
+
 if __name__ == "__main__":
     unittest.main()
