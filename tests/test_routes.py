@@ -2,6 +2,7 @@ import unittest
 
 from webapp.app import app
 
+
 class TestRoutes(unittest.TestCase):
     def setUp(self):
         """
