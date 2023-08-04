@@ -3,12 +3,6 @@ on: pull_request
 
 env:
   SECRET_KEY: local_development_fake_key
-  CLIENT_EMAIL: ${{ secrets.CLIENT_EMAIL }}
-  CLIENT_ID: ${{ secrets.CLIENT_ID }}
-  CLIENT__X509_CERT_URL: ${{ secrets.CLIENT__X509_CERT_URL }}
-  PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-  PRIVATE_KEY_ID: ${{ secrets.PRIVATE_KEY_ID }}
-  PROJECT_ID: ${{ secrets.PROJECT_ID }}
 
 jobs:
   run-image:
@@ -70,9 +64,13 @@ jobs:
 
       - name: Build resources
         run: /snap/bin/dotrun build
+      
+      - name: Create secrets file for dotrun
+        run:
+          cat ${{ secrets.SECRETS_FILE }} | base64 -d > .env.local
 
       - name: Run tests with coverage
-        run: /snap/bin/dotrun --env SEARCH_API_KEY=fake-key exec coverage run --source=. -m unittest discover tests
+        run: /snap/bin/dotrun exec coverage run --source=. -m unittest discover tests
 
   lint-python:
     runs-on: ubuntu-latest
