@@ -4,9 +4,10 @@ from webapp.app import app
 
 
 class TestRoutes(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         """
-        Setup Flask app for testing
+        Setup Flask app for testing once for all tests
         """
         app.testing = True
         self.app = app.test_client()
@@ -16,6 +17,20 @@ class TestRoutes(unittest.TestCase):
                 "email": "testing@ubuntu.com",
                 "fullname": "Test user",
             }
+
+    def setUp(self):
+        """
+        Create a new client instance before each test
+        """
+        self.client = app.test_client()
+        print("test case",self._testMethodName)
+
+    @classmethod
+    def tearDownClass(self):
+        """
+        Teardown Flask app after all tests have run
+        """
+        self.app = None
 
     def test_home_page(self):
         """
