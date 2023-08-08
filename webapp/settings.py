@@ -1,11 +1,18 @@
 import os
 
-PROJECT_ID = os.getenv("PROJECT_ID")
-PRIVATE_KEY_ID = os.getenv("PRIVATE_KEY_ID")
-PRIVATE_KEY = os.getenv("PRIVATE_KEY")
-CLIENT_EMAIL = os.getenv("CLIENT_EMAIL")
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT__X509_CERT_URL = os.getenv("CLIENT__X509_CERT_URL")
+
+def sanitize_env(env_var):
+    """Remove escape slashes and string environment variables"""
+    if env_var is not None:
+        return env_var.replace("\\n", "\n").replace('"', "")
+
+
+PROJECT_ID = sanitize_env(os.getenv("PROJECT_ID"))
+PRIVATE_KEY_ID = sanitize_env(os.getenv("PRIVATE_KEY_ID"))
+PRIVATE_KEY = sanitize_env(os.getenv("PRIVATE_KEY"))
+CLIENT_EMAIL = sanitize_env(os.getenv("CLIENT_EMAIL"))
+CLIENT_ID = sanitize_env(os.getenv("CLIENT_ID"))
+CLIENT__X509_CERT_URL = sanitize_env(os.getenv("CLIENT__X509_CERT_URL"))
 
 SERVICE_ACCOUNT_INFO = {
     "type": "service_account",
