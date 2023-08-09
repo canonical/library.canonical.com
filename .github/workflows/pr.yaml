@@ -42,6 +42,30 @@ jobs:
           /snap/bin/dotrun &
           curl --head --fail --retry-delay 1 --retry 30 --retry-connrefused http://localhost:8051
 
+  test-python:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create secrets file 
+        run:
+          echo "${{ secrets.SECRETS_FILE }}" | base64 -d > .env.local
+
+      - name: Build image
+        run: DOCKER_BUILDKIT=1 docker build --tag library-canonical-com .
+
+      - name: Start container
+        run: |
+          docker run --env-file .env.local --network host --name lib-c-c -d library-canonical-com
+
+      - name: Install coverage
+        run: |
+          docker exec -i lib-c-c bash -c "apt-get update && apt-get install -y python3-pip && pip3 install coverage"
+      
+      - name: Run tests with coverage
+        run: docker exec -i lib-c-c coverage run --source=. -m unittest discover tests
+
   lint-python:
     runs-on: ubuntu-latest
 
