@@ -12,7 +12,7 @@ class TestParser(unittest.TestCase):
     def setUpClass(self):
         with open("webapp/config/bs4_ignores.json") as f:
             self.bs4_ignores = json.load(f)
-    
+
     def setUp(self):
         """
         Run test HTML through the parser.
@@ -108,8 +108,9 @@ class TestParser(unittest.TestCase):
         self.soup.body.append(a_tag)
 
         # Monkey patch doc_dict
-        original_doc_dict = self.parser.doc_dict
-        self.parser.doc_dict = {"example12345": {"full_path": "/example/full/path"}}
+        self.parser.doc_dict = {
+            "example12345": {"full_path": "/example/full/path"}
+        }
 
         google_doc_paths = [
             "docs.google.com/document/d/",
@@ -131,7 +132,7 @@ class TestParser(unittest.TestCase):
             "a", href="http://example.com/&sa=D&source=editors&ust=GARBAGE"
         )
         self.soup.body.append(a_tag)
-        
+
         self.parser.parse_links()
 
         self.assertEqual(
@@ -228,7 +229,7 @@ class TestParser(unittest.TestCase):
 
     def test_nested_empty_tags(self):
         """
-        Check if tag_is_empty returns True for a tag with empty 
+        Check if tag_is_empty returns True for a tag with empty
         child tags
         """
         parent_tag = self.soup.new_tag("ul")
@@ -244,7 +245,7 @@ class TestParser(unittest.TestCase):
 
     def test_mixed_empty_and_non_empty_tags(self):
         """
-        Check if tag_is_empty correctly handles a tag with mixed 
+        Check if tag_is_empty correctly handles a tag with mixed
         content (text and child tags)
         """
         tag = self.soup.new_tag("div")
@@ -287,7 +288,7 @@ class TestParser(unittest.TestCase):
         p_tag = self.soup.select_one("p")
         self.assertNotEqual(
             p_tag, None, "Non-empty tag should not be removed."
-        ) 
+        )
 
     def test_underline_style_is_converted_to_tag(self):
         """
@@ -295,17 +296,17 @@ class TestParser(unittest.TestCase):
         """
         tag = self.soup.new_tag("p", style="text-decoration: underline;")
         self.soup.body.insert(1, tag)
-        
+
         self.parser.convert_styles_to_tags(tag, self.bs4_ignores["styles"])
 
         converted_tag = self.soup.select_one("p")
         has_style = hasattr(converted_tag, "style")
         parent_tag = converted_tag.parent
-        self.assertTrue(
-            has_style, "Style should be removed"
-        )
+        self.assertTrue(has_style, "Style should be removed")
         self.assertEqual(
-            parent_tag.name, "u", "Style should be converted to a wrapping tag."
+            parent_tag.name,
+            "u",
+            "Style should be converted to a wrapping tag.",
         )
 
     def test_bold_style_is_converted_to_tag(self):
@@ -320,11 +321,11 @@ class TestParser(unittest.TestCase):
         converted_tag = self.soup.select_one("p")
         has_style = hasattr(converted_tag, "style")
         parent_tag = converted_tag.parent
-        self.assertTrue(
-            has_style, "Style should be removed"
-        )
+        self.assertTrue(has_style, "Style should be removed")
         self.assertEqual(
-            parent_tag.name, "strong", "Style should be converted to a wrapping tag."
+            parent_tag.name,
+            "strong",
+            "Style should be converted to a wrapping tag.",
         )
 
     def test_italic_style_is_converted_to_tag(self):
@@ -333,17 +334,17 @@ class TestParser(unittest.TestCase):
         """
         tag = self.soup.new_tag("p", style="font-style: italic;")
         self.soup.body.insert(1, tag)
-        
+
         self.parser.convert_styles_to_tags(tag, self.bs4_ignores["styles"])
 
         converted_tag = self.soup.select_one("p")
         has_style = hasattr(converted_tag, "style")
         parent_tag = converted_tag.parent
-        self.assertTrue(
-            has_style, "Style should be removed"
-        )
+        self.assertTrue(has_style, "Style should be removed")
         self.assertEqual(
-            parent_tag.name, "em", "Style should be converted to a wrapping tag."
+            parent_tag.name,
+            "em",
+            "Style should be converted to a wrapping tag.",
         )
 
     def test_spans_are_unwrapped(self):
@@ -363,6 +364,7 @@ class TestParser(unittest.TestCase):
             "span",
             "Element should not be wrapped in a span element",
         )
+
 
 if __name__ == "__main__":
     unittest.main()

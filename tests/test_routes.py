@@ -23,7 +23,7 @@ class TestRoutes(unittest.TestCase):
         Create a new client instance before each test
         """
         self.client = app.test_client()
-        print("test case",self._testMethodName)
+        print("test case", self._testMethodName)
 
     @classmethod
     def tearDownClass(self):
