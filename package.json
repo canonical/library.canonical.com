@@ -7,7 +7,7 @@
     "build": "yarn run build-css && yarn run build-js",
     "build-css": "sass static/sass/styles.scss static/css/styles.css --load-path=node_modules --style=compressed && postcss --map false --use autoprefixer --replace 'static/css/**/*.css'",
     "build-js": "yarn run webpack",
-    "format-python": "black --line-length 79 webapp",
+    "format-python": "black --line-length 79 webapp tests",
     "lint-python": "flake8 webapp tests && black --check --line-length 79 webapp tests",
     "lint-js": "eslint static/js",
     "lint-scss": "stylelint static/**/*.scss",

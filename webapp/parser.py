@@ -49,7 +49,7 @@ class Parser:
 
     def convert_styles_to_tags(self, tag, ignored_styles):
         if tag.has_attr("style"):
-            tag_style = tag["style"]
+            tag_style = tag["style"].replace(" ", "")
             for style, tag_name in ignored_styles.items():
                 if style in tag_style and not tag.find("a"):
                     tag.wrap(self.html.new_tag(tag_name))
