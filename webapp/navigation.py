@@ -49,6 +49,9 @@ class Navigation:
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
             doc["expanded"] = False
+            # If the parent folders id is a drive id (less than 20 chars)
+            # and it is not the target folder (root_folder), don't add
+            # it to the reference dict/navigation
             if doc["parents"] and (
                 len(doc["parents"][0]) > 20
                 or doc["name"].lower() == self.root_folder
