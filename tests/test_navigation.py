@@ -33,7 +33,7 @@ class TestNavigation(unittest.TestCase):
 
         self.assertFalse(
             not_a_slug,
-            "Document slugs should replaces spaces with dashes and be"
+            "Document slugs should replace spaces with dashes and be"
             "lowercase.",
         )
 

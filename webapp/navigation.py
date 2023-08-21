@@ -1,6 +1,8 @@
 import copy
 
+
 from webapp.googledrive import Drive
+from webapp.utils.remove_leading_numbers import remove_leading_numbers
 
 
 class Navigation:
@@ -15,11 +17,10 @@ class Navigation:
     def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
         """
         A recursive function that adds a 'full_path' value, which indicates
-        the url to the document and a 'breadcrumbs' value, which is an array
+        the url to the document and a 'breadcrumbs' value, which is a list
         of links that represent the nesting of the given document in the
         hierarchy.
         """
-        # Check if there is a breadcrumb list, if there is not initialise one
         if breadcrumbs is None:
             breadcrumbs = []
 
@@ -99,18 +100,6 @@ class Navigation:
         Orders top level items based on leading numbers separated by
         a dash(-) and then removes the number and dash.
         """
-
-        def remove_pre(text):
-            """
-            Removes the number and dash(-) from a string
-            """
-            if "-" in text:
-                idx = text.index("-")
-                if text[:idx].isdigit():
-                    index = idx + 1
-                    return text[index:]
-            return text
-
         if "index" in hierarchy:
             index_item = hierarchy.pop("index")
             ordered_items = dict(sorted(hierarchy.items(), key=lambda x: x[0]))
@@ -118,15 +107,15 @@ class Navigation:
 
             updated_dict = {}
             for key, item in ordered_items.items():
-                new_key = remove_pre(key)
+                new_key = remove_leading_numbers(key)
                 if isinstance(item, dict):
                     if "slug" in item:
-                        item["slug"] = remove_pre(item["slug"])
+                        item["slug"] = remove_leading_numbers(item["slug"])
                     if "name" in item:
-                        item["name"] = remove_pre(item["name"])
+                        item["name"] = remove_leading_numbers(item["name"])
                     if item["id"] in self.doc_reference_dict:
                         ref_item = self.doc_reference_dict.get(item["id"])
-                        ref_item["name"] = remove_pre(ref_item["name"])
+                        ref_item["name"] = remove_leading_numbers(ref_item["name"])
                 updated_dict[new_key] = item
 
             ordered_hierarchy.update(updated_dict)
