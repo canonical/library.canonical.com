@@ -299,7 +299,9 @@ class TestParser(unittest.TestCase):
         parent_tag = converted_tag.parent
         self.assertTrue(has_style, "Style should be removed")
         self.assertEqual(
-            parent_tag.name, "u", "Style should be converted to a wrapping tag."
+            parent_tag.name,
+            "u",
+            "Style should be converted to a wrapping tag.",
         )
 
     def test_bold_style_is_converted_to_tag(self):
@@ -314,11 +316,11 @@ class TestParser(unittest.TestCase):
         converted_tag = self.soup.select_one("p")
         has_style = hasattr(converted_tag, "style")
         parent_tag = converted_tag.parent
-        self.assertTrue(
-            has_style, "Style should be removed"
-        )
+        self.assertTrue(has_style, "Style should be removed")
         self.assertEqual(
-            parent_tag.name, "strong", "Style should be converted to a wrapping tag."
+            parent_tag.name,
+            "strong",
+            "Style should be converted to a wrapping tag.",
         )
 
     def test_bold_style_is_converted_to_tag(self):
@@ -393,6 +395,7 @@ class TestParser(unittest.TestCase):
             "span",
             "Element should not be wrapped in a span element",
         )
+
 
 if __name__ == "__main__":
     unittest.main()

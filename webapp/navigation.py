@@ -13,6 +13,12 @@ class Navigation:
         self.hierarchy = self.create_hierarchy(doc_objects_copy)
 
     def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
+        """
+        A recursive function that adds a 'full_path' value, which indicates the url
+        to the document and a 'breadcrumbs' value, which is an array of links that
+        represent the nesting of the given document in the hierarchy.
+        """
+        # Check if there is a breadcrumb list, if there is not initialise one
         if breadcrumbs is None:
             breadcrumbs = []
 
@@ -38,8 +44,14 @@ class Navigation:
                 )
 
     def create_hierarchy(self, doc_objects):
+        """
+        A function that initialises each document with the appropriate data
+        for building the navigation
+        """
+        # Create a 'doc_reference_dict' of all documents without nesting,
+        # so they can be referenced by their key.
         for doc in doc_objects:
-            # If a document has now parent (shortcut) then we attach it
+            # If a document has no parent (shortcut) then we attach it
             # to the root folder
             if "parents" not in doc:
                 doc["parents"] = None
@@ -58,6 +70,10 @@ class Navigation:
             ):
                 self.doc_reference_dict[doc["id"]] = doc
 
+        # For each doc's parent, find the associated doc and attach it as
+        # a child within the 'doc_hierarchy'. If the parent doesn't exist
+        # and the slug is the 'root', attach it as the root of the dict.
+        # If it meet niether criteria, remove it form  'doc_reference_dict'
         for doc in doc_objects:
             if doc["parents"]:
                 parent_ids = doc["parents"]
@@ -78,7 +94,15 @@ class Navigation:
         return ordered_hierarchy
 
     def order_hierarchy(self, hierarchy):
+        """
+        Orders top level items based on leading numbers separated by
+        a dash(-) and then removes the number and dash.
+        """
+
         def remove_pre(text):
+            """
+            Removes the number and dash(-) from a string
+            """
             if "-" in text:
                 idx = text.index("-")
                 if text[:idx].isdigit():

@@ -5,6 +5,7 @@ with open("tests/mocks/data/mock_file_list.json", "r") as f:
 with open("tests/mocks/data/mock_google_doc.html", "r") as f:
     mock_google_doc = f.read()
 
+
 class GoogleDriveMock:
     def __init__(self):
         self.mock_google_doc = mock_google_doc
@@ -18,7 +19,7 @@ class GoogleDriveMock:
         work within the Parser
         """
         return self.mock_google_doc
-    
+
     def get_document_list(self):
         """
         Mocks retrieving a list of documents from a chosen google drive
