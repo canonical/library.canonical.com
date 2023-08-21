@@ -33,7 +33,8 @@ class TestNavigation(unittest.TestCase):
 
         self.assertFalse(
             not_a_slug,
-            "Document slugs should replaces spaces with dashes and be lowercase",
+            "Document slugs should replaces spaces with dashes and be"
+            "lowercase.",
         )
 
     def test_non_root_items_arent_included(self):
@@ -59,8 +60,8 @@ class TestNavigation(unittest.TestCase):
 
     def test_the_top_level_items_are_children_of_root(self):
         """
-        Look at the top level items in the hierarchy and check they are all children
-        of the root folder
+        Look at the top level items in the hierarchy and check they are all
+        children of the root folder
         """
         mock_root_folder_id = "the_library_folder_id"
         valid_parents = True
@@ -75,9 +76,10 @@ class TestNavigation(unittest.TestCase):
 
     def test_children_items_have_correspondin_parents(self):
         """
-        Test that the 'children' of a given folder, have the coresponding 'parents'
-        for the folder they are in
+        Test that the 'children' of a given folder, have the coresponding
+        'parents' for the folder they are in
         """
+
         def check_parents(hierarchy):
             for key, value in hierarchy.items():
                 if "children" in value and value["children"]:
@@ -118,6 +120,8 @@ class TestNavigation(unittest.TestCase):
         # Make an array of the top level items that have been processed by
         # the Navigation class, removing the first item (which is always
         # 'index')
-        hierarchy_ids = [item["id"] for item in list(self.mock_hierarchy.values())[1:]]
+        hierarchy_ids = [
+            item["id"] for item in list(self.mock_hierarchy.values())[1:]
+        ]
 
         self.assertListEqual(sorted_ids, hierarchy_ids)

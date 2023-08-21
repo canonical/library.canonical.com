@@ -14,9 +14,10 @@ class Navigation:
 
     def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
         """
-        A recursive function that adds a 'full_path' value, which indicates the url
-        to the document and a 'breadcrumbs' value, which is an array of links that
-        represent the nesting of the given document in the hierarchy.
+        A recursive function that adds a 'full_path' value, which indicates
+        the url to the document and a 'breadcrumbs' value, which is an array
+        of links that represent the nesting of the given document in the
+        hierarchy.
         """
         # Check if there is a breadcrumb list, if there is not initialise one
         if breadcrumbs is None:
