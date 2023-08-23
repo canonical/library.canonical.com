@@ -31,6 +31,63 @@ body p:not([class*="p-heading--"], [class*="p-muted-heading"])+h1 {
   margin-right: 1rem;
 }
 
+.p-navigation__row {
+  height: 100%;
+}
+.p-navigation__nav {
+  justify-content: end;
+}
+
+.p-search-and-filter {
+  display: none;
+
+  &.is-active {
+    display: block;
+    align-items: center;
+    display: inline-flex;
+    flex-grow: 1;
+    margin: 0;
+  }
+
+  .p-search-and-filter__clear {
+    display: none;
+    margin: 0.8rem 0;
+    padding: calc(0.2rem - 1px) 1rem;
+  }
+
+  .p-search-and-filter__search-container {
+    width: 100%;
+  }
+
+  .p-search-and-filter__panel {
+    display: none;
+    top: calc(2.8rem + 1px);
+    padding: 0;
+
+    .p-search-and-filter__search-prompt {
+      background: #fff;
+      display: block;
+      padding: 0.4rem 1rem;
+      margin: 0;
+
+      &:hover {
+        background: #f7f7f7;
+        text-decoration: none;
+      }
+    }
+
+    .p-search-and-filter__search-result {
+      @extend .p-search-and-filter__search-prompt;
+
+      color: #111;
+    }
+  }
+
+  .p-search-and-filter__input {
+    background: #f2f2f2
+  }
+}
+
 // XXX - can be removed once we have a custom logo&logo-title
 .p-navigation__tagged-logo .p-navigation__logo-title {
   font-size: 1rem;

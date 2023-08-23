@@ -2,6 +2,10 @@ import os
 import flask
 import talisker
 
+
+from flask import request, jsonify
+
+
 from canonicalwebteam.flask_base.app import FlaskBase
 
 from webapp.googledrive import GoogleDrive
@@ -22,6 +26,16 @@ app = FlaskBase(
 
 session = talisker.requests.get_session()
 init_sso(app)
+
+
+@app.route("/search")
+def search():
+    query = request.args.get("q", "")
+    if len(query) >= 2:
+        search_results = drive.search_drive(query)
+        return jsonify(search_results)
+    else:
+        return jsonify([])
 
 
 @app.route("/")
@@ -52,6 +66,7 @@ def document(path=None):
     return flask.render_template(
         "index.html",
         navigation=navigation.hierarchy,
+        doc_reference_dict=navigation.doc_reference_dict,
         html=soup.html,
         root_name=ROOT,
         document=target_document,
