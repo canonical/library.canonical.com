@@ -24,12 +24,10 @@ class GoogleDrive:
             "drive", "v3", credentials=credentials, cache_discovery=False
         )
 
-    def search_drive(self, query, search_content=True):
+    def search_drive(self, query):
         try:
-            query_string = f"fullText contains '{query}' and trashed = false"
-            # if search_content:
-            #     query_string += f" or fullText contains '{query}'"
-
+            query_string = f"(name contains '{query}' or fullText contains '{query}') and trashed = false"
+            print("query sting>>>", query_string)
             results = (
                 self.service.files()
                 .list(
@@ -44,7 +42,6 @@ class GoogleDrive:
                 )
                 .execute()
             )
-            print("results are", results)
 
         except Exception as error:
             err = "Error searching for documents."
@@ -52,6 +49,7 @@ class GoogleDrive:
             abort(500, description=err)
 
         items = results.get("files", [])
+        print("items length>>>",len(items))
         return items
 
     def get_document_list(self):
@@ -65,7 +63,7 @@ class GoogleDrive:
                     supportsAllDrives=True,
                     includeItemsFromAllDrives=True,
                     spaces="drive",
-                    fields="files(id, name, parents, mimeType)",
+                    fields="files(id, name, parents, mimeType, owners)",
                     pageSize=1000,
                 )
                 .execute()

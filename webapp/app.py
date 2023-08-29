@@ -1,11 +1,7 @@
 import os
 import flask
 import talisker
-
-
 from flask import request, jsonify
-
-
 from canonicalwebteam.flask_base.app import FlaskBase
 
 from webapp.googledrive import GoogleDrive
@@ -13,8 +9,8 @@ from webapp.parser import Parser
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
 
+# Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")
-
 app = FlaskBase(
     __name__,
     "library.canonical.com",
@@ -24,20 +20,30 @@ app = FlaskBase(
     static_folder="../static",
 )
 
+# Initialize session and single Drive instance
 session = talisker.requests.get_session()
 init_sso(app)
 
 
-@app.route("/search")
-def search():
-    query = request.args.get("q", "")
-    if len(query) >= 2:
-        search_results = drive.search_drive(query)
-        return jsonify(search_results)
-    else:
-        return jsonify([])
+# Helper function to find target document
+def target_document(path, navigation):
+    if not path:
+        navigation["index"]["active"] = True
+        return navigation["index"]
+    split_slug = path.split("/")
+    target_page = navigation
+    for index, slug in enumerate(split_slug):
+        if len(split_slug) == index + 1:
+            target_page[slug]["active"] = True
+            if target_page[slug]["mimeType"] == "folder":
+                target_page[slug]["expanded"] = True
+                return target_page[slug]["children"]["index"]
+            else:
+                return target_page[slug]
+        target_page[slug]["expanded"] = True
+        target_page = target_page[slug]["children"]
 
-
+# Route to display documents and root page
 @app.route("/")
 @app.route("/<path:path>")
 def document(path=None):
@@ -45,6 +51,7 @@ def document(path=None):
     The entire site is rendered by this function. As all pages use the same
     template, the only difference between them is the content.
     """
+    global 
     navigation = NavigationBuilder(get_google_drive_instance(), ROOT)
 
     try:
@@ -66,12 +73,20 @@ def document(path=None):
     return flask.render_template(
         "index.html",
         navigation=navigation.hierarchy,
-        doc_reference_dict=navigation.doc_reference_dict,
         html=soup.html,
         root_name=ROOT,
         document=target_document,
     )
 
+# Route for search functionality
+@app.route("/search")
+def search():
+    query = request.args.get("q", "")
+    if len(query) >= 2:
+        search_results = drive.search_drive(query)
+        return jsonify(search_results)
+    else:
+        return jsonify([])
 
 def get_google_drive_instance():
     """
