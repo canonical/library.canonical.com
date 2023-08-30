@@ -1,6 +1,8 @@
 import copy
 
+
 from webapp.googledrive import Drive
+from webapp.utils.remove_leading_numbers import remove_leading_numbers
 
 
 class Navigation:
@@ -13,6 +15,12 @@ class Navigation:
         self.hierarchy = self.create_hierarchy(doc_objects_copy)
 
     def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
+        """
+        A recursive function that adds a 'full_path' value, which indicates
+        the url to the document and a 'breadcrumbs' value, which is a list
+        of links that represent the nesting of the given document in the
+        hierarchy.
+        """
         if breadcrumbs is None:
             breadcrumbs = []
 
@@ -38,8 +46,14 @@ class Navigation:
                 )
 
     def create_hierarchy(self, doc_objects):
+        """
+        A function that initialises each document with the appropriate data
+        for building the navigation
+        """
+        # Create a 'doc_reference_dict' of all documents without nesting,
+        # so they can be referenced by their key.
         for doc in doc_objects:
-            # If a document has now parent (shortcut) then we attach it
+            # If a document has no parent (shortcut) then we attach it
             # to the root folder
             if "parents" not in doc:
                 doc["parents"] = None
@@ -49,12 +63,19 @@ class Navigation:
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
             doc["expanded"] = False
+            # If the parent folders id is a drive id (less than 20 chars)
+            # and it is not the target folder (root_folder), don't add
+            # it to the reference dict/navigation
             if doc["parents"] and (
                 len(doc["parents"][0]) > 20
                 or doc["name"].lower() == self.root_folder
             ):
                 self.doc_reference_dict[doc["id"]] = doc
 
+        # For each doc's parent, find the associated doc and attach it as
+        # a child within the 'doc_hierarchy'. If the parent doesn't exist
+        # and the slug is the 'root', attach it as the root of the dict.
+        # If it meet niether criteria, remove it form  'doc_reference_dict'
         for doc in doc_objects:
             if doc["parents"]:
                 parent_ids = doc["parents"]
@@ -75,14 +96,10 @@ class Navigation:
         return ordered_hierarchy
 
     def order_hierarchy(self, hierarchy):
-        def remove_pre(text):
-            if "-" in text:
-                idx = text.index("-")
-                if text[:idx].isdigit():
-                    index = idx + 1
-                    return text[index:]
-            return text
-
+        """
+        Orders top level items based on leading numbers separated by
+        a dash(-) and then removes the number and dash.
+        """
         if "index" in hierarchy:
             index_item = hierarchy.pop("index")
             ordered_items = dict(sorted(hierarchy.items(), key=lambda x: x[0]))
@@ -90,15 +107,17 @@ class Navigation:
 
             updated_dict = {}
             for key, item in ordered_items.items():
-                new_key = remove_pre(key)
+                new_key = remove_leading_numbers(key)
                 if isinstance(item, dict):
                     if "slug" in item:
-                        item["slug"] = remove_pre(item["slug"])
+                        item["slug"] = remove_leading_numbers(item["slug"])
                     if "name" in item:
-                        item["name"] = remove_pre(item["name"])
+                        item["name"] = remove_leading_numbers(item["name"])
                     if item["id"] in self.doc_reference_dict:
                         ref_item = self.doc_reference_dict.get(item["id"])
-                        ref_item["name"] = remove_pre(ref_item["name"])
+                        ref_item["name"] = remove_leading_numbers(
+                            ref_item["name"]
+                        )
                 updated_dict[new_key] = item
 
             ordered_hierarchy.update(updated_dict)

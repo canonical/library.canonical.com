@@ -1,10 +1,9 @@
 import json
 import unittest
-from unittest.mock import patch
 
 
 from webapp.parser import Parser
-from tests.mocks.functions.get_html_mock import get_html_mock
+from tests.mocks.functions.googledrivemock import GoogleDriveMock
 
 
 class TestParser(unittest.TestCase):
@@ -18,21 +17,20 @@ class TestParser(unittest.TestCase):
         Run test HTML through the parser.
         """
         # Setup mock parameters
-        self.mock_drive = True
+        self.mock_drive = GoogleDriveMock()
         self.mock_doc_id = "12345"
         self.mock_doc_dict = {
             "12345": {"full_path": "/full/mock/path", "name": "Mock document"}
         }
         self.mock_doc_name = "Mock document"
-        # Inject custom HTML
-        with patch.object(Parser, "get_html", get_html_mock):
-            self.parser = Parser(
-                self.mock_drive,
-                self.mock_doc_id,
-                self.mock_doc_dict,
-                self.mock_doc_name,
-            )
-            self.soup = self.parser.html
+
+        self.parser = Parser(
+            self.mock_drive,
+            self.mock_doc_id,
+            self.mock_doc_dict,
+            self.mock_doc_name,
+        )
+        self.soup = self.parser.html
 
     def test_insert_h1_if_missing_with_h1_present(self):
         """
@@ -132,7 +130,6 @@ class TestParser(unittest.TestCase):
             "a", href="http://example.com/&sa=D&source=editors&ust=GARBAGE"
         )
         self.soup.body.append(a_tag)
-
         self.parser.parse_links()
 
         self.assertEqual(
@@ -296,7 +293,6 @@ class TestParser(unittest.TestCase):
         """
         tag = self.soup.new_tag("p", style="text-decoration: underline;")
         self.soup.body.insert(1, tag)
-
         self.parser.convert_styles_to_tags(tag, self.bs4_ignores["styles"])
 
         converted_tag = self.soup.select_one("p")
@@ -334,7 +330,6 @@ class TestParser(unittest.TestCase):
         """
         tag = self.soup.new_tag("p", style="font-style: italic;")
         self.soup.body.insert(1, tag)
-
         self.parser.convert_styles_to_tags(tag, self.bs4_ignores["styles"])
 
         converted_tag = self.soup.select_one("p")

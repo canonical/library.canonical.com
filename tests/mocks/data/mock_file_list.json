@@ -1,0 +1,23 @@
+{"file_list":
+  [
+    {"mimeType": "application/vnd.google-apps.folder", "parents": ["root_drive_id"], "id": "___unwanted_folder_id", "name": "Unwanted folder"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["___unwanted_folder_id"], "id": "_____unwanted_file_id", "name": "Unwanted file"},
+    {"mimeType": "application/vnd.google-apps.folder", "parents": ["___unwanted_folder_id"], "id": "nested_unwanted_folder_id", "name": "Nested unwanted folder"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["nested_unwanted_folder_id"], "id": "nested_unwanted_file_id", "name": "Nested unwanted file"},
+    {"mimeType": "application/vnd.google-apps.folder", "parents": ["root_drive_id"], "id": "the_library_folder_id", "name": "Library"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["the_library_folder_id"], "id": "_the_library_index_id", "name": "Index"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["the_library_folder_id"], "id": "____top_level_file_id", "name": "3-Top level file"},
+    {"mimeType": "application/vnd.google-apps.folder", "parents": ["the_library_folder_id"], "id": "_top_level_folder_1_id", "name": "1-Top level folder 1"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["_top_level_folder_1_id"], "id": "top_level_folder_1_index_id", "name": "index"},
+    {"mimeType": "application/vnd.google-apps.folder", "parents": ["the_library_folder_id"], "id": "_top_level_folder_2_id", "name": "2-Top level folder 2"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["_top_level_folder_2_id"], "id": "top_level_folder_2_index_id", "name": "index"},
+    {"mimeType": "application/vnd.google-apps.folder", "parents": ["_top_level_folder_2_id"], "id": "nested_1_deep_folder_id", "name": "Nested 1 deep folder"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["nested_1_deep_folder_id"], "id": "nested_1_deep_folder_index_id", "name": "index"},
+    {"mimeType": "application/vnd.google-apps.folder", "parents": ["nested_1_deep_folder_id"], "id": "nested_2_deep_folder_id", "name": "Nested 2 deep folder"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["nested_2_deep_folder_id"], "id": "nested_2_deep_folder_index_id", "name": "index"},
+    {"mimeType": "application/vnd.google-apps.folder", "parents": ["nested_2_deep_folder_id"], "id": "nested_3_deep_folder_id", "name": "Nested 3 deep folder"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["nested_3_deep_folder_id"], "id": "nested_3_deep_folder_index_id", "name": "Index"},
+    {"mimeType": "application/vnd.google-apps.folder", "parents": ["nested_3_deep_folder_id"], "id": "nested_4_deep_folder_id", "name": "Nested 4 deep folder"},
+    {"mimeType": "application/vnd.google-apps.document", "parents": ["nested_4_deep_folder_id"], "id": "nested_4_deep_folder_index_id", "name": "Index"}
+  ]
+}
