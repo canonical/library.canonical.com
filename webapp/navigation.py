@@ -115,7 +115,9 @@ class Navigation:
                         item["name"] = remove_leading_numbers(item["name"])
                     if item["id"] in self.doc_reference_dict:
                         ref_item = self.doc_reference_dict.get(item["id"])
-                        ref_item["name"] = remove_leading_numbers(ref_item["name"])
+                        ref_item["name"] = remove_leading_numbers(
+                            ref_item["name"]
+                        )
                 updated_dict[new_key] = item
 
             ordered_hierarchy.update(updated_dict)
