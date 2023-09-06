@@ -4,7 +4,6 @@ import os
 from flask import abort
 
 from pymemcache.client.base import Client
-from cachetools import TTLCache, cached
 
 from apiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build
@@ -13,9 +12,6 @@ from google.oauth2 import service_account
 from webapp.settings import SERVICE_ACCOUNT_INFO
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
-
-cache = TTLCache(maxsize=100, ttl=1800)
-
 
 class Drive:
     def __init__(self):
@@ -30,7 +26,6 @@ class Drive:
         )
         self.client = Client(("localhost", 11211))
 
-    @cached(cache)
     def get_document_list(self):
         try:
             results = (
@@ -57,10 +52,6 @@ class Drive:
 
     def fetch_document(self, document_id):
         try:
-            html = self.client.get(document_id)
-            if html is not None:
-                return html.decode("utf-8")
-
             request = self.service.files().export(
                 fileId=document_id, mimeType="text/html"
             )
@@ -71,14 +62,7 @@ class Drive:
             while done is False:
                 _, done = downloader.next_chunk()
             html = file.getvalue().decode("utf-8")
-
-            if html:
-                self.client.set(document_id, html.encode("utf-8"))
-                return html
-            else:
-                err = "Error, document not found."
-                print(f"{err}\n")
-                abort(404, description=err)
+            return html
 
         except Exception as error:
             err = "Error retrieving HTML or caching document."
