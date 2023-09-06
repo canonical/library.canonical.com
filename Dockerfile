@@ -1,31 +1,25 @@
 # syntax=docker/dockerfile:experimental
 
-# Build stage: Install python dependencies
-# ===
-FROM ubuntu:jammy AS python-dependencies
-RUN apt-get update && apt-get install --no-install-recommends --yes python3-pip python3-setuptools
-COPY requirements.txt /tmp/requirements.txt
-RUN --mount=type=cache,target=/root/.cache/pip pip3 install --user --requirement /tmp/requirements.txt
-
-
 # Build stage: Install yarn dependencies
 # ===
-FROM node:18 AS yarn-dependencies
-WORKDIR /srv
-ADD package.json .
-RUN --mount=type=cache,target=/usr/local/share/.cache/yarn yarn install
-
-# Build stage: Run "yarn run build-js"
-# ===
-FROM yarn-dependencies AS build-js
-ADD . .
+FROM node:18 AS build-frontend
+WORKDIR /code
+COPY . /code
+RUN yarn install
 RUN yarn run build-js
-
-# Build stage: Run "yarn run build-css"
-# ===
-FROM yarn-dependencies AS build-css
-ADD . .
 RUN yarn run build-css
+
+# Build stage: Install python dependencies
+# ===
+FROM ubuntu:jammy AS base-dev
+RUN apt update && apt install -y \
+    python3 \
+    python3-pip \
+    python3-setuptools
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . /code
+WORKDIR /code
 
 # Build the production image
 # ===
@@ -35,7 +29,7 @@ FROM ubuntu:jammy
 ENV LANG C.UTF-8
 WORKDIR /srv
 
-# Install memcached
+# # Install memcached
 RUN apt-get update && apt-get install -y memcached
 
 # Install python and import python dependencies
@@ -43,8 +37,8 @@ RUN apt-get update && apt-get install --no-install-recommends --yes python3 pyth
 ENV PATH="/root/.local/bin:${PATH}"
 
 # Copy python dependencies
-COPY --from=python-dependencies /root/.local/lib/python3.10/site-packages /root/.local/lib/python3.10/site-packages
-COPY --from=python-dependencies /root/.local/bin /root/.local/bin
+COPY --from=base-dev /root/.local/lib/python3.10/site-packages /root/.local/lib/python3.10/site-packages
+COPY --from=base-dev /root/.local/bin /root/.local/bin
 
 # COPY necessary all files but remove those that are not required
 COPY . .
@@ -55,7 +49,3 @@ COPY --from=build-js /srv/static/js static/js
 # Set build ID
 ARG BUILD_ID
 ENV TALISKER_REVISION_ID "${BUILD_ID}"
-
-# Setup commands to run server
-ENTRYPOINT ["./entrypoint"]
-CMD ["0.0.0.0:80"]

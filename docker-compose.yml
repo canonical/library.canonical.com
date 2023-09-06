@@ -1,0 +1,30 @@
+services:
+    redis: 
+        image: redis:alpine
+        container_name: redis
+        restart: always
+        ports:
+            - '6379:6379'
+        command: redis-server --port 6379
+
+    app:
+        env_file: .env.local
+        build:
+            context: .
+            target: base-dev
+        command: ./entrypoint "0.0.0.0:${PORT}"
+        container_name: library.canonical.com
+        ports:
+            - "8051:${PORT}"
+        depends_on:
+            - redis
+        volumes:
+           - .:/code
+        
+    build-frontend:
+        build:
+            context: .
+            target: build-frontend
+        command: yarn run build
+        volumes:
+            - ./static:/code/static
