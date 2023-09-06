@@ -1,7 +1,7 @@
 import os
 import flask
 import talisker
-
+from webapp.extensions import cache
 from canonicalwebteam.flask_base.app import FlaskBase
 
 from webapp.googledrive import Drive
@@ -25,6 +25,13 @@ session = talisker.requests.get_session()
 
 init_sso(app)
 
+app.config['CACHE_TYPE'] = 'redis'
+app.config['CACHE_REDIS_HOST'] = 'redis'
+app.config['CACHE_REDIS_PORT'] = 6379
+app.config['CACHE_DEFAULT_TIMEOUT'] = 120
+
+cache.init_app(app)
+
 drive = None
 
 
@@ -41,11 +48,13 @@ def document(path=None):
     navigation = Navigation(init_drive(), ROOT)
 
     try:
-        document = target_document(path, navigation.hierarchy)
+        cache.set("document", target_document(path, navigation.hierarchy))
     except Exception as e:
         err = "Error, document does not exist."
         print(f"{err}\n {e}")
         flask.abort(404, description=err)
+
+    document = cache.get("document")
 
     soup = Parser(
         init_drive(),
