@@ -25,10 +25,10 @@ session = talisker.requests.get_session()
 
 init_sso(app)
 
-app.config['CACHE_TYPE'] = 'redis'
-app.config['CACHE_REDIS_HOST'] = 'redis'
-app.config['CACHE_REDIS_PORT'] = 6379
-app.config['CACHE_DEFAULT_TIMEOUT'] = 120
+app.config["CACHE_TYPE"] = "redis"
+app.config["CACHE_REDIS_HOST"] = "redis"
+app.config["CACHE_REDIS_PORT"] = 6379
+app.config["CACHE_DEFAULT_TIMEOUT"] = 120
 
 cache.init_app(app)
 
@@ -47,14 +47,18 @@ def init_drive():
 def document(path=None):
     navigation = Navigation(init_drive(), ROOT)
 
-    try:
-        cache.set("document", target_document(path, navigation.hierarchy))
-    except Exception as e:
-        err = "Error, document does not exist."
-        print(f"{err}\n {e}")
-        flask.abort(404, description=err)
+    if path is None:
+        document = cache.get("/")
+    else:
+        document = cache.get(path)
 
-    document = cache.get("document")
+    if not document:
+        try:
+            document = target_document(path, navigation.hierarchy)
+        except Exception as e:
+            err = "Error, document does not exist."
+            print(f"{err}\n {e}")
+            flask.abort(404, description=err)
 
     soup = Parser(
         init_drive(),
@@ -65,6 +69,11 @@ def document(path=None):
 
     document["metadata"] = soup.metadata
     document["headings_map"] = soup.headings_map
+
+    if path is None:
+        cache.set("/", document)
+    else:
+        cache.set(path, document)
 
     return flask.render_template(
         "index.html",
