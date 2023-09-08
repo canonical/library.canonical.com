@@ -47,10 +47,8 @@ def init_drive():
 def document(path=None):
     navigation = Navigation(init_drive(), ROOT)
 
-    if path is None:
-        document = cache.get("/")
-    else:
-        document = cache.get(path)
+    cache_key = "/" if path is None else path
+    document = cache.get(cache_key)
 
     if not document:
         try:
@@ -60,28 +58,25 @@ def document(path=None):
             print(f"{err}\n {e}")
             flask.abort(404, description=err)
 
-    soup = Parser(
-        init_drive(),
-        document["id"],
-        navigation.doc_reference_dict,
-        document["name"],
-    )
+        soup = Parser(
+            init_drive(),
+            document["id"],
+            navigation.doc_reference_dict,
+            document["name"],
+        )
 
-    document["metadata"] = soup.metadata
-    document["headings_map"] = soup.headings_map
+        document["metadata"] = soup.metadata
+        document["headings_map"] = soup.headings_map
 
-    if path is None:
-        cache.set("/", document)
-    else:
-        cache.set(path, document)
+        cache.set(cache_key, document)
 
-    return flask.render_template(
-        "index.html",
-        navigation=navigation.hierarchy,
-        html=soup.html,
-        root_name=ROOT,
-        document=document,
-    )
+        return flask.render_template(
+            "index.html",
+            navigation=navigation.hierarchy,
+            html=soup.html,
+            root_name=ROOT,
+            document=document,
+        )
 
 
 def target_document(path, navigation):
