@@ -283,6 +283,7 @@ class TestParser(unittest.TestCase):
         self.parser.parse_tags()
 
         p_tag = self.soup.select_one("p")
+
         self.assertNotEqual(
             p_tag, None, "Non-empty tag should not be removed."
         )
@@ -298,6 +299,7 @@ class TestParser(unittest.TestCase):
         converted_tag = self.soup.select_one("p")
         has_style = hasattr(converted_tag, "style")
         parent_tag = converted_tag.parent
+
         self.assertTrue(has_style, "Style should be removed")
         self.assertEqual(
             parent_tag.name,
@@ -317,6 +319,7 @@ class TestParser(unittest.TestCase):
         converted_tag = self.soup.select_one("p")
         has_style = hasattr(converted_tag, "style")
         parent_tag = converted_tag.parent
+
         self.assertTrue(has_style, "Style should be removed")
         self.assertEqual(
             parent_tag.name,
@@ -347,12 +350,12 @@ class TestParser(unittest.TestCase):
         Check that an element will have wrapping spans removed
         """
         parent_tag = self.soup.new_tag("span")
-        child_tag1 = self.soup.new_tag("p")
-        parent_tag.insert(1, child_tag1)
+        child_tag = self.soup.new_tag("p")
+        parent_tag.insert(1, child_tag)
 
         self.parser.parse_tags()
 
-        parent_tag = child_tag1.parent
+        parent_tag = child_tag.parent
 
         self.assertEqual(
             parent_tag.name,

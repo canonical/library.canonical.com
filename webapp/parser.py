@@ -22,11 +22,54 @@ class Parser:
 
     def process_html(self, doc_name):
         self.parse_metadata()
+        self.parse_nested_lists()
         self.parse_links()
         self.parse_tags()
         self.remove_head()
         self.insert_h1_if_missing(doc_name)
         self.generate_headings_map()
+
+    def parse_nested_lists(self):
+        ol_elements = self.html.find_all(
+            "ol", class_=lambda x: x and x.startswith("lst-kix")
+        )
+        previous_ols = {}
+
+        for ol in ol_elements:
+            print(ol)
+            # get the level of nesting from the class name
+            numeric_suffix = ol["class"][0][len("lst-kix") :][-1]  # noqa: E203
+            # check if it is the start of a new list
+            if "start" in ol["class"]:
+                # if its top level add the counter class
+                if numeric_suffix == "0":
+                    ol["class"] = ol.get("class", []) + [
+                        "p-list--nested-counter"
+                    ]
+                # check if there's already a list with a lower level of nesting
+                if (
+                    numeric_suffix
+                    and str(int(numeric_suffix) - 1) in previous_ols
+                ):
+                    target_location = previous_ols[
+                        str(int(numeric_suffix) - 1)
+                    ]
+                    if target_location.name == "li":
+                        target_location.append(ol)
+                    elif target_location.name == "ol":
+                        target_location.find_all("li")[-1].append(ol)
+                # add the current list to the previous_ols dict
+                previous_ols[numeric_suffix] = ol
+            # if it's not the start of a new list extract the indervidual li's
+            else:
+                target_location = previous_ols[str(int(numeric_suffix))]
+                li_eles = ol.find_all("li")
+                for li in li_eles:
+                    if target_location.name == "li":
+                        target_location.append(li)
+                    elif target_location.name == "ol":
+                        target_location.append(li)
+                previous_ols[numeric_suffix] = li_eles[-1]
 
     def remove_head(self):
         head = self.html.select_one("head")
