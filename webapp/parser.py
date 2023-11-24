@@ -36,7 +36,6 @@ class Parser:
         previous_ols = {}
 
         for ol in ol_elements:
-            print(ol)
             # get the level of nesting from the class name
             numeric_suffix = ol["class"][0][len("lst-kix") :][-1]  # noqa: E203
             # check if it is the start of a new list
