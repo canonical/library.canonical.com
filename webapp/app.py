@@ -46,37 +46,35 @@ def init_drive():
 @app.route("/<path:path>")
 def document(path=None):
     navigation = Navigation(init_drive(), ROOT)
-
     cache_key = "/" if path is None else path
     document = cache.get(cache_key)
 
     if not document:
         try:
             document = target_document(path, navigation.hierarchy)
+            cache.set(cache_key, document)
         except Exception as e:
             err = "Error, document does not exist."
             print(f"{err}\n {e}")
             flask.abort(404, description=err)
 
-        soup = Parser(
-            init_drive(),
-            document["id"],
-            navigation.doc_reference_dict,
-            document["name"],
-        )
+    soup = Parser(
+        init_drive(),
+        document["id"],
+        navigation.doc_reference_dict,
+        document["name"],
+    )
 
-        document["metadata"] = soup.metadata
-        document["headings_map"] = soup.headings_map
+    document["metadata"] = soup.metadata
+    document["headings_map"] = soup.headings_map
 
-        cache.set(cache_key, document)
-
-        return flask.render_template(
-            "index.html",
-            navigation=navigation.hierarchy,
-            html=soup.html,
-            root_name=ROOT,
-            document=document,
-        )
+    return flask.render_template(
+        "index.html",
+        navigation=navigation.hierarchy,
+        html=soup.html,
+        root_name=ROOT,
+        document=document,
+    )
 
 
 def target_document(path, navigation):
