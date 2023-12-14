@@ -2,8 +2,13 @@
   "styles": {
     "font-weight:700": "strong",
     "font-style:italic": "em",
-    "text-decoration:underline": "u"
+    "text-decoration:underline": "u",
+    "font-family:\"RobotoMono\"": "code"
   },
-  "tags": ["img", "hr", "p"],
-  "span_containers": ["p", "h1", "h2", "h3", "h4", "h5", "h6"]
+  "tags": ["img", "hr", "p", "br"],
+  "span_containers": ["p", "h1", "h2", "h3", "h4", "h5", "h6"],
+  "code_block": {
+    "start": "&#60419;",
+    "end": "&#60418;"
+  }
 }

@@ -21,10 +21,14 @@ class Parser:
         return BeautifulSoup(raw_html, features="lxml")
 
     def process_html(self, doc_name):
+        with open("webapp/config/bs4_ignores.json") as f:
+            bs4_ignores = json.load(f)
+
         self.parse_metadata()
         self.parse_nested_lists()
         self.parse_links()
-        self.parse_tags()
+        self.parse_tags(bs4_ignores)
+        self.wrap_code_blocks(bs4_ignores["code_block"])
         self.remove_head()
         self.insert_h1_if_missing(doc_name)
         self.generate_headings_map()
@@ -75,19 +79,12 @@ class Parser:
         if head:
             head.decompose()
 
-    def parse_tags(self):
-        with open("webapp/config/bs4_ignores.json") as f:
-            bs4_ignores = json.load(f)
-
+    def parse_tags(self, bs4_ignores):
         for tag in self.html.findAll(True):
             self.convert_styles_to_tags(tag, bs4_ignores["styles"])
             self.remove_ids_from_tags(tag)
             self.unwrap_spans(tag)
             self.remove_empty_tags(tag, bs4_ignores["tags"])
-
-    def remove_ids_from_tags(self, tag):
-        if tag.has_attr("id"):
-            del tag["id"]
 
     def convert_styles_to_tags(self, tag, ignored_styles):
         if tag.has_attr("style"):
@@ -96,6 +93,52 @@ class Parser:
                 if style in tag_style and not tag.find("a"):
                     tag.wrap(self.html.new_tag(tag_name))
             del tag["style"]
+    
+    def wrap_code_blocks(self, code_block_config):
+        def entity_to_char(entity):
+            # Convert an HTML entity to its corresponding character
+            return chr(int(entity.replace("&#", "").replace(";", ""), 10))
+        
+        start_symbol = entity_to_char(code_block_config["start"])
+        end_symbol = entity_to_char(code_block_config["end"])
+
+        current_code_block = None
+
+        for tag in self.html.findAll("code"):
+            # Sometimes there will be a line break in the middle of a code block, so we need to unwrap it
+            if tag.find("br"):
+                tag.unwrap()
+            elif start_symbol in tag.text:
+                current_code_block = self.html.new_tag("div", **{"class": "p-code-snippet"})
+                tag.string = tag.text.replace(start_symbol, "")
+                parent_tag = tag.parent
+                if parent_tag.name != 'pre':
+                    parent_tag.name = 'pre'
+                    # Append the pre tag to the code block and put the code block where the original tag was
+                    parent_tag.insert_before(current_code_block)
+                    current_code_block.append(parent_tag)
+            elif end_symbol in tag.text and current_code_block:
+                # End the current code block and reset
+                tag.decompose()
+                current_code_block = None
+            elif current_code_block:
+                # If there is no start or end symbol, we are in the middle of a code block
+                parent_tag = tag.parent
+                if parent_tag.name != 'pre':
+                    pre_tag = current_code_block.find('pre')
+                    pre_tag.append(self.html.new_tag('br'))
+                    # Get all the tags in the new group and append them to the pre tag on a new line
+                    for tag in parent_tag.find_all('code'):
+                        pre_tag.append(tag)
+
+
+
+        
+            
+    def remove_ids_from_tags(self, tag):
+        if tag.has_attr("id"):
+            del tag["id"]
+
 
     def remove_empty_tags(self, tag, ignored_tags):
         if tag.name not in ignored_tags and self.tag_is_empty(tag):
