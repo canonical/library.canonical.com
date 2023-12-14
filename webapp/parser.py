@@ -115,7 +115,6 @@ class Parser:
                 )
                 tag.string = tag.text.replace(start_symbol, "")
                 parent_tag = tag.parent
-                print(parent_tag.name)
                 if parent_tag.name != "pre":
                     parent_tag.name = "pre"
                     # Append the pre tag to the code block and put the code
@@ -123,10 +122,15 @@ class Parser:
                     parent_tag.insert_before(current_code_block)
                     current_code_block.append(parent_tag)
             elif end_symbol in tag.text and current_code_block:
-                # End the current code block and reset
                 tag.decompose()
+                # Unwrap the nested code tags
                 for tag in current_code_block.findAll("code"):
                     tag.unwrap()
+                # Re-wrap in a code tag within the pre tag
+                pre_tag = current_code_block.find("pre")
+                pre_tag.name = "code"
+                pre_tag.wrap(self.html.new_tag("pre"))
+                # End the current code block and reset
                 current_code_block = None
             elif current_code_block:
                 # If there is no start or end symbol, we are in the middle of
