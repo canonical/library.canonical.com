@@ -264,7 +264,7 @@ class TestParser(unittest.TestCase):
             tag = self.soup.new_tag(empty_tag)
             self.soup.body.insert(1, tag)
 
-        self.parser.parse_tags()
+        self.parser.parse_tags(self.bs4_ignores)
 
         for empty_tag in empty_tags:
             removed_tag = self.soup.select_one(empty_tag)
@@ -280,7 +280,7 @@ class TestParser(unittest.TestCase):
         tag.string = "Non-empty paragraph"
         self.soup.body.append(tag)
 
-        self.parser.parse_tags()
+        self.parser.parse_tags(self.bs4_ignores)
 
         p_tag = self.soup.select_one("p")
 
@@ -353,7 +353,7 @@ class TestParser(unittest.TestCase):
         child_tag = self.soup.new_tag("p")
         parent_tag.insert(1, child_tag)
 
-        self.parser.parse_tags()
+        self.parser.parse_tags(self.bs4_ignores)
 
         parent_tag = child_tag.parent
 
