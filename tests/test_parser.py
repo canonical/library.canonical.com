@@ -370,42 +370,50 @@ class TestParser(unittest.TestCase):
         """
         Check that HTML entities are converted to characters
         """
-        start_char = self.entity_to_char(self.bs4_ignores["code_block"]["start"])
+        start_char = self.entity_to_char(
+            self.bs4_ignores["code_block"]["start"]
+        )
         end_char = self.entity_to_char(self.bs4_ignores["code_block"]["end"])
 
-        self.assertEqual(start_char, "", "Start entity code should be converted to character")
-        self.assertEqual(end_char, "", "End entity code should be converted to character")
+        self.assertEqual(
+            start_char,
+            "",
+            "Start entity code should be converted to character",
+        )
+        self.assertEqual(
+            end_char, "", "End entity code should be converted to character"
+        )
 
     def test_code_block_handling(self):
         """
         Check that code blocks are handled correctly
         """
         # First paragraph
-        p1 = self.soup.new_tag('p')
-        code1 = self.soup.new_tag('code')
-        code1.string = ''
-        code2 = self.soup.new_tag('code')
-        code2.string = 'test'
-        code3 = self.soup.new_tag('code')
-        code3.string = '&nbsp;'
-        code4 = self.soup.new_tag('code')
-        code4.string = 'line1'
+        p1 = self.soup.new_tag("p")
+        code1 = self.soup.new_tag("code")
+        code1.string = ""
+        code2 = self.soup.new_tag("code")
+        code2.string = "test"
+        code3 = self.soup.new_tag("code")
+        code3.string = "&nbsp;"
+        code4 = self.soup.new_tag("code")
+        code4.string = "line1"
         p1.extend([code1, code2, code3, code4])
 
         # Second paragraph
-        p2 = self.soup.new_tag('p')
-        code5 = self.soup.new_tag('code')
-        code5.string = 'test'
-        code6 = self.soup.new_tag('code')
-        code6.string = '&nbsp;'
-        code7 = self.soup.new_tag('code')
-        code7.string = 'line2'
+        p2 = self.soup.new_tag("p")
+        code5 = self.soup.new_tag("code")
+        code5.string = "test"
+        code6 = self.soup.new_tag("code")
+        code6.string = "&nbsp;"
+        code7 = self.soup.new_tag("code")
+        code7.string = "line2"
         p2.extend([code5, code6, code7])
 
         # Third paragraph
-        p3 = self.soup.new_tag('p')
-        code8 = self.soup.new_tag('code')
-        code8.string = ''
+        p3 = self.soup.new_tag("p")
+        code8 = self.soup.new_tag("code")
+        code8.string = ""
         p3.append(code8)
 
         # Append all paragraphs
@@ -417,9 +425,23 @@ class TestParser(unittest.TestCase):
         code_block_child = code_block.find(recursive=False)
         code_block_child_child = code_block_child.find(recursive=False)
 
-        self.assertIsNotNone(code_block, "Code block should be wrapped in a div with the class name 'p-code-snippet'")
-        self.assertEqual(code_block_child.name, "pre", "Code block should be wrapped in a pre tag, as a direct child of the div with class name 'p-code-snippet'")
-        self.assertEqual(code_block_child_child.name, "code", "Code block should be wrapped in a code tag, as a direct child of the pre tag")
+        self.assertIsNotNone(
+            code_block,
+            "Code block should be wrapped in a div with"
+            " the class name 'p-code-snippet'",
+        )
+        self.assertEqual(
+            code_block_child.name,
+            "pre",
+            "Code block should be wrapped in a pre tag,"
+            " as a direct child of the div with class name 'p-code-snippet'",
+        )
+        self.assertEqual(
+            code_block_child_child.name,
+            "code",
+            "Code block should be wrapped in a code tag,"
+            " as a direct child of the pre tag",
+        )
 
 
 if __name__ == "__main__":
