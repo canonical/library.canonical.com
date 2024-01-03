@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup, NavigableString
 
 from webapp.googledrive import Drive
 
+from webapp.helper.entity_to_char import entity_to_char
+
 ROOT = os.getenv("ROOT_FOLDER", "library")
 
 
@@ -95,10 +97,6 @@ class Parser:
             del tag["style"]
 
     def wrap_code_blocks(self, code_block_config):
-        def entity_to_char(entity):
-            # Convert an HTML entity to its corresponding character
-            return chr(int(entity.replace("&#", "").replace(";", ""), 10))
-
         start_symbol = entity_to_char(code_block_config["start"])
         end_symbol = entity_to_char(code_block_config["end"])
 
