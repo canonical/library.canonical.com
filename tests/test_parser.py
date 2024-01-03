@@ -1,9 +1,10 @@
 import json
 import unittest
 
-
 from webapp.parser import Parser
 from tests.mocks.functions.googledrivemock import GoogleDriveMock
+
+from webapp.helper.entity_to_char import entity_to_char
 
 
 class TestParser(unittest.TestCase):
@@ -31,6 +32,8 @@ class TestParser(unittest.TestCase):
             self.mock_doc_name,
         )
         self.soup = self.parser.html
+
+        self.entity_to_char = entity_to_char
 
     def test_insert_h1_if_missing_with_h1_present(self):
         """
@@ -264,7 +267,7 @@ class TestParser(unittest.TestCase):
             tag = self.soup.new_tag(empty_tag)
             self.soup.body.insert(1, tag)
 
-        self.parser.parse_tags()
+        self.parser.parse_tags(self.bs4_ignores)
 
         for empty_tag in empty_tags:
             removed_tag = self.soup.select_one(empty_tag)
@@ -280,7 +283,7 @@ class TestParser(unittest.TestCase):
         tag.string = "Non-empty paragraph"
         self.soup.body.append(tag)
 
-        self.parser.parse_tags()
+        self.parser.parse_tags(self.bs4_ignores)
 
         p_tag = self.soup.select_one("p")
 
@@ -353,7 +356,7 @@ class TestParser(unittest.TestCase):
         child_tag = self.soup.new_tag("p")
         parent_tag.insert(1, child_tag)
 
-        self.parser.parse_tags()
+        self.parser.parse_tags(self.bs4_ignores)
 
         parent_tag = child_tag.parent
 
@@ -361,6 +364,83 @@ class TestParser(unittest.TestCase):
             parent_tag.name,
             "span",
             "Element should not be wrapped in a span element",
+        )
+
+    def test_entity_to_char_conversion(self):
+        """
+        Check that HTML entities are converted to characters
+        """
+        start_char = self.entity_to_char(
+            self.bs4_ignores["code_block"]["start"]
+        )
+        end_char = self.entity_to_char(self.bs4_ignores["code_block"]["end"])
+
+        self.assertEqual(
+            start_char,
+            "",
+            "Start entity code should be converted to character",
+        )
+        self.assertEqual(
+            end_char, "", "End entity code should be converted to character"
+        )
+
+    def test_code_block_handling(self):
+        """
+        Check that code blocks are handled correctly
+        """
+        # First paragraph
+        p1 = self.soup.new_tag("p")
+        code1 = self.soup.new_tag("code")
+        code1.string = ""
+        code2 = self.soup.new_tag("code")
+        code2.string = "test"
+        code3 = self.soup.new_tag("code")
+        code3.string = "&nbsp;"
+        code4 = self.soup.new_tag("code")
+        code4.string = "line1"
+        p1.extend([code1, code2, code3, code4])
+
+        # Second paragraph
+        p2 = self.soup.new_tag("p")
+        code5 = self.soup.new_tag("code")
+        code5.string = "test"
+        code6 = self.soup.new_tag("code")
+        code6.string = "&nbsp;"
+        code7 = self.soup.new_tag("code")
+        code7.string = "line2"
+        p2.extend([code5, code6, code7])
+
+        # Third paragraph
+        p3 = self.soup.new_tag("p")
+        code8 = self.soup.new_tag("code")
+        code8.string = ""
+        p3.append(code8)
+
+        # Append all paragraphs
+        self.soup.extend([p1, p2, p3])
+
+        self.parser.wrap_code_blocks(self.bs4_ignores["code_block"])
+
+        code_block = self.soup.find("div", {"class": "p-code-snippet"})
+        code_block_child = code_block.find(recursive=False)
+        code_block_child_child = code_block_child.find(recursive=False)
+
+        self.assertIsNotNone(
+            code_block,
+            "Code block should be wrapped in a div with"
+            " the class name 'p-code-snippet'",
+        )
+        self.assertEqual(
+            code_block_child.name,
+            "pre",
+            "Code block should be wrapped in a pre tag,"
+            " as a direct child of the div with class name 'p-code-snippet'",
+        )
+        self.assertEqual(
+            code_block_child_child.name,
+            "code",
+            "Code block should be wrapped in a code tag,"
+            " as a direct child of the pre tag",
         )
 
 
