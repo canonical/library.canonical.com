@@ -14,9 +14,7 @@ The simplest way to run the site locally is using the [`dotrun`](https://github.
 
 You will need to add the appropriate variables to `.env.local`, these can be found in LastPass by searching for library.canonical.com.
 
-Lastly, you will need to have a local memcached server running. You can install it with `apt-get install memcached` and start it with `sudo service start memcached`. It needs to be running on 'localhost:11211', the default settings. You can check this by running `telnet localhost 11211`. If you can't find the server, configure it following the [official guide](https://github.com/memcached/memcached/wiki/ConfiguringServer). 
-
-Once it's installed, run the project with:
+Run the project with:
 
 ```bash
 dotrun
