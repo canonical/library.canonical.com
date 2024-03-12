@@ -36,12 +36,16 @@ def init_drive():
 
 
 @app.route("/")
-@app.route("/<path:path>")
-def document(path=None):
+@app.route("/<section>", defaults={"path": None})
+@app.route("/<section>/<path:path>")
+def document(section=None, path=None):
     navigation = Navigation(init_drive(), ROOT)
+    full_path = section
+    if path is not None:
+        full_path = f"{section}/{path}"
 
     try:
-        document = target_document(path, navigation.hierarchy)
+        document = target_document(full_path, navigation.hierarchy)
     except Exception as e:
         err = "Error, document does not exist."
         print(f"{err}\n {e}")
@@ -62,6 +66,7 @@ def document(path=None):
         navigation=navigation.hierarchy,
         html=soup.html,
         root_name=ROOT,
+        section=section,
         document=document,
     )
 

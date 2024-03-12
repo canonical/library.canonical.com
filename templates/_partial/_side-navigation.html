@@ -71,7 +71,7 @@
           </li>
         {% elif navigation[nav_group].mimeType == "document" and navigation[nav_group].name|lower == "index" %}
           <div class="p-side-navigation__primary-heading">
-            <a class="p-side-navigation__link p-muted-heading" {% if navigation[nav_group].active %}aria-current="page"{% endif%} href="/"><strong>{{root_name}}</strong></a>
+            <a class="p-side-navigation__link p-muted-heading" {% if navigation[nav_group].active %}aria-current="page"{% endif%} href="/"><strong>{% if section %}{{ section }}{% else %}{{ root_name }}{% endif %}</strong></a>
           </div>
         {% endif %}
       {% endfor %}

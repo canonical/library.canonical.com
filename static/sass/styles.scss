@@ -13,6 +13,12 @@
   padding: 0;
 }
 
+// This makes the table of contents look nicer, as it nests <p> tags inside <td>
+td > p {
+  margin-bottom: 0;
+}
+
+// Adds some padding to the main content so it looks nicer
 .l-docs__main {
   padding-bottom: 1.5rem;
 }
@@ -22,6 +28,7 @@
   padding-top: 6px;
 }
 
+// Aligns the global nav to the meta info
 .global-nav__dropdown-toggle {
   margin-right: 1rem;
 }
