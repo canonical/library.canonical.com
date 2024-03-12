@@ -8,42 +8,18 @@
 // Import cookie policy
 @import "@canonical/cookie-policy/build/css/cookie-policy";
 
-body {
-  min-height: 100vh;
-  position: relative;
+// Sometime the entire document is put in a table and it adds padding
+.l-docs__main > table > tbody > tr > td {
+  padding: 0;
 }
 
-.content-body {
-  padding-bottom: 182px;
-
-  @media screen and (min-width: $breakpoint-large) {
-    padding-bottom: 252px;
-  }
+.l-docs__main {
+  padding-bottom: 1.5rem;
 }
 
-.table-of-contents.is-sticky {
-  max-height: 100vh;
-  overflow-y: auto;
-  position: sticky;
-  right: 0;
-  top: 2.5rem;
-
-  li {
-    margin-top: 0.3rem;
-  }
-
-  ul.p-list ul.p-list {
-    margin-left: 1rem;
-  }
-}
-
-.p-side-navigation.is-sticky {
-  height: 100%;
-}
-
-.l-footer--sticky {
-  bottom: 0;
-  position: absolute;
+// This makes it align to the breadcrumbs
+.p-side-navigation__primary-heading > a {
+  padding-top: 6px;
 }
 
 // XXX - can be removed once we have a custom logo&logo-title

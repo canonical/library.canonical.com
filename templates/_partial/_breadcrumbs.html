@@ -1,13 +1,15 @@
-<nav class="p-breadcrumbs" aria-label="Breadcrumbs">
-  <ol class="p-breadcrumbs__items">
-    {% for page in document["breadcrumbs"] %}
-    <li class="p-breadcrumbs__item">
-      {% if not loop.last %}
-      <a href="{{ page.path }}">{{ page.name }}</a>
-      {% else %}
-        {{ page.name }}
-      {% endif %}
-    </li>
-    {% endfor %}
-  </ol>
-</nav>
+<div class="u-fixed-width">
+  <nav class="p-breadcrumbs" aria-label="Breadcrumbs">
+    <ol class="p-breadcrumbs__items">
+      {% for page in document["breadcrumbs"] %}
+      <li class="p-breadcrumbs__item">
+        {% if not loop.last %}
+        <a href="{{ page.path }}">{{ page.name }}</a>
+        {% else %}
+          {{ page.name }}
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </nav>
+</div>

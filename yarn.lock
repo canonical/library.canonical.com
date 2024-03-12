@@ -3312,10 +3312,9 @@ vanilla-framework@3.11.1:
     sass "1.58.0"
     yaml "1.10.2"
 
-vanilla-framework@4.0.0-alpha.2:
-  version "4.0.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.0.0-alpha.2.tgz#2539ba7faa9c1aca2cb194cd835a1c944b3fb2bd"
-  integrity sha512-7ZFEjt9NoonL5ln22M8SBeok90a0KSaOKr564eRC8BPeKDWTc4XnBbVS4Nm5VtIVxGUKi0H4DlyYDEVSQT4efQ==
+vanilla-framework@canonical/vanilla-framework#main:
+  version "4.9.0"
+  resolved "https://codeload.github.com/canonical/vanilla-framework/tar.gz/86603f1083f9c6f607e8f69297cd9bf68a588509"
 
 verbalize@^0.1.2:
   version "0.1.2"
