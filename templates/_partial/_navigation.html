@@ -18,7 +18,7 @@
           <ul class="p-navigation__items">
             {% for nav_group in navigation %}
               {% if (navigation[nav_group].children and navigation[nav_group]["children"]["index"]) %}
-                <li class="p-navigation__item">
+                <li class="p-navigation__item {% if navigation[nav_group].slug == section %}is-selected{% endif %}">
                   <a 
                     class="p-navigation__link" 
                     href="/{{navigation[nav_group].slug}}" 
