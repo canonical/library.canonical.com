@@ -6,44 +6,46 @@ Canonical Reference Library is single source of information for all corporate kn
 {% endblock %}
 
 {% block content %}
-<div class="l-docs">
-  <div class="l-docs__header">
-    {% include "_partial/_navigation.html" %}
-  </div>
+<div class="l-site">
+  <div class="l-docs">
+    <div class="l-docs__header">
+      {% include "_partial/_navigation.html" %}
+    </div>
 
-  <aside class="l-docs__sidebar">
-    {% include "_partial/_side-navigation.html" %}
-  </aside>
+    <aside class="l-docs__sidebar">
+      {% include "_partial/_side-navigation.html" %}
+    </aside>
 
-  <div class="l-docs__title">
-    {% if document["breadcrumbs"]|length > 1 %}
-      {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1adcrumbs"] %}
-        {% include "_partial/_breadcrumbs.html" %}
-      {% endwith %}
-    {% endif %}
-  </div>
-
-  <div class="l-docs__meta">
-    <div class="l-docs__sticky-container">
-      <div class="u-fixed-width">
-        {% with document = document %}
-          {% include "_partial/_table-of-content.html" %}
+    <div class="l-docs__title">
+      {% if document["breadcrumbs"]|length > 1 %}
+        {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1adcrumbs"] %}
+          {% include "_partial/_breadcrumbs.html" %}
         {% endwith %}
+      {% endif %}
+    </div>
+
+    <div class="l-docs__meta">
+      <div class="l-docs__sticky-container">
+        <div class="u-fixed-width">
+          {% with document = document %}
+            {% include "_partial/_table-of-content.html" %}
+          {% endwith %}
+        </div>
       </div>
     </div>
+
+    <main class="l-docs__main u-fixed-width">
+
+      {{ html | safe }}
+
+      <hr />
+      <a class="p-link__suggest-changes" href="https://docs.google.com/document/d/{{document.id}}">Suggest changes&nbsp;&rsaquo;</a>
+    </main>
   </div>
 
-  <main class="l-docs__main u-fixed-width">
-
-    {{ html | safe }}
-
-    <hr>
-    <a class="p-link__suggest-changes" href="https://docs.google.com/document/d/{{document.id}}">Suggest changes&nbsp;&rsaquo;</a>
-  </main>
-</div>
-
-<div class="l-docs__footer">
-  {% include "_partial/_footer.html" %}
+  <div class="l-docs__footer l-footer--sticky">
+    {% include "_partial/_footer.html" %}
+  </div>
 </div>
 
 {% endblock %}
