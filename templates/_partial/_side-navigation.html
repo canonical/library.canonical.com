@@ -43,6 +43,14 @@
         Toggle side navigation
       </a>
     </div>
+    <select name="" id="" style="margin: 1rem; max-width: 13rem;" class="section-seclection">
+      <option value="" disabled="disabled" selected="">Select an option</option>
+      {% for nav_group in navigation %}
+        {% if (navigation[nav_group].children and navigation[nav_group]["children"]["index"]) %}
+          <option class="p-navigation__item {% if navigation[nav_group].slug == section %}is-selected{% endif %}" value="{{navigation[nav_group].slug}}">{{ navigation[nav_group].name }}</option>
+        {% endif %}
+    {% endfor %}
+    </select>
     <ul class="p-side-navigation__list">
       {% if section %}
         {% set section_name = navigation[section].name %}
@@ -81,3 +89,18 @@
     </ul>
   </div>
 </nav>
+
+<script>
+  var sectionSelection = document.querySelector(".section-seclection");
+  sectionSelection.addEventListener("change", function(e){
+    const currHref = window.location.href;
+    const currOrigin = window.location.origin;
+    const currUrl = currHref.split(currOrigin + '/')[1];
+    const currSection = currUrl.split('/')[0];
+    console.log(e.target.value, currSection)
+    if (e.target.value != currSection) {
+      console.log("hereeee")
+      window.location.href = e.target.value;
+    }
+  })
+</script>

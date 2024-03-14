@@ -16,27 +16,28 @@ Canonical Reference Library is single source of information for all corporate kn
       {% include "_partial/_side-navigation.html" %}
     </aside>
 
-  <div class="l-docs__title">
-    {% if document["breadcrumbs"]|length > 1 %}
-      {% include "_partial/_breadcrumbs.html" %}
-    {% endif %}
-  </div>
+    <div class="l-docs__title">
+      {% if document["breadcrumbs"]|length > 1 %}
+        {% include "_partial/_breadcrumbs.html" %}
+      {% endif %}
+    </div>
 
-  <div class="l-docs__meta">
-    <div class="l-docs__sticky-container">
-      <div class="u-fixed-width">
-        {% include "_partial/_table-of-content.html" %}
+    <div class="l-docs__meta">
+      <div class="l-docs__sticky-container">
+        <div class="u-fixed-width">
+          {% include "_partial/_table-of-content.html" %}
+        </div>
       </div>
     </div>
+
+    <main class="l-docs__main content u-fixed-width">
+
+      {{ html | safe }}
+
+      <hr />
+      <a class="p-link__suggest-changes" href="https://docs.google.com/document/d/{{document.id}}">Suggest changes&nbsp;&rsaquo;</a>
+    </main>
   </div>
-
-  <main class="l-docs__main content u-fixed-width">
-
-    {{ html | safe }}
-
-    <hr />
-    <a class="p-link__suggest-changes" href="https://docs.google.com/document/d/{{document.id}}">Suggest changes&nbsp;&rsaquo;</a>
-  </main>
 
   <div class="l-docs__footer l-footer--sticky">
     {% include "_partial/_footer.html" %}
