@@ -15,25 +15,8 @@
           <span class="u-off-screen">
             <a href="#main-content">Jump to main content</a>
           </span>
-          <ul class="p-navigation__items">
-            {% for nav_group in navigation %}
-              {% if (navigation[nav_group].children and navigation[nav_group]["children"]["index"]) %}
-                <li class="p-navigation__item {% if navigation[nav_group].slug == section %}is-selected{% endif %}">
-                  <a 
-                    class="p-navigation__link" 
-                    href="/{{navigation[nav_group].slug}}" 
-                    {% if navigation[nav_group].active %}aria-current="page"{% endif %}
-                  >{{ navigation[nav_group].name }}</a>
-                </li>
-              {% endif %}
-            {% endfor %}
-          </ul>
         </nav>
       </div>
-    </div>
-    <div class="l-docs__meta">
-      <a href="#navigation" class="p-navigation__toggle--open" title="menu">Menu</a>
-      <a href="#navigation-closed" class="p-navigation__toggle--close" title="close menu">Menu</a>
     </div>
   </div>
 </header>

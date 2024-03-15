@@ -43,22 +43,22 @@
         Toggle side navigation
       </a>
     </div>
-    <select name="" id="" style="margin: 1rem; max-width: 13rem;" class="section-seclection">
-      <option value="" disabled="disabled" selected="">Select an option</option>
+
+    <select name="section selection" id="section-selection" class="p-section-seclection js-section-selection">
+      <option value="" disabled="disabled" {% if not section %}selected="true"{% endif %}>Select an option</option>
       {% for nav_group in navigation %}
+      {{nav_group.slug}}
         {% if (navigation[nav_group].children and navigation[nav_group]["children"]["index"]) %}
-          <option class="p-navigation__item {% if navigation[nav_group].slug == section %}is-selected{% endif %}" value="{{navigation[nav_group].slug}}">{{ navigation[nav_group].name }}</option>
+          <option class="p-navigation__item" {% if navigation[nav_group].slug == section %}selected="true"{% endif %} value="{{navigation[nav_group].slug}}">{{ navigation[nav_group].name }}</option>
         {% endif %}
     {% endfor %}
     </select>
+
     <ul class="p-side-navigation__list">
       {% if section %}
         {% set section_name = navigation[section].name %}
         {% set navigation = navigation[section].children %}
       {% endif %}
-      <div class="p-side-navigation__primary-heading">
-        <a class="p-side-navigation__link p-muted-heading" {% if navigation.index.active %}aria-current="page"{% endif %} href="{{navigation.index.full_path}}"><strong>{% if section %}{{ section_name }}{% else %}Home{% endif %}</strong></a>
-      </div>
       {% for nav_group in navigation %}
         {% if (navigation[nav_group].children and navigation[nav_group]["children"]["index"]) 
         or (navigation[nav_group].mimeType == "document" and not navigation[nav_group].name|lower == "index") %}
@@ -74,7 +74,7 @@
               class="p-side-navigation__link is-expandable u-no-margin--bottom" 
               href="{{ navigation[nav_group].full_path }}" 
               {% if navigation[nav_group].active %}aria-current="page"{% endif %}
-            >{{ navigation[nav_group].name }}</a>
+            ><strong>{{ navigation[nav_group].name }}</strong></a>
             <button  
               class="p-side-navigation__expand" 
               {% if navigation[nav_group].expanded %}aria-expanded="true"{% endif %} 
@@ -90,17 +90,3 @@
   </div>
 </nav>
 
-<script>
-  var sectionSelection = document.querySelector(".section-seclection");
-  sectionSelection.addEventListener("change", function(e){
-    const currHref = window.location.href;
-    const currOrigin = window.location.origin;
-    const currUrl = currHref.split(currOrigin + '/')[1];
-    const currSection = currUrl.split('/')[0];
-    console.log(e.target.value, currSection)
-    if (e.target.value != currSection) {
-      console.log("hereeee")
-      window.location.href = e.target.value;
-    }
-  })
-</script>

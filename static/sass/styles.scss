@@ -21,11 +21,15 @@ td > p {
 // Adds some padding to the main content so it looks nicer
 .l-docs__main.content {
   padding-bottom: 1.5rem;
+
+  h1:first-of-type {
+    padding-top: 1rem;
+  }
 }
 
-// This makes it align to the breadcrumbs
-.p-side-navigation__primary-heading > a {
-  padding-top: 7px;
+
+.l-docs__sidebar {
+  border-right: 1px solid var(--vf-color-border-default);
 }
 
 // Aligns the global nav to the meta info
@@ -34,14 +38,21 @@ td > p {
 }
 
 // Styles to make the menu button fit with documentation layout
-.p-navigation .l-docs__meta {
-  text-align: left;
+.p-navigation {
+  .l-docs__meta {
+    text-align: left;
+  }
 }
 
 .p-navigation__toggle--open,
 .p-navigation__toggle--close {
   margin-right: auto;
   max-width: fit-content;
+}
+
+.p-section-seclection {
+  margin: 1rem 0.8rem 1rem 1.15rem; 
+  max-width: 13rem;
 }
 
 // XXX - can be removed once we have a custom logo&logo-title
