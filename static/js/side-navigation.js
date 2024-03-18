@@ -161,7 +161,6 @@ import debounce from "./utility/debounce";
 
   // Debounce navigating link clicks
   var navigationLinks = document.querySelectorAll(".p-side-navigation__link");
-
   navigationLinks.forEach((link) => {
     link.addEventListener("click", function (event) {
       event.preventDefault();
