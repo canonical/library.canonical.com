@@ -175,16 +175,18 @@ import debounce from "./utility/debounce";
 (function () {
   /**
    * Sets up the select dropdown for section selection
-  */
+   */
 
-  const sectionSelectionDropdown = document.querySelector(".js-section-selection");
+  const sectionSelectionDropdown = document.querySelector(
+    ".js-section-selection"
+  );
 
-  sectionSelectionDropdown.addEventListener('change', (event) => {
+  sectionSelectionDropdown.addEventListener("change", (event) => {
     const href = window.location.href;
     const origin = window.location.origin;
 
     // Derive the current section from the URL, removing the origin part
-    const currentSection = href.split(`${origin}/`)[1].split('/')[0];
+    const currentSection = href.split(`${origin}/`)[1].split("/")[0];
 
     // If the selected value is different from the current section, redirect to the new section
     if (event.target.value !== currentSection) {
