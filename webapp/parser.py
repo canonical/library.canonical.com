@@ -1,5 +1,6 @@
 import os
 import json
+from urllib.parse import unquote
 from bs4 import BeautifulSoup, NavigableString
 
 from webapp.googledrive import Drive
@@ -188,6 +189,7 @@ class Parser:
             self.clean_external_links(a_tag, external_path)
             self.process_google_doc_links(a_tag, google_doc_paths)
             self.remove_trailing_garbage(a_tag, trailing_garbage)
+            a_tag["href"] = unquote(a_tag["href"])
 
     def clean_external_links(self, a_tag, external_path):
         if a_tag["href"].startswith(external_path):
