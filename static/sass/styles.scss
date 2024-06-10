@@ -8,8 +8,13 @@
 // Import cookie policy
 @import "@canonical/cookie-policy/build/css/cookie-policy";
 
+// Override vanilla styles
+body p:not([class*=p-heading--]):not([class*=p-muted-heading])+h1 {
+  padding-top: 0.55rem;
+}
+
 // Sometimes the entire document is put in a table and it adds padding
-.l-docs__main > table > tbody > tr > td {
+.l-docs__main>table>tbody>tr>td {
   padding: 0;
 }
 
@@ -18,7 +23,7 @@
 }
 
 // This makes it align to the breadcrumbs
-.p-side-navigation__primary-heading > a {
+.p-side-navigation__primary-heading>a {
   padding-top: 6px;
 }
 
@@ -30,4 +35,22 @@
 .p-navigation__tagged-logo .p-navigation__logo-title {
   font-size: 1rem;
   line-height: 1.5rem;
+}
+
+.p-side-navigation__list {
+  .p-side-navigation__heading--linked {
+    margin-top: 1rem;
+  }
+
+  hr {
+    left: 1.5rem;
+    width: calc(100% - 1.5rem);
+    margin: 1rem 0;
+  }
+}
+
+.l-docs__meta {
+  .l-docs__sticky-container {
+    padding-top: 1rem;
+  }
 }

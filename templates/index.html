@@ -10,6 +10,15 @@ Canonical Reference Library is single source of information for all corporate kn
   <div class="l-docs">
     <div class="l-docs__header">
       {% include "_partial/_navigation.html" %}
+      <section class="l-docs__subgrid p-strip is-bordered u-no-padding">
+        <div class="l-docs__main u-no-padding">
+          <div class="p-notification--caution" style="margin-top: 1rem;">
+            <div class="p-notification__content">
+              <h5 class="p-notification__title">Work in progress</h5>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <aside class="l-docs__sidebar">
@@ -18,28 +27,33 @@ Canonical Reference Library is single source of information for all corporate kn
 
     <div class="l-docs__title">
       {% if document["breadcrumbs"]|length > 1 %}
-        {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1 col-order-small-1adcrumbs"] %}
-          {% include "_partial/_breadcrumbs.html" %}
-        {% endwith %}
+      {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1
+      col-order-small-1adcrumbs"] %}
+      {% include "_partial/_breadcrumbs.html" %}
+      {% endwith %}
       {% endif %}
     </div>
 
     <div class="l-docs__meta">
       <div class="l-docs__sticky-container">
-        <div class="u-fixed-width">
-          {% with document = document %}
-            {% include "_partial/_table-of-content.html" %}
-          {% endwith %}
-        </div>
+        {% with document = document %}
+        {% include "_partial/_table-of-content.html" %}
+        {% endwith %}
       </div>
     </div>
 
-    <main class="l-docs__main u-fixed-width">
+    <main class="l-docs__main u-fixed-width u-text-max-width">
 
       {{ html | safe }}
 
       <hr />
-      <a class="p-link__suggest-changes" href="https://docs.google.com/document/d/{{document.id}}">Suggest changes&nbsp;&rsaquo;</a>
+      <div class="p-notification--information">
+        <div class="p-notification__content">
+          <p class="p-notification__message">
+            <a href="https://docs.google.com/document/d/{{document.id}}">Help improve this document</a>.
+          </p>
+        </div>
+      </div>
     </main>
   </div>
 
