@@ -51,6 +51,17 @@ body p:not([class*=p-heading--]):not([class*=p-muted-heading])+h1 {
 
 .l-docs__meta {
   .l-docs__sticky-container {
+    @extend .u-fixed-width;
+
     padding-top: 1rem;
+
+    @media (min-width: calc($breakpoint-large + $l-documentation-sidebar-width)) {
+      padding-left: 0;
+      padding-right: 0;
+    }
   }
+}
+
+.p-notification--caution {
+  background-position: 1.5rem 1.15rem;
 }
