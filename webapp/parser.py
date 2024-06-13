@@ -157,7 +157,7 @@ class Parser:
 
     def insert_h1_if_missing(self, doc_name):
         h1 = self.html.select_one("h1")
-        if not h1 and doc_name != "index":
+        if not h1 and doc_name.lower() != "index":
             inserted_h1 = self.html.new_tag("h1")
             inserted_h1.string = doc_name
             self.html.body.insert(0, inserted_h1)
