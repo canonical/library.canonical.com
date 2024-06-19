@@ -9,7 +9,7 @@
 @import "@canonical/cookie-policy/build/css/cookie-policy";
 
 // Override vanilla styles
-body p:not([class*=p-heading--]):not([class*=p-muted-heading])+h1 {
+body p:not([class*="p-heading--"], [class*="p-muted-heading"])+h1 {
   padding-top: 0.55rem;
 }
 
@@ -44,8 +44,8 @@ body p:not([class*=p-heading--]):not([class*=p-muted-heading])+h1 {
 
   hr {
     left: 1.5rem;
-    width: calc(100% - 1.5rem);
     margin: 1rem 0;
+    width: calc(100% - 1.5rem);
   }
 }
 
