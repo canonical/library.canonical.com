@@ -1,14 +1,8 @@
-
-<div class="p-notification--caution" style="margin-top: 1rem;">
-  <div class="p-notification__content">
-    <h5 class="p-notification__title">Work in progress</h5>
-  </div>
-</div>
 {% if document["metadata"]["type"] %}
   <div class="u-sv2">
     {% with document_type = document["metadata"]["type"] %}
       {% include "_partial/_doc-type.html" %}
-    {% endwith%}
+    {% endwith %}
   </div>
   <hr />
 {% endif %}
@@ -19,36 +13,37 @@
       <nav class="p-table-of-contents__nav" aria-label="Table of contents">
         {% set ns = namespace(parent_active=False) %}
         <ul class="p-table-of-contents__list">
-        {% for heading in document["headings_map"] %}
-          {% if heading.level == 2 %}
-            {% if ns.parent_active %}
+          {% for heading in document["headings_map"] %}
+            {% if heading.level == 2 %}
+              {% if ns.parent_active %}
               </ul>
             </li>
-            {% endif %}
-            <li class="p-table-of-contents__item u-no-padding">
-              <a class="p-table-of-contents__link" href="#{{ heading.id }}">{{ heading.name }}</a>
-              <ul class="p-table-of-contents__list">
-            {% set ns.parent_active = true %}
-          {% else %}
-            <li class="p-table-of-contents__item u-no-padding"><a class="p-table-of-contents__link" href="#{{ heading.id }}">{{ heading.name }}</a></li>
           {% endif %}
-        {% endfor %}
-        {% if ns.parent_active %}
+          <li class="p-table-of-contents__item u-no-padding">
+            <a class="p-table-of-contents__link" href="#{{ heading.id }}">{{ heading.name }}</a>
+            <ul class="p-table-of-contents__list">
+              {% set ns.parent_active = true %}
+            {% else %}
+              <li class="p-table-of-contents__item u-no-padding">
+                <a class="p-table-of-contents__link" href="#{{ heading.id }}">{{ heading.name }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          {% if ns.parent_active %}
           </ul>
         </li>
-        {% endif %}
-        </ul>
-        <hr />
-      </nav>
-    </div>
-  </div>
+      {% endif %}
+    </ul>
+    <hr />
+  </nav>
+</div>
+</div>
 {% endif %}
 <p>
-  <a href="https://docs.google.com/document/d/{{document["id"]}}">
-    Suggest changes&nbsp;&rsaquo;
-  </a>
+  <a href="https://docs.google.com/document/d/{{ document['id'] }}">Suggest changes&nbsp;&rsaquo;</a>
 </p>
-
 {% if document["metadata"]["review_date"] %}
-<p>Requires review: {{document["metadata"]["review_date"]}}, by {{document["metadata"]["authors"] or "Unknown"}}</p>
+  <p>
+    Requires review: {{ document["metadata"]["review_date"] }}, by {{ document["metadata"]["authors"] or "Unknown" }}
+  </p>
 {% endif %}
