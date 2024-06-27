@@ -94,7 +94,6 @@ class Navigation:
 
         return self.temp_hierarchy[self.root_folder]["children"]
 
-
     def insert_based_on_position(self, parent_obj, doc):
         """
         When appending a child to a parent, it checks for leadings numbers and positions it accordingly
@@ -102,15 +101,16 @@ class Navigation:
         slug = doc["slug"]
         position = doc["position"]
         
-        # if no 'position' is given, append to the end
-        if position is None:
-            parent_obj["children"][slug] = doc
-            return
-
+        # Add doc to children
         children = parent_obj["children"]
         children[slug] = doc
+
+        # if no 'position' is given, leave it at the end
+        if position is None:
+            return
+
+        # reorder the based on 'position'
         ordered_slugs = sorted(children.keys(), key=lambda s: (children[s]["position"] if children[s]["position"] is not None else float('inf')))
 
-        # so this is working but I don't know why
         new_children = {k: children[k] for k in ordered_slugs}
         parent_obj["children"] = new_children
