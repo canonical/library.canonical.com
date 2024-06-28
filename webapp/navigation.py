@@ -2,24 +2,25 @@ import copy
 
 
 from webapp.googledrive import Drive
-from webapp.utils.remove_leading_numbers import remove_leading_numbers
+from webapp.utils.process_leading_number import (
+    extract_leading_number,
+    remove_leading_number,
+)
 
 
 class Navigation:
     def __init__(self, google_drive: Drive, root_folder: str):
         self.root_folder = root_folder.lower()
         self.doc_reference_dict = {}
-        self.doc_hierarchy = {}
+        self.temp_hierarchy = {}
         file_list = google_drive.get_document_list()
         doc_objects_copy = copy.deepcopy(file_list)
         self.hierarchy = self.create_hierarchy(doc_objects_copy)
 
     def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
         """
-        A recursive function that adds a 'full_path' value, which indicates
-        the url to the document and a 'breadcrumbs' value, which is a list
-        of links that represent the nesting of the given document in the
-        hierarchy.
+        Recursively adds 'full_path' (document URL) and 'breadcrumbs' (list of
+        hierarchical links) to each document in the hierarchy.
         """
         if breadcrumbs is None:
             breadcrumbs = []
@@ -50,76 +51,74 @@ class Navigation:
         A function that initialises each document with the appropriate data
         for building the navigation
         """
-        # Create a 'doc_reference_dict' of all documents without nesting,
-        # so they can be referenced by their key.
+        # Builds 'doc_reference_dict'.
+        # ex. 'docuement_id': {document_object}
         for doc in doc_objects:
-            # If a document has no parent (shortcut) then we attach it
-            # to the root folder
+            # Attach orphan documents to the root folder.
             if "parents" not in doc:
                 doc["parents"] = None
 
             doc["children"] = {}
             doc["mimeType"] = doc["mimeType"].rpartition(".")[-1]
+            # Extract position before assigning slug, since 'name' is edited.
+            doc["position"] = extract_leading_number(doc["name"])
+            doc["name"] = remove_leading_number(doc["name"])
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
             doc["expanded"] = False
-            # If the parent folders id is a drive id (less than 20 chars)
-            # and it is not the target folder (root_folder), don't add
-            # it to the reference dict/navigation
+
+            # To keep only 'Library' from top level: If the parent folder's ID
+            # is a drive ID (<20 chars) and not 'root', skip it in the
+            # reference dict/navigation.
             if doc["parents"] and (
                 len(doc["parents"][0]) > 20
                 or doc["name"].lower() == self.root_folder
             ):
                 self.doc_reference_dict[doc["id"]] = doc
 
-        # For each doc's parent, find the associated doc and attach it as
-        # a child within the 'doc_hierarchy'. If the parent doesn't exist
-        # and the slug is the 'root', attach it as the root of the dict.
-        # If it meet niether criteria, remove it form  'doc_reference_dict'
+        # Build the 'temp_hierarchy' with the 'root_folder' as the root.
+        # A tree structure reflecting the Google Drive folder structure.
         for doc in doc_objects:
             if doc["parents"]:
                 parent_ids = doc["parents"]
                 parent_obj = self.doc_reference_dict.get(parent_ids[0])
                 if parent_obj is not None:
                     parent_obj["children"][doc["slug"]] = doc
+                    self.insert_based_on_position(parent_obj, doc)
                 elif doc["slug"] == self.root_folder:
-                    self.doc_hierarchy[doc["slug"]] = doc
+                    self.temp_hierarchy[doc["slug"]] = doc
                 elif doc["id"] in self.doc_reference_dict:
                     self.doc_reference_dict.pop(doc["id"])
 
-        ordered_hierarchy = self.order_hierarchy(
-            self.doc_hierarchy[self.root_folder]["children"]
+        self.add_path_context(self.temp_hierarchy)
+
+        return self.temp_hierarchy[self.root_folder]["children"]
+
+    def insert_based_on_position(self, parent_obj, doc):
+        """
+        When appending a child to a parent, it checks for leadings numbers and
+        positions it accordingly
+        """
+        slug = doc["slug"]
+        position = doc["position"]
+
+        # Add doc to children
+        children = parent_obj["children"]
+        children[slug] = doc
+
+        # If no 'position' is given, leave it at the end
+        if position is None:
+            return
+
+        # Reorder based on 'position' value
+        ordered_slugs = sorted(
+            children.keys(),
+            key=lambda s: (
+                children[s]["position"]
+                if children[s]["position"] is not None
+                else float("inf")
+            ),
         )
 
-        self.add_path_context(self.doc_hierarchy)
-
-        return ordered_hierarchy
-
-    def order_hierarchy(self, hierarchy):
-        """
-        Orders top level items based on leading numbers separated by
-        a dash(-) and then removes the number and dash.
-        """
-        if "index" in hierarchy:
-            index_item = hierarchy.pop("index")
-            ordered_items = dict(sorted(hierarchy.items(), key=lambda x: x[0]))
-            ordered_hierarchy = {"index": index_item}
-
-            updated_dict = {}
-            for key, item in ordered_items.items():
-                new_key = remove_leading_numbers(key)
-                if isinstance(item, dict):
-                    if "slug" in item:
-                        item["slug"] = remove_leading_numbers(item["slug"])
-                    if "name" in item:
-                        item["name"] = remove_leading_numbers(item["name"])
-                    if item["id"] in self.doc_reference_dict:
-                        ref_item = self.doc_reference_dict.get(item["id"])
-                        ref_item["name"] = remove_leading_numbers(
-                            ref_item["name"]
-                        )
-                updated_dict[new_key] = item
-
-            ordered_hierarchy.update(updated_dict)
-
-            return ordered_hierarchy
+        new_children = {k: children[k] for k in ordered_slugs}
+        parent_obj["children"] = new_children
