@@ -1,9 +1,11 @@
 import copy
-import re
 
 
 from webapp.googledrive import Drive
-from webapp.utils.process_leading_number import extract_leading_number, remove_leading_number
+from webapp.utils.process_leading_number import (
+    extract_leading_number,
+    remove_leading_number,
+)
 
 
 class Navigation:
@@ -17,7 +19,8 @@ class Navigation:
 
     def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
         """
-        Recursively adds 'full_path' (document URL) and 'breadcrumbs' (list of hierarchical links) to each document in the hierarchy.
+        Recursively adds 'full_path' (document URL) and 'breadcrumbs' (list of
+        hierarchical links) to each document in the hierarchy.
         """
         if breadcrumbs is None:
             breadcrumbs = []
@@ -48,36 +51,33 @@ class Navigation:
         A function that initialises each document with the appropriate data
         for building the navigation
         """
-        # Create a 'doc_reference_dict' of all documents without nesting,
-        # so they can be referenced by their key.
+        # Builds 'doc_reference_dict'.
+        # ex. 'docuement_id': {document_object}
         for doc in doc_objects:
-            # If a document has no parent (shortcut) then we attach it
-            # to the root folder
+            # Attach orphan documents to the root folder.
             if "parents" not in doc:
                 doc["parents"] = None
 
             doc["children"] = {}
             doc["mimeType"] = doc["mimeType"].rpartition(".")[-1]
-            # position must be extracted before slug is assigned, as 'name' is edited
+            # Extract position before assigning slug, since 'name' is edited.
             doc["position"] = extract_leading_number(doc["name"])
             doc["name"] = remove_leading_number(doc["name"])
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
             doc["expanded"] = False
-            
-            # If the parent folders id is a drive id (less than 20 chars)
-            # and it is not the target folder (root_folder), don't add
-            # it to the reference dict/navigation
+
+            # To keep only 'Library' from top level: If the parent folder's ID
+            # is a drive ID (<20 chars) and not 'root', skip it in the
+            # reference dict/navigation.
             if doc["parents"] and (
                 len(doc["parents"][0]) > 20
                 or doc["name"].lower() == self.root_folder
             ):
                 self.doc_reference_dict[doc["id"]] = doc
 
-        # For each doc's parent, find the associated doc and attach it as
-        # a child within the 'temp_hierarchy'. If the parent doesn't exist
-        # and the slug is the 'root', attach it as the root of the dict.
-        # If it meet niether criteria, remove it form  'doc_reference_dict'
+        # Build the 'temp_hierarchy' with the 'root_folder' as the root.
+        # A tree structure reflecting the Google Drive folder structure.
         for doc in doc_objects:
             if doc["parents"]:
                 parent_ids = doc["parents"]
@@ -96,21 +96,29 @@ class Navigation:
 
     def insert_based_on_position(self, parent_obj, doc):
         """
-        When appending a child to a parent, it checks for leadings numbers and positions it accordingly
+        When appending a child to a parent, it checks for leadings numbers and
+        positions it accordingly
         """
         slug = doc["slug"]
         position = doc["position"]
-        
+
         # Add doc to children
         children = parent_obj["children"]
         children[slug] = doc
 
-        # if no 'position' is given, leave it at the end
+        # If no 'position' is given, leave it at the end
         if position is None:
             return
 
-        # reorder the based on 'position'
-        ordered_slugs = sorted(children.keys(), key=lambda s: (children[s]["position"] if children[s]["position"] is not None else float('inf')))
+        # Reorder based on 'position' value
+        ordered_slugs = sorted(
+            children.keys(),
+            key=lambda s: (
+                children[s]["position"]
+                if children[s]["position"] is not None
+                else float("inf")
+            ),
+        )
 
         new_children = {k: children[k] for k in ordered_slugs}
         parent_obj["children"] = new_children
