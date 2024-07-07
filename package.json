@@ -24,7 +24,7 @@
     "@canonical/global-nav": "3.2.4",
     "autoprefixer": "10.4.13",
     "postcss": "8.4.21",
-    "vanilla-framework": "canonical/vanilla-framework#main"
+    "vanilla-framework": "4.14.0"
   },
   "devDependencies": {
     "@babel/core": "7.20.12",

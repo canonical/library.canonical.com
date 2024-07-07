@@ -109,25 +109,24 @@ function fetchSearchResults(query) {
         .then(results => {
           searchResults.innerHTML = "";
           console.log(results)
-          results.forEach((result) => {            
-            let resultLinkCont = document.createElement("a");
-            let docTitle = document.createElement("strong");
-            let doctAuthor = document.createElement("p");
+          results.forEach((result, index) => {
             let targetDoc = referenceDict[result.id];
-            console.log("----_", targetDoc)
-            
-            if (!targetDoc || !targetDoc.breadcrumbs) {
-              return;
-            } else if (targetDoc.name.toLowerCase() == "index") {
+            if (!targetDoc || !targetDoc.breadcrumbs) return;
+
+            let resultTemplate = document.querySelector(".js-result-template");
+            let resultTemplateClone = resultTemplate.content.cloneNode(true);
+            let resultLink = resultTemplateClone.querySelector(".p-search-and-filter__search-result");
+
+            if (targetDoc.name.toLowerCase() == "index") {
               let parentFolder = targetDoc.breadcrumbs.slice(-1)[0].name;
-              resultLinkCont.textContent = parentFolder;
+              resultLink.textContent = parentFolder;
             } else {
-              resultLinkCont.textContent = targetDoc.name;
+              resultLink.textContent = targetDoc.name;
             }
             
-            resultLinkCont.href = referenceDict[result.id].full_path;
-            resultLinkCont.classList.add("p-search-and-filter__search-result");
-            searchResults.append(resultLinkCont);
+            resultLink.href = referenceDict[result.id].full_path;
+            resultLink.classList.add("p-search-and-filter__search-result");
+            searchResults.append(resultLink);
           });
         })
         .catch(error => {
