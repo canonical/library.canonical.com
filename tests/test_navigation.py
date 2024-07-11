@@ -16,7 +16,9 @@ class TestNavigation(unittest.TestCase):
         self.mock_drive = GoogleDriveMock()
         self.mock_file_list = self.mock_drive.mock_file_list
         self.mock_root_name = "library"
-        self.MockNavigation = NavigationBuilder(self.mock_drive, self.mock_root_name)
+        self.MockNavigation = NavigationBuilder(
+            self.mock_drive, self.mock_root_name
+        )
         self.mock_hierarchy = self.MockNavigation.hierarchy
         self.mock_reference_dict = self.MockNavigation.doc_reference_dict
 

@@ -76,14 +76,14 @@ def get_target_document(path, navigation):
     if not path:
         navigation["index"]["active"] = True
         return navigation["index"]
-    
+
     split_slug = path.split("/")
     target_page = navigation
-    
+
     for index, slug in enumerate(split_slug):
         if slug not in target_page:
             raise KeyError(f"Slug '{slug}' not found in navigation.")
-        
+
         if len(split_slug) == index + 1:
             target_page[slug]["active"] = True
             if target_page[slug]["mimeType"] == "folder":
@@ -91,10 +91,10 @@ def get_target_document(path, navigation):
                 return target_page[slug]["children"]["index"]
             else:
                 return target_page[slug]
-        
+
         target_page[slug]["expanded"] = True
         target_page = target_page[slug]["children"]
-    
+
     raise KeyError(f"Document for path '{path}' not found.")
 
 

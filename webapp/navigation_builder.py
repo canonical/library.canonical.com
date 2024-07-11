@@ -16,7 +16,6 @@ class NavigationBuilder:
         self.initialize_reference_dict()
         self.hierarchy = self.create_hierarchy(self.file_list)
 
-
     def get_file_list_copy(self, google_drive: GoogleDrive):
         """
         Retrieves and deep copies the document list from Google Drive.
@@ -24,13 +23,11 @@ class NavigationBuilder:
         file_list = google_drive.get_document_list()
         return copy.deepcopy(file_list)
 
-
     def initialize_reference_dict(self):
         """
         Initializes the document reference dictionary.
         """
         self.doc_reference_dict = self.create_reference_dict(self.file_list)
-
 
     def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
         """
@@ -60,7 +57,6 @@ class NavigationBuilder:
                 self.add_path_context(
                     hierarchy_obj[key]["children"], full_path, item_breadcrumbs
                 )
-
 
     def create_reference_dict(self, doc_objects):
         """
@@ -94,7 +90,6 @@ class NavigationBuilder:
 
         return doc_reference_dict
 
-
     def create_hierarchy(self, doc_objects):
         """
         A function that initialises each document with the appropriate data
@@ -117,7 +112,6 @@ class NavigationBuilder:
         self.add_path_context(self.temp_hierarchy)
 
         return self.temp_hierarchy[self.root_folder]["children"]
-
 
     def insert_based_on_position(self, parent_obj, doc):
         """
