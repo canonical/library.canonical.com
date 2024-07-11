@@ -12,7 +12,7 @@ from webapp.settings import SERVICE_ACCOUNT_INFO
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 
 
-class Drive:
+class GoogleDrive:
     def __init__(self):
         scopes = [
             "https://www.googleapis.com/auth/drive",

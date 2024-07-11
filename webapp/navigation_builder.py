@@ -1,21 +1,36 @@
 import copy
 
-
-from webapp.googledrive import Drive
+from webapp.googledrive import GoogleDrive
 from webapp.utils.process_leading_number import (
     extract_leading_number,
     remove_leading_number,
 )
 
 
-class Navigation:
-    def __init__(self, google_drive: Drive, root_folder: str):
+class NavigationBuilder:
+    def __init__(self, google_drive: GoogleDrive, root_folder: str):
         self.root_folder = root_folder.lower()
         self.doc_reference_dict = {}
         self.temp_hierarchy = {}
+        self.file_list = self.get_file_list_copy(google_drive)
+        self.initialize_reference_dict()
+        self.hierarchy = self.create_hierarchy(self.file_list)
+
+
+    def get_file_list_copy(self, google_drive: GoogleDrive):
+        """
+        Retrieves and deep copies the document list from Google Drive.
+        """
         file_list = google_drive.get_document_list()
-        doc_objects_copy = copy.deepcopy(file_list)
-        self.hierarchy = self.create_hierarchy(doc_objects_copy)
+        return copy.deepcopy(file_list)
+
+
+    def initialize_reference_dict(self):
+        """
+        Initializes the document reference dictionary.
+        """
+        self.doc_reference_dict = self.create_reference_dict(self.file_list)
+
 
     def add_path_context(self, hierarchy_obj, path="", breadcrumbs=None):
         """
@@ -46,13 +61,14 @@ class Navigation:
                     hierarchy_obj[key]["children"], full_path, item_breadcrumbs
                 )
 
-    def create_hierarchy(self, doc_objects):
+
+    def create_reference_dict(self, doc_objects):
         """
-        A function that initialises each document with the appropriate data
-        for building the navigation
+        A function that builds the reference dictionary for documents and
+        initialises each document with the appropriate data.
+        ex. {"document_id": {document_data_object}}
         """
-        # Builds 'doc_reference_dict'.
-        # ex. 'docuement_id': {document_object}
+        doc_reference_dict = {}
         for doc in doc_objects:
             # Attach orphan documents to the root folder.
             if "parents" not in doc:
@@ -74,10 +90,18 @@ class Navigation:
                 len(doc["parents"][0]) > 20
                 or doc["name"].lower() == self.root_folder
             ):
-                self.doc_reference_dict[doc["id"]] = doc
+                doc_reference_dict[doc["id"]] = doc
 
+        return doc_reference_dict
+
+
+    def create_hierarchy(self, doc_objects):
+        """
+        A function that initialises each document with the appropriate data
+        for building the navigation
+        """
         # Build the 'temp_hierarchy' with the 'root_folder' as the root.
-        # A tree structure reflecting the Google Drive folder structure.
+        # A tree structure reflecting the Google GoogleDrive folder structure.
         for doc in doc_objects:
             if doc["parents"]:
                 parent_ids = doc["parents"]
@@ -93,6 +117,7 @@ class Navigation:
         self.add_path_context(self.temp_hierarchy)
 
         return self.temp_hierarchy[self.root_folder]["children"]
+
 
     def insert_based_on_position(self, parent_obj, doc):
         """

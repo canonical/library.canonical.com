@@ -4,7 +4,7 @@ import unittest
 from webapp.parser import Parser
 from tests.mocks.functions.googledrivemock import GoogleDriveMock
 
-from webapp.helper.entity_to_char import entity_to_char
+from webapp.utils.entity_to_char import entity_to_char
 
 
 class TestParser(unittest.TestCase):
