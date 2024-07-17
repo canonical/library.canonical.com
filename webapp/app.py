@@ -37,7 +37,6 @@ def document(path=None):
         target_document = get_target_document(path, navigation.hierarchy)
     except KeyError as e:
         err = "Error, document does not exist."
-        print(f"{err}\n {e}")
         flask.abort(404, description=err)
 
     soup = Parser(
@@ -95,7 +94,7 @@ def get_target_document(path, navigation):
         target_page[slug]["expanded"] = True
         target_page = target_page[slug]["children"]
 
-    raise KeyError(f"Document for path '{path}' not found.")
+    raise ValueError(f"Document for path '{path}' not found.")
 
 
 if __name__ == "__main__":
