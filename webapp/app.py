@@ -36,7 +36,7 @@ def document(path=None):
     try:
         target_document = get_target_document(path, navigation.hierarchy)
     except KeyError as e:
-        err = "Error, document does not exist."
+        err = "Error, document does not exist. {e}"
         flask.abort(404, description=err)
 
     soup = Parser(
