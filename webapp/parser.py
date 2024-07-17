@@ -3,23 +3,23 @@ import json
 from urllib.parse import unquote
 from bs4 import BeautifulSoup, NavigableString
 
-from webapp.googledrive import Drive
+from webapp.googledrive import GoogleDrive
 
-from webapp.helper.entity_to_char import entity_to_char
+from webapp.utils.entity_to_char import entity_to_char
 
 ROOT = os.getenv("ROOT_FOLDER", "library")
 
 
 class Parser:
     def __init__(
-        self, google_drive: Drive, doc_id: str, doc_dict, doc_name: str
+        self, google_drive: GoogleDrive, doc_id: str, doc_dict, doc_name: str
     ):
         self.doc_id = doc_id
         self.doc_dict = doc_dict
         self.html = self.get_html(google_drive)
         self.process_html(doc_name)
 
-    def get_html(self, google_drive: Drive):
+    def get_html(self, google_drive: GoogleDrive):
         raw_html = google_drive.fetch_document(self.doc_id)
         return BeautifulSoup(raw_html, features="lxml")
 

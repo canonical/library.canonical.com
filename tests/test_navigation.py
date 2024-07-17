@@ -1,7 +1,7 @@
 import unittest
 
 
-from webapp.navigation import Navigation
+from webapp.navigation_builder import NavigationBuilder
 
 from tests.mocks.functions.googledrivemock import GoogleDriveMock
 
@@ -16,7 +16,9 @@ class TestNavigation(unittest.TestCase):
         self.mock_drive = GoogleDriveMock()
         self.mock_file_list = self.mock_drive.mock_file_list
         self.mock_root_name = "library"
-        self.MockNavigation = Navigation(self.mock_drive, self.mock_root_name)
+        self.MockNavigation = NavigationBuilder(
+            self.mock_drive, self.mock_root_name
+        )
         self.mock_hierarchy = self.MockNavigation.hierarchy
         self.mock_reference_dict = self.MockNavigation.doc_reference_dict
 
@@ -118,7 +120,7 @@ class TestNavigation(unittest.TestCase):
         sorted_ids = [item["id"] for item in filtered_items]
 
         # Make an array of the top level items that have been processed by
-        # the Navigation class, removing the first item (which is always
+        # the NavigationBuilder class, removing the first item (which is always
         # 'index')
         hierarchy_ids = [
             item["id"] for item in list(self.mock_hierarchy.values())[1:]
