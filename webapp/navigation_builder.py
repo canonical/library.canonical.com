@@ -72,7 +72,7 @@ class NavigationBuilder:
 
             doc["children"] = {}
             doc["mimeType"] = doc["mimeType"].rpartition(".")[-1]
-            # Extract position information ('01-') and store it, 
+            # Extract position information ('01-') and store it,
             # since 'name' is edited.
             doc["position"] = extract_leading_number(doc["name"])
             doc["name"] = remove_leading_number(doc["name"])
@@ -121,7 +121,6 @@ class NavigationBuilder:
         item alphabetically after the ones with 'position' values.
         """
         slug = doc["slug"]
-        position = doc.get("position")
 
         # Add doc to children
         children = parent_obj["children"]
@@ -131,8 +130,12 @@ class NavigationBuilder:
         ordered_slugs = sorted(
             children.keys(),
             key=lambda s: (
-                children[s]["position"] if children[s]["position"] is not None else float("inf"),
-                s.lower()  # Sort alphabetically
+                (
+                    children[s]["position"]
+                    if children[s]["position"] is not None
+                    else float("inf")
+                ),
+                s.lower(),  # Sort alphabetically
             ),
         )
 
