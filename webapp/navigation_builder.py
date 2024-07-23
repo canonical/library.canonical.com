@@ -72,7 +72,8 @@ class NavigationBuilder:
 
             doc["children"] = {}
             doc["mimeType"] = doc["mimeType"].rpartition(".")[-1]
-            # Extract position before assigning slug, since 'name' is edited.
+            # Extract position information ('01-') and store it, 
+            # since 'name' is edited.
             doc["position"] = extract_leading_number(doc["name"])
             doc["name"] = remove_leading_number(doc["name"])
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
@@ -115,27 +116,23 @@ class NavigationBuilder:
 
     def insert_based_on_position(self, parent_obj, doc):
         """
-        When appending a child to a parent, it checks for leadings numbers and
-        positions it accordingly
+        When appending a child to a parent, it checks for leading numbers and
+        positions it accordingly. If no 'position' is given, it places the
+        item alphabetically after the ones with 'position' values.
         """
         slug = doc["slug"]
-        position = doc["position"]
+        position = doc.get("position")
 
         # Add doc to children
         children = parent_obj["children"]
         children[slug] = doc
 
-        # If no 'position' is given, leave it at the end
-        if position is None:
-            return
-
-        # Reorder based on 'position' value
+        # Sort children first by 'position', then alphabetically by 'slug'
         ordered_slugs = sorted(
             children.keys(),
             key=lambda s: (
-                children[s]["position"]
-                if children[s]["position"] is not None
-                else float("inf")
+                children[s]["position"] if children[s]["position"] is not None else float("inf"),
+                s.lower()  # Sort alphabetically
             ),
         )
 
