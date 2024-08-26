@@ -76,7 +76,7 @@ class NavigationBuilder:
             # since 'name' is edited.
             doc["position"] = extract_leading_number(doc["name"])
             temp_name = remove_leading_number(doc["name"])
-            if(temp_name == "Index"):
+            if (temp_name == "Index"):
                 temp_name = "index"
             doc["name"] = temp_name
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
