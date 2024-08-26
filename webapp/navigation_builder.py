@@ -75,7 +75,10 @@ class NavigationBuilder:
             # Extract position information ('01-') and store it,
             # since 'name' is edited.
             doc["position"] = extract_leading_number(doc["name"])
-            doc["name"] = remove_leading_number(doc["name"])
+            temp_name = remove_leading_number(doc["name"])
+            if temp_name == "Index":
+                temp_name = "index"
+            doc["name"] = temp_name
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
             doc["expanded"] = False
