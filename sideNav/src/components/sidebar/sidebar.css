@@ -1,0 +1,22 @@
+.mainSidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: right;
+    width: 100%;
+    background-color: #EBEBEB;
+    min-height: 100vh;
+    max-height: 100vh;
+    color: #000000;
+    overflow: scroll;
+}
+.topNav{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: right;
+    width: 100%;
+    background-color: #EBEBEB;
+    height: 56px;
+    color: #000000;
+}
+  
