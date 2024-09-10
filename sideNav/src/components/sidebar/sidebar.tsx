@@ -1,11 +1,8 @@
 'use client'
 import { useState } from 'react';
 import { doclist } from './Lists/doclist';
-import { doublecomplex } from './Lists/doublecomplex';
-import {doublelist} from './Lists/doubleList';
 import './sidebar.css';
 import ParentFolder from '../folder/parentFolder';
-
 export interface Document {
     type: string;
     name: string;
@@ -23,7 +20,13 @@ export interface selectedDocument extends levelDocument{
 }
 export const MAX_NUMBER_LEVELS = 6
 
-const Sidebar: React.FC = () => {
+export interface sidebarProps {
+  documents?: any,
+}
+
+
+const Sidebar: React.FC<sidebarProps> = ({
+}) => {
     const root = "1QLSNL1QhMMHJmDVFyTXoQ2V6RBtc8mjx";
     // ----------------------------------------------
     // ---------------  STATE MANAGEMENT ------------
@@ -31,6 +34,11 @@ const Sidebar: React.FC = () => {
     const [maxLevel, setMaxLevel] = useState(1);
     const [selected, setSelected] = useState<selectedDocument|null>(null);
     const [softRoot, setSoftRoot] = useState<levelDocument|null>(null);
+
+    const navItems = window.__NAV_ITEMS__;
+    const previousSlug = window.__PREVIOUS_SLUG__;
+    console.log(navItems);
+    console.log(previousSlug);
     // ----------------------------------------------
     // ------------  HIERARCHY CREATION  ------------
     // ----------------------------------------------
@@ -43,9 +51,17 @@ const Sidebar: React.FC = () => {
       children: [],
       isSoftRoot: false,
     }
+    const testRoot: Document = {
+      type: "folder",
+      name: "root",
+      id: root,
+      parent: null,
+      children: [],
+      isSoftRoot: false,
+    }
     const hidden: number[] = [];
     const processList = () => {
-      doublecomplex.map((doc) => {
+      doclist.map((doc) => {
             let document = {
               isSoftRoot: doc.name.includes('!'),
               type: doc.mimeType.split('google-apps.')[1],
@@ -68,8 +84,15 @@ const Sidebar: React.FC = () => {
         }
       });
     }
+    if(navItems !== undefined){
+      Object.keys(navItems).forEach((key) => {
+        let item = navItems[key];
+        testRoot.children.push(item);
+      });
+    }
     generateHierarchy();
-
+    console.log(hierarchy);
+    console.log(testRoot);
     // ----------------------------------------------
     // ----------------  RENDERING  -----------------
     // ----------------------------------------------
