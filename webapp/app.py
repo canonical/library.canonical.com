@@ -43,6 +43,7 @@ def target_document(path, navigation):
         target_page[slug]["expanded"] = True
         target_page = target_page[slug]["children"]
 
+
 @app.route("/search")
 def search_drive():
     query = request.args.get("q", "")
@@ -53,6 +54,7 @@ def search_drive():
         doc_reference_dict=doc_reference_dict,
         query=query,
     )
+
 
 # Route to display documents and root page
 @app.route("/")
@@ -91,6 +93,7 @@ def document(path=None):
         document=target_document,
     )
 
+
 # Route for search functionality
 @app.route("/search")
 def search():
@@ -100,6 +103,7 @@ def search():
         return jsonify(search_results)
     else:
         return jsonify([])
+
 
 def get_google_drive_instance():
     """

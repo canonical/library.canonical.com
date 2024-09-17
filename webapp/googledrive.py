@@ -49,7 +49,7 @@ class GoogleDrive:
             abort(500, description=err)
 
         items = results.get("files", [])
-        print("items length>>>",len(items))
+        print("items length>>>", len(items))
         return items
 
     def get_document_list(self):
