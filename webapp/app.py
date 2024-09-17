@@ -1,7 +1,7 @@
 import os
 import flask
 import talisker
-from flask import request, jsonify
+from flask import request
 from canonicalwebteam.flask_base.app import FlaskBase
 
 from webapp.googledrive import GoogleDrive
@@ -92,17 +92,6 @@ def document(path=None):
         root_name=ROOT,
         document=target_document,
     )
-
-
-# Route for search functionality
-@app.route("/search")
-def search():
-    query = request.args.get("q", "")
-    if len(query) >= 2:
-        search_results = drive.search_drive(query)
-        return jsonify(search_results)
-    else:
-        return jsonify([])
 
 
 def get_google_drive_instance():

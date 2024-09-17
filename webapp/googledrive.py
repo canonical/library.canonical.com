@@ -26,8 +26,11 @@ class GoogleDrive:
 
     def search_drive(self, query):
         try:
-            query_string = f"(name contains '{query}' or fullText contains '{query}') and trashed = false"
-            print("query sting>>>", query_string)
+            query_string = (
+                f"(name contains '{query}' or fullText contains '{query}') "
+                "and trashed = false"
+            )
+
             results = (
                 self.service.files()
                 .list(
@@ -49,7 +52,6 @@ class GoogleDrive:
             abort(500, description=err)
 
         items = results.get("files", [])
-        print("items length>>>", len(items))
         return items
 
     def get_document_list(self):

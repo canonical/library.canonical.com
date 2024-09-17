@@ -34,6 +34,7 @@ body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {
 .p-navigation__row {
   height: 100%;
 }
+
 .p-navigation__nav {
   justify-content: end;
 }
@@ -42,7 +43,6 @@ body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {
   display: none;
 
   &.is-active {
-    display: block;
     align-items: center;
     display: inline-flex;
     flex-grow: 1;
@@ -61,14 +61,14 @@ body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {
 
   .p-search-and-filter__panel {
     display: none;
-    top: calc(2.8rem + 1px);
     padding: 0;
+    top: calc(2.8rem + 1px);
 
     .p-search-and-filter__search-prompt {
       background: #fff;
       display: block;
-      padding: 0.4rem 1rem;
       margin: 0;
+      padding: 0.4rem 1rem;
 
       &:hover {
         background: #f7f7f7;
