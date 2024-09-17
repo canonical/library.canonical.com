@@ -8,7 +8,6 @@ import { levelDocument } from '../sidebar/sidebar';
 interface FolderProps {
     document: Document;
     level: number;
-    hidden: number[];
     maxLevel: number;
     setmaxLevel: (maxLevel: number) => void;
     selected: levelDocument|null;
@@ -29,7 +28,6 @@ interface FolderProps {
 const Folder: React.FC<FolderProps> = ({ 
     document,
     level,
-    hidden,
     maxLevel,
     setmaxLevel, 
     selected, 
@@ -77,7 +75,6 @@ const Folder: React.FC<FolderProps> = ({
                 return <Folder
                         document={doc}
                         level={level+1}
-                        hidden={hidden}
                         maxLevel={maxLevel}
                         setmaxLevel={setmaxLevel}
                         selected={selected}
@@ -186,7 +183,7 @@ const Folder: React.FC<FolderProps> = ({
     // ----------------------------------------------
     // -------  MANAGE HIDDING CONDITIONS -----------
     // ---------------------------------------------- 
-    const levelcondition = maxLevel - level >= MAX_NUMBER_LEVELS || hidden.indexOf(level)>0;
+    const levelcondition = maxLevel - level >= MAX_NUMBER_LEVELS;
     const isChildSoft = softRoot !== null && level > softRoot.level && parentId === softRoot.parentId;
     let hideLevel = levelcondition ||(softRoot !== null && document.id !== softRoot.id);
     if(isChildSoft){ 

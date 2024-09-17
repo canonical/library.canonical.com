@@ -10,7 +10,6 @@ interface ParentFolderProps {
     document: Document;
     selected: levelDocument|null;
     setSelected: (selected: levelDocument|null) => void;
-    hidden: number[]
     maxLevel: number;
     setMaxLevel: (maxLevel: number) => void;
     softRoot: levelDocument|null;
@@ -28,7 +27,6 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     document,
     selected, 
     setSelected,
-    hidden, 
     maxLevel, 
     setMaxLevel,
     softRoot,
@@ -79,7 +77,6 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
                 return <Folder 
                         document={doc}
                         level={level+1}
-                        hidden={hidden}
                         maxLevel={maxLevel}
                         setmaxLevel={setMaxLevel}
                         selected={selected}

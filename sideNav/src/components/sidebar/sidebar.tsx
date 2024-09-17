@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react';
-import { doclist } from './Lists/doclist';
 import { testlist } from './Lists/testlist';
 import './sidebar.css';
 import ParentFolder from '../folder/parentFolder';
@@ -41,25 +40,9 @@ const Sidebar: React.FC<sidebarProps> = ({
     const [softRoot, setSoftRoot] = useState<levelDocument|null>(null);
 
     const navItems = window.__NAV_ITEMS__||testlist;
-    console.log(navItems);
     // ----------------------------------------------
     // ------------  HIERARCHY CREATION  ------------
     // ----------------------------------------------
-    const dict:Document[] = [];
-    const hierarchy: Document = {
-      mimeType: "folder",
-      name: "root",
-      id: root,
-      parent: null,
-      children: [],
-      postChildren: [], // Initialize as an empty array
-      isSoftRoot: false,
-      position:null,
-      active: false,
-      expanded: false,  
-      full_path: "",
-      slug: "",
-    }
     const testRoot: Document = {
       mimeType: "folder",
       name: "root",
@@ -74,37 +57,7 @@ const Sidebar: React.FC<sidebarProps> = ({
       full_path: "",
       slug: "",
     }
-    const hidden: number[] = [];
-    const processList = () => {
-      doclist.map((doc) => {
-            let document = {
-              isSoftRoot: doc.name.includes('!'),
-              mimeType: doc.mimeType.split('google-apps.')[1],
-              name: doc.name.includes('!')? doc.name.replace('!','') : doc.name,
-              id: doc.id,
-              parent: doc.parents[0], 
-              children: [],
-              postChildren: [],
-              position:  null,
-              active: false,
-              expanded: false,  
-              full_path: "",
-              slug: "",
-            };
-            dict.push(document);
-        });
-    }
-    const generateHierarchy = () => {
-      processList();
-      dict.forEach(document => {
-        let parent = document.parent;
-        if (parent === root) {
-          hierarchy.postChildren?.push(document);
-        } else {
-          dict.find(doc => doc.id === parent)?.postChildren?.push(document);
-        }
-      });
-    }
+    
     if(navItems !== undefined){
       if(testRoot.postChildren === null){
         testRoot.postChildren = [];
@@ -114,8 +67,6 @@ const Sidebar: React.FC<sidebarProps> = ({
         testRoot.postChildren!.push(item);
       });
     }
-    generateHierarchy();
-    const documents = testRoot.postChildren?.length! > 0 ? testRoot : hierarchy;
     
     
     const handleAboutClick = () => {
@@ -132,7 +83,7 @@ const Sidebar: React.FC<sidebarProps> = ({
           <div className='about'>
            <p className='aboutTittle' onClick={() => handleAboutClick()}>About the Library</p>
           </div>
-          {documents.postChildren?.sort((a,b) => {
+          {testRoot.postChildren?.sort((a,b) => {
             if (a.position === null || b.position === null) {
               return 1;
             }
@@ -145,7 +96,6 @@ const Sidebar: React.FC<sidebarProps> = ({
                         document={doc}
                         selected={selected}
                         setSelected={setSelected}
-                        hidden={hidden}
                         maxLevel={maxLevel}
                         setMaxLevel={setMaxLevel} 
                         softRoot={softRoot}
