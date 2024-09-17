@@ -121,6 +121,9 @@ const Folder: React.FC<FolderProps> = ({
     useEffect(() => {
         if(document.active){
             setSelected({...document, 'level': level, 'parentId': parentId});
+            if(document.isSoftRoot){
+                setSoftRoot({...document, 'level': level, 'parentId': parentId});
+            }
         }
     },[])
 
