@@ -121,7 +121,13 @@ const Folder: React.FC<FolderProps> = ({
     useEffect(() => {
         if(document.active){
             setSelected({...document, 'level': level, 'parentId': parentId});
+            if(localMaxLevel<level){
+                setLocalMaxLevel(level);
+            }
             if(document.isSoftRoot){
+                if(localMaxLevel<level){
+                    setLocalMaxLevel(level);
+                }
                 setSoftRoot({...document, 'level': level, 'parentId': parentId});
             }
         }

@@ -55,7 +55,6 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     // Manage and stores the opened children of the parent folder
     // so navigation is independant pero child 
     const [openedChildren, setOpenedChildren] = useState<levelDocument[]>([]);  
-    console.log(softRoot)
     // ----------------------------------------------
     // ---------------  RENDER FUNCTIONS ------------
     // ----------------------------------------------
@@ -164,7 +163,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
         }
         return (
             <div className='popUp' style={{top: position.y, left: position.x}} onMouseLeave={() => handleMouseLeave()}>
-                {hiddenOptions.sort((a,b) => a.name.localeCompare(b.name)).map(option => {
+                {hiddenOptions.sort((a,b) => a.level - b.level).map(option => {
                     return <div className='popUpOption' onClick={() => handelOptionClick(option)}>{option.name}</div>
                 })}
             </div>
@@ -178,6 +177,8 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
         const handleClick = () => {
             setLocalMaxLevel(selected ? selected.level: 1);
             setMaxLevel(selected ? selected.level: 1);
+            const newUrl = selected?.full_path || window.location.href;
+            window.location.href = newUrl;
         }
         return (
             <div className="hiddenChild" onClick={() => handleClick()} style={{paddingLeft: selected ? padding + 'px' : '20px'}}>... ({selected?.name}) </div>
@@ -237,7 +238,8 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     } 
     const levelcondition = maxLevel - level >= MAX_NUMBER_LEVELS;
     const hideLevel = levelcondition ||(softRoot !== null && document.id !== softRoot.id)
-    const hiddenChild =  selected &&selected.level > localMaxLevel && selected.parentId === parentId; 
+    const hiddenChild =  selected &&selected.level > localMaxLevel && selected.parentId === parentId && selected.id !== lastInteracted?.id; 
+
     return (
         <>
         { hideLevel  ?
