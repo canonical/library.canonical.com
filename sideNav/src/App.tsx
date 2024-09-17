@@ -3,7 +3,6 @@ import './App.css'
 
 
 const App: React.FC = () => {
-  console.log('App.tsx');
   return (
     <div className='sidebar'>
       <Sidebar/>

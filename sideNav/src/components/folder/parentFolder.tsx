@@ -1,21 +1,22 @@
 'use client'
 import { useState } from 'react';
 import { ExpandMore, ChevronRight} from '@mui/icons-material';
-import { Document, levelDocument, selectedDocument } from '../sidebar/sidebar';
+import { Document, levelDocument } from '../sidebar/sidebar';
 import  Folder  from '../folder/folder';
-import File from '../file/file';
 import { MAX_NUMBER_LEVELS } from '../sidebar/sidebar';
 import './folder.css';
 
 interface ParentFolderProps {
     document: Document;
-    selected: selectedDocument|null;
-    setSelected: (selected: selectedDocument|null) => void;
+    selected: levelDocument|null;
+    setSelected: (selected: levelDocument|null) => void;
     hidden: number[]
     maxLevel: number;
     setMaxLevel: (maxLevel: number) => void;
     softRoot: levelDocument|null;
     setSoftRoot: (softRoot: levelDocument|null) => void;
+    lastInteracted: levelDocument|null;
+    setLastInteracted: (lastInteracted: levelDocument|null) => void;
 }
 
 interface position {
@@ -32,17 +33,20 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     setMaxLevel,
     softRoot,
     setSoftRoot, 
+    lastInteracted,
+    setLastInteracted
     }) => {
     // ----------------------------------------------
     // ---------------  STATE MANAGEMENT ------------
     // ----------------------------------------------
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(document.expanded);
+    const [mouseHover, setMouseHover] = useState(false);
     let level = 1;
     const parentId = document.id;
     // Manage and stores the hidden folders based on maximum level shown
     const [hiddenOptions, setHiddenOptions] = useState<levelDocument[]>([]);
     // Manage and stores the breadcrumb of the selected folder
-    const [breadcrumb, setBreadcrumb] = useState<levelDocument[]>([]);
+    //const [breadcrumb, setBreadcrumb] = useState<levelDocument[]>([]);
     // Help separate the max level currently open per parent folder
     const [localMaxLevel, setLocalMaxLevel] = useState(1);
     // Pop Up configuration to manage the position of the pop up and its visibility
@@ -51,55 +55,79 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     // Manage and stores the opened children of the parent folder
     // so navigation is independant pero child 
     const [openedChildren, setOpenedChildren] = useState<levelDocument[]>([]);  
-
     // ----------------------------------------------
     // ---------------  RENDER FUNCTIONS ------------
     // ----------------------------------------------
     // Render the children depending on the tipe of document (folder or file)
     const renderChildren = (doc: Document) => {
-        
-        return doc.children.map((doc) => {
-            if(doc.type === 'document') {
-                return <File
-                document={doc}
-                selected={selected}
-                setSelected={setSelected}
-                level={level+1}
-                parentId={parentId}
-                breadcrumb={breadcrumb}
-                setBreadcrumb={setBreadcrumb}
-                />;
-            }    
-            return <Folder 
-                    document={doc}
-                    level={level+1}
-                    hidden={hidden}
-                    maxLevel={maxLevel}
-                    setmaxLevel={setMaxLevel}
-                    selected={selected}
-                    setSelected={setSelected}
-                    hiddenOptions={hiddenOptions}
-                    setHiddenOptions={setHiddenOptions}
-                    parentId={parentId}
-                    softRoot={softRoot}
-                    setSoftRoot={setSoftRoot}
-                    localMaxLevel={localMaxLevel}
-                    setLocalMaxLevel={setLocalMaxLevel}
-                    breadcrumb={breadcrumb}
-                    setBreadcrumb={setBreadcrumb}
-                    openedChildren={openedChildren}
-                    setOpenedChildren={setOpenedChildren}
-                    />;
+        const processChildren = Object.keys(doc.children).map((key) => doc.children[key]);
+        doc.postChildren = processChildren;
+        return doc.postChildren.sort((a,b) => {
+            if (a.position === null && b.position === null) {
+              return -1;
+            }
+            if (a.position === null || b.position === null) {
+              return 1;
+            }
+            return a.position - b.position;
+          }).map((doc) => {
+            if(doc.name.includes('!')){
+                doc.isSoftRoot = true;
+                doc.name = doc.name.replace('!', '');
+            }
+            if(doc.name !== 'index'){
+                return <Folder 
+                        document={doc}
+                        level={level+1}
+                        hidden={hidden}
+                        maxLevel={maxLevel}
+                        setmaxLevel={setMaxLevel}
+                        selected={selected}
+                        setSelected={setSelected}
+                        hiddenOptions={hiddenOptions}
+                        setHiddenOptions={setHiddenOptions}
+                        parentId={parentId}
+                        softRoot={softRoot}
+                        setSoftRoot={setSoftRoot}
+                        localMaxLevel={localMaxLevel}
+                        setLocalMaxLevel={setLocalMaxLevel}
+                        lastInteracted={lastInteracted}
+                        setLastInteracted={setLastInteracted}
+                        openedChildren={openedChildren}
+                        setOpenedChildren={setOpenedChildren}
+                        />;
+            }
           });
     }
 
     // Render the ... and manage the lists of hidden folders 
     const renderHide = () => {
-        if(hiddenOptions.find(option => option.id === document.id) === undefined){
-            const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
-            setHiddenOptions([...hiddenOptions, levelDoc])
+        if(selected){
+            if(hiddenOptions.find(option => option.id === document.id) === undefined 
+                && selected?.full_path.includes(document.slug)){
+                const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
+                setHiddenOptions([...hiddenOptions, levelDoc].sort((a,b) => a.level - b.level))
+            }
+        } else {
+
+            if(hiddenOptions.find(option => option.id === document.id) === undefined 
+                && lastInteracted && lastInteracted.full_path.includes(document.slug)){  
+                const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
+                setHiddenOptions([...hiddenOptions, levelDoc].sort((a,b) => a.level - b.level))
+            }
         }
-        if (level === 1) {
+        if(softRoot){
+            if (level === 1 && softRoot?.parentId === document.id) {
+                const HandleHiddenClick = (e: React.MouseEvent<HTMLDivElement>) => {
+                    setPosition({x: e.clientX, y: e.clientY});
+                    setOpenPopUp(true);
+                };
+                return (
+                <div className="hidden" onClick={(e) => HandleHiddenClick(e)}>... </div>
+                )
+            }
+        }
+        if (level === 1 && lastInteracted && lastInteracted.parentId === document.id) {
             const HandleHiddenClick = (e: React.MouseEvent<HTMLDivElement>) => {
                 setPosition({x: e.clientX, y: e.clientY});
                 setOpenPopUp(true);
@@ -108,6 +136,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             <div className="hidden" onClick={(e) => HandleHiddenClick(e)}>... </div>
             )
         }
+        
         return null;
     }
 
@@ -116,23 +145,21 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     const renderPopUp = () => {
         // Handles States so local max level, the max level, selected files, hidden, and opened children to match the selection
         const handelOptionClick = (option: levelDocument) => {
-            setLocalMaxLevel(breadcrumb.length < MAX_NUMBER_LEVELS ? option.level+1 : MAX_NUMBER_LEVELS + (option.level-1));
+            setLocalMaxLevel(option.level+1 );
             setMaxLevel(1);
-            const tempBreadcrums = breadcrumb.filter(opt => opt.level <= option.level);
-            setBreadcrumb(tempBreadcrums);
-            setSelected({...option, 'breadcrumb': breadcrumb});
-            const index = hiddenOptions.findIndex(opt => opt.name === option.name);
-            const tempHiddenOptions = [...hiddenOptions].slice(0,index);
-            setHiddenOptions(tempHiddenOptions);
+            setHiddenOptions([]);
             setOpenPopUp(false);
             setSoftRoot(null);
-            const tempOpenedChildren = [...openedChildren].filter(opt => opt.level <= (MAX_NUMBER_LEVELS ? option.level+1 : MAX_NUMBER_LEVELS + (option.level-1)));    
-            setOpenedChildren([...tempOpenedChildren]);
+            const newUrl = option.full_path || window.location.href;
+            window.location.href = newUrl;
         }   
         // Closes the popUp when the mouse leaves
         const handleMouseLeave = () => {
             setPosition({x: 0, y: 0}); 
             setOpenPopUp(false);
+        }
+        if(position.y > 152){
+            position.y = position.y - 152;
         }
         return (
             <div className='popUp' style={{top: position.y, left: position.x}} onMouseLeave={() => handleMouseLeave()}>
@@ -164,23 +191,18 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     const handleFolderClick = (doc : Document) => {
         if(level< localMaxLevel){
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
-            setSelected({...levelDoc, 'breadcrumb': breadcrumb});
+            setSelected({...levelDoc});
         } else {
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
-            setSelected({...levelDoc, 'breadcrumb': breadcrumb});
+            setSelected({...levelDoc});
             setLocalMaxLevel(localMaxLevel + 1)
-        }
-        if(breadcrumb.length > level && selected !== null){
-            const tempBreadcrums = breadcrumb.filter(opt => opt.level <= level);
-            setBreadcrumb(tempBreadcrums);
-        }
-        if(breadcrumb.find(option => option.id === document.id) === undefined){
-            const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
-            setBreadcrumb([...breadcrumb, levelDoc])
         }
         if(openedChildren.find(option => option.id === doc.id) === undefined){
             setOpenedChildren([...openedChildren, {...doc, 'level': level, 'parentId': parentId}])
         }
+        setLastInteracted({...doc, 'level': level, 'parentId': parentId});
+        const newUrl = doc.full_path || window.location.href;
+        window.location.href = newUrl;
         setOpen(true);
     }
 
@@ -198,20 +220,12 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             setLocalMaxLevel(localMaxLevel + 1)
         }
         if(!open){
-            if(breadcrumb.length > level && selected !== null){
-                const tempBreadcrums = breadcrumb.filter(opt => opt.level <= level);
-                setBreadcrumb(tempBreadcrums);
-            }
             if(openedChildren.find(option => option.id === document.id) === undefined){
                 setOpenedChildren([...openedChildren, {...document, 'level': level, 'parentId': parentId}])
             }
-            if(breadcrumb.find(option => option.id === document.id) === undefined){
-                const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
-                setBreadcrumb([...breadcrumb, levelDoc])
-            }
         }
         setOpen(!open);
-
+        setLastInteracted({...document, 'level': level, 'parentId': parentId});
     } 
 
     // ----------------------------------------------
@@ -223,17 +237,23 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     const levelcondition = maxLevel - level >= MAX_NUMBER_LEVELS;
     const hideLevel = levelcondition ||(softRoot !== null && document.id !== softRoot.id)
     const hiddenChild =  selected &&selected.level > localMaxLevel && selected.parentId === parentId; 
-
     return (
         <>
         { hideLevel  ?
         renderHide()
         :
-        <div className="folder" >
+        <div 
+            className="folder" 
+            onMouseEnter={() =>setMouseHover(true)} 
+            onMouseLeave={() => setMouseHover(false)}
+            style={{backgroundColor: mouseHover ? '#c4c4c4': '#EBEBEB'}}
+            >
+            {(document.mimeType === 'folder' ||  document.postChildren !== null && document.postChildren.length > 1) ? 
             <div onClick={() => handleChevronClick()}>{open ?
             <ExpandMore/>
             : <ChevronRight/>}
-            </div>
+            </div> 
+            : null}
             <p className='folderTittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
         </div>
         }

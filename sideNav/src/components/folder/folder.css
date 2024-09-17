@@ -7,11 +7,13 @@
     cursor: pointer;
     padding-top: 4px;
     padding-bottom: 4px;
+    background-color: #EBEBEB;
+    min-height: 32px;
 }
 
 .folderTittle {
     font-size: 14px;
-    color: #000000;;
+    color: #000000;
     font-family: "Ubuntu Sans", sans-serif;
     font-optical-sizing: auto;
     font-style: normal;
@@ -19,6 +21,7 @@
     overflow-wrap: break-word;
     margin: 0;
     cursor: pointer;
+    padding-top: 0;
 }
 
 .hidden {
@@ -29,7 +32,7 @@
 .hiddenChild {
     cursor: pointer;
     font-size: 14px;
-    color: #000000;;
+    color: #000000;
     font-family: "Ubuntu Sans", sans-serif;
     font-optical-sizing: auto;
     font-style: normal;

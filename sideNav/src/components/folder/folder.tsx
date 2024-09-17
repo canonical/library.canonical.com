@@ -1,9 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react';
 import { ExpandMore, ChevronRight} from '@mui/icons-material';
-import { Document, MAX_NUMBER_LEVELS, selectedDocument } from '../sidebar/sidebar';
-import File from '../file/file';
-
+import { Document, MAX_NUMBER_LEVELS } from '../sidebar/sidebar';
 import './folder.css';
 import { levelDocument } from '../sidebar/sidebar';
 
@@ -13,8 +11,8 @@ interface FolderProps {
     hidden: number[];
     maxLevel: number;
     setmaxLevel: (maxLevel: number) => void;
-    selected: selectedDocument|null;
-    setSelected: (selected: selectedDocument|null) => void;
+    selected: levelDocument|null;
+    setSelected: (selected: levelDocument|null) => void;
     hiddenOptions: levelDocument[];
     setHiddenOptions: (hiddenOptions: levelDocument[]) => void;
     parentId: string;
@@ -22,8 +20,8 @@ interface FolderProps {
     setSoftRoot: (softRoot: levelDocument|null) => void;
     localMaxLevel: number;
     setLocalMaxLevel: (maxLevel: number) => void;
-    breadcrumb: levelDocument[];
-    setBreadcrumb: (breadcrumb: levelDocument[]) => void;
+    lastInteracted: levelDocument|null;
+    setLastInteracted: (lastInteracted: levelDocument|null) => void;
     openedChildren: levelDocument[];
     setOpenedChildren: (openedChildren: levelDocument[]) => void;
   }
@@ -43,88 +41,87 @@ const Folder: React.FC<FolderProps> = ({
     setSoftRoot, 
     setLocalMaxLevel, 
     localMaxLevel, 
-    breadcrumb, 
-    setBreadcrumb,
+    lastInteracted, 
+    setLastInteracted,
     openedChildren,
     setOpenedChildren,
     }) => {
     // ----------------------------------------------
     // ---------------  STATE MANAGEMENT ------------
     // ----------------------------------------------
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(document.expanded);
 
     // ----------------------------------------------
     // ---------------  RENDER FUNCTIONS ------------
     // ----------------------------------------------
     // Render the children depending on the tipe of document (folder or file)
     const renderChildren = (doc: Document) => {
-        
-        return doc.children.map((doc) => {
-            if(doc.type === 'document') {
-                return <File
-                document={doc}
-                selected={selected}
-                setSelected={setSelected}
-                level={level+1}
-                parentId={parentId}
-                breadcrumb={breadcrumb}
-                setBreadcrumb={setBreadcrumb}
-                />;
+        const processChildren = Object.keys(doc.children).map((key) => doc.children[key]);
+        doc.postChildren = processChildren;
+        return doc.postChildren.sort((a,b) => {
+            if (a.position === null && b.position === null) {
+                return -1;
             }
-
-            return <Folder
-                    document={doc}
-                    level={level+1}
-                    hidden={hidden}
-                    maxLevel={maxLevel}
-                    setmaxLevel={setmaxLevel}
-                    selected={selected}
-                    setSelected={setSelected}
-                    hiddenOptions={hiddenOptions}
-                    setHiddenOptions={setHiddenOptions} 
-                    parentId={parentId}
-                    softRoot={softRoot}
-                    setSoftRoot={setSoftRoot}
-                    localMaxLevel={localMaxLevel}
-                    setLocalMaxLevel={setLocalMaxLevel}
-                    breadcrumb={breadcrumb}
-                    setBreadcrumb={setBreadcrumb}
-                    openedChildren={openedChildren}
-                    setOpenedChildren={setOpenedChildren}  
-                    />;
+            if (a.position === null || b.position === null) {
+              return 1;
+            }
+            return a.position - b.position;
+          }).map((doc) => {
+            if(doc.name.includes('!')){
+                doc.isSoftRoot = true;
+                doc.name = doc.name.replace('!', '');
+            }
+            if(doc.name !== 'index'){
+            
+                return <Folder
+                        document={doc}
+                        level={level+1}
+                        hidden={hidden}
+                        maxLevel={maxLevel}
+                        setmaxLevel={setmaxLevel}
+                        selected={selected}
+                        setSelected={setSelected}
+                        hiddenOptions={hiddenOptions}
+                        setHiddenOptions={setHiddenOptions} 
+                        parentId={parentId}
+                        softRoot={softRoot}
+                        setSoftRoot={setSoftRoot}
+                        localMaxLevel={localMaxLevel}
+                        setLocalMaxLevel={setLocalMaxLevel}
+                        lastInteracted={lastInteracted}
+                        setLastInteracted={setLastInteracted}
+                        openedChildren={openedChildren}
+                        setOpenedChildren={setOpenedChildren}  
+                        />;
+            }
           });
     }
     // Manage the lists of hidden folders 
     const renderHide = () => {
-        
-        if(hiddenOptions.find(option => option.id === document.id) === undefined){
-            const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
-            setHiddenOptions([...hiddenOptions, levelDoc])
+        if(selected){
+            if(hiddenOptions.find(option => option.id === document.id) === undefined 
+                && selected?.full_path.includes(document.slug)){
+                const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
+                setHiddenOptions([...hiddenOptions, levelDoc].sort((a,b) => a.level - b.level))
+            }
+        } else {
+            if(hiddenOptions.find(option => option.id === document.id) === undefined 
+                && lastInteracted && lastInteracted.full_path.includes(document.slug)){  
+                const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
+                setHiddenOptions([...hiddenOptions, levelDoc].sort((a,b) => a.level - b.level))
+            }
         }
+        
         return null;
     }
     // ----------------------------------------------
     // ---------------  USE EFFECTS ----------------
     // ----------------------------------------------
-    // used to check if the folder should be open or closed based on the max level
     useEffect(() => {
-        if (openedChildren.find(option => option.id === document.parent) === undefined){   
-            if(level >= localMaxLevel) {
-                setOpen(false);
-            }
-            else {
-                setOpen(true);
-            }
+        if(document.active){
+            setSelected({...document, 'level': level, 'parentId': parentId});
         }
-        if (selected?.breadcrumb.find(option => option.id === document.id) !== undefined){
-            if(level >= localMaxLevel) {
-                setOpen(false);
-            }
-            else {
-                setOpen(true);
-            }
-        } 
-    },[localMaxLevel, breadcrumb, openedChildren]);
+    },[])
 
     // ----------------------------------------------
     // ---------------  HANDLER FUNCTIONS -----------
@@ -138,25 +135,20 @@ const Folder: React.FC<FolderProps> = ({
         }
         if(level< maxLevel){
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
-            setSelected({...levelDoc, 'breadcrumb': breadcrumb});
+            setSelected({...levelDoc});
         } else {
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
-            setSelected({...levelDoc, 'breadcrumb': breadcrumb});
+            setSelected({...levelDoc});
             if(!open){
                 setLocalMaxLevel(localMaxLevel + 1)
             }
         }
-        if(breadcrumb.length > level && selected !== null){
-            const tempBreadcrums = breadcrumb.filter(opt => opt.level <= level);
-            setBreadcrumb(tempBreadcrums);
-        }
-        if(breadcrumb.find(option => option.id === document.id) === undefined){
-            const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
-            setBreadcrumb([...breadcrumb, levelDoc])
-        }
         if(openedChildren.find(option => option.id === doc.id) === undefined){
             setOpenedChildren([...openedChildren, {...doc, 'level': level, 'parentId': parentId}])
         }
+        setLastInteracted({...doc, 'level': level, 'parentId': parentId});
+        const newUrl = doc.full_path || window.location.href;
+        window.location.href = newUrl;
         setOpen(true)
     }
     // On click of the chevron, if the folder is closed,it will open and show its children
@@ -170,29 +162,15 @@ const Folder: React.FC<FolderProps> = ({
             const idxOC = openedChildren.findIndex(opt => opt.name === document.name);
             const tempOpenedChildren = [...openedChildren].slice(0,idxOC);
             setOpenedChildren(tempOpenedChildren);
-            const index = breadcrumb.findIndex(opt => opt.name === document.name);
-            let tempBreadcrums =[...breadcrumb]
-            tempBreadcrums.splice(index,1);
-            if(tempBreadcrums.length > level && selected && selected.level <= level){
-                tempBreadcrums = tempBreadcrums.filter(opt => opt.level <= level);
-            }
-            setBreadcrumb(tempBreadcrums);
         }else if(level >= localMaxLevel){
             setLocalMaxLevel(localMaxLevel + 1)
         }
         if(!open){
-            if(breadcrumb.length > level && selected !== null){
-                const tempBreadcrums = breadcrumb.filter(opt => opt.level <= level);
-                setBreadcrumb(tempBreadcrums);
-            }
             if(openedChildren.find(option => option.id === document.id) === undefined){
                 setOpenedChildren([...openedChildren, {...document, 'level': level, 'parentId': parentId}])
             }
-            if(breadcrumb.find(option => option.id === document.id) === undefined){
-                const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
-                setBreadcrumb([...breadcrumb, levelDoc])
-            }
         }
+        setLastInteracted({...document, 'level': level, 'parentId': parentId});
         setOpen(!open);
     }
     // ----------------------------------------------
@@ -204,17 +182,18 @@ const Folder: React.FC<FolderProps> = ({
     if(isChildSoft){ 
         hideLevel = false;
     }
-
     return (
         <>
         { hideLevel ?
         renderHide()
         :
         <div className="folder" >
+            {(document.mimeType === 'folder' &&  Object.keys(document.children).length > 1) ? 
             <div onClick={() => handleChevronClick()}>{open ?
             <ExpandMore/>
             : <ChevronRight/>}
             </div>
+            :null}
             <p className='folderTittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
         </div>
         }
