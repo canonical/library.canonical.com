@@ -1,0 +1,82 @@
+{% extends 'base_layout.html' %}
+{% block title %}Canonical Reference Library | Search{% endblock %}
+{% block description %}Search Canonical Reference Library{% endblock %}
+{% block content %}
+  {% include "_partial/_navigation.html" %}
+  {% if search_results %}
+    <div class="p-strip is-shallow">
+      <div class="u-fixed-width">
+        <h1>Search results for "{{ query }}"</h1>
+      </div>
+    </div>
+  {% else %}
+    <div class="p-strip is-shallow">
+      <div class="u-fixed-width">
+        <h1>We couldn't find anything results for "{{ query }}"</h1>
+      </div>
+    </div>
+  {% endif %}
+  <div class="p-strip is-shallow">
+    <div class="u-fixed-width">
+      <form class="p-search-box" action="/search">
+        <label for="search-input" class="u-off-screen">Search</label>
+        <input class="p-search-box__input"
+               name="q"
+               id="search-input"
+               type="search"
+               {% if query %}value="{{ query }}"{% endif %}
+               placeholder="e.g. juju" />
+        {% if siteSearch %}<input name="siteSearch" type="hidden" value="{{ siteSearch }}" />{% endif %}
+        <button type="submit" alt="search" class="p-search-box__button" alt="search">
+          <i class="p-icon--search">Submit</i>
+        </button>
+      </form>
+    </div>
+  </div>
+  {% if search_results %}
+    {% for search_result in search_results %}
+      {% if search_result.id in doc_reference_dict %}
+        {% set library_obj = doc_reference_dict[search_result.id] %}
+        {% if library_obj.full_path %}
+          <div class="p-strip is-shallow u-fixed-width u-text-max-width">
+            <p class="p-heading--5">
+              <a href="{% if library_obj.full_path %}{{ library_obj.full_path }}{% else %}/{{ library_obj.slug }}{% endif %}"
+                 class="title-main">
+                {% if library_obj.name|lower != "index" %}
+                  {{ library_obj.name | safe }}
+                {% else %}
+                  {% with parent = library_obj.breadcrumbs|last %}{{ parent.name | safe }}{% endwith %}
+                {% endif %}
+              </a>
+            </p>
+            {% if search_result.description %}<p>{{ search_result.description }}</p>{% endif %}
+            <a href="{{ library_obj.full_path }}">https://library.canonical.com{{ library_obj.full_path }}</a>
+          </div>
+          <hr class="is-muted is-fixed-width u-no-margin--bottom">
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    <div class="p-strip">
+      <div class="row">
+        <div class="col-6">
+          <h3>Why not try widening your search?</h3>
+          <p>You can do this by:</p>
+          <ul class="p-list">
+            <li class="p-list__item is-ticked">Adding alternative words or phrases</li>
+            <li class="p-list__item is-ticked">Using individual words instead of phrases</li>
+            <li class="p-list__item is-ticked">Trying a different spelling</li>
+          </ul>
+        </div>
+        <div class="col-6">
+          <h3>Still no luck?</h3>
+          <ul class="p-list">
+            <li class="p-list__item is-ticked">
+              <a href="/">Visit the Library homepage</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock content %}

@@ -43,6 +43,17 @@ def target_document(path, navigation):
         target_page[slug]["expanded"] = True
         target_page = target_page[slug]["children"]
 
+@app.route("/search")
+def search_drive():
+    query = request.args.get("q", "")
+    search_results = drive.search_drive(query)
+    return flask.render_template(
+        "search.html",
+        search_results=search_results,
+        doc_reference_dict=doc_reference_dict,
+        query=query,
+    )
+
 # Route to display documents and root page
 @app.route("/")
 @app.route("/<path:path>")

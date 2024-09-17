@@ -37,7 +37,7 @@ class GoogleDrive:
                     supportsAllDrives=True,
                     includeItemsFromAllDrives=True,
                     spaces="drive",
-                    fields="files(id, name, mimeType)",
+                    fields="files(id, name, mimeType, description)",
                     pageSize=1000,
                 )
                 .execute()

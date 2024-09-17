@@ -18,27 +18,21 @@
           <ul class="p-navigation__items" aria-hidden="true"></ul>
           <ul class="p-navigation__items">
             <li class="p-navigation__item">
-              <button href="#" class="js-search-button p-navigation__link--search-toggle">
+              <a href="#" class="js-search-button p-navigation__link--search-toggle">
                 <span class="p-navigation__search-label">Search</span>
-              </button>
+              </a>
             </li>
           </ul>
-          <div class="p-search-and-filter is-light">
-            <button class="p-search-and-filter__clear"><i class="p-icon--close"></i></button>
-            <div class="p-search-and-filter__search-container" aria-expanded="false" data-active="true" data-empty="false">
-              <form class="p-search-and-filter__box" data-overflowing="false">
-                <label class="u-off-screen" for="search">Search</label>
-                <input autocomplete="off" class="p-search-and-filter__input" id="search" name="search" placeholder="Search and filter" type="search" value="">
-                <button alt="search" class="u-off-screen" type="submit" aria-hidden="true" tabindex="-1">Search</button>
-              </form>
-            </div>
-            <div class="p-search-and-filter__panel" aria-hidden="false">
-              <div class="p-search-and-filter__search-results"></div>
-            </div>
-            <template class="js-result-template">
-              <a class="p-search-and-filter__search-result" href=""></a>
-              <hr class="is-muted">
-            </template>
+          <div class="p-navigation__search">
+            <form action="/search" class="p-search-box is-light">
+              <input type="search" class="p-search-box__input" name="q" placeholder="Search our sites" required="" aria-label="Search our sites">
+              <button type="reset" class="p-search-box__reset">
+                <i class="p-icon--close"></i>
+              </button>
+              <button type="submit" class="p-search-box__button">
+                <i class="p-icon--search"></i>
+              </button>
+            </form>
           </div>
           <ul class="p-navigation__items global-nav"></ul>
         </nav>
