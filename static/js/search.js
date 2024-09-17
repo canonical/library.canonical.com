@@ -1,5 +1,4 @@
-function initNavigationSearch(navigationElement) {
-  const navigation = navigationElement;
+function initNavigationSearch(navigation) {
   const searchButtons = navigation.querySelectorAll(".js-search-button");
   const searchContainer = navigation.querySelector(".p-search-box");
   const searchInput = navigation.querySelector(".p-search-box__input");
