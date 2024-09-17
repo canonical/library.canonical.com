@@ -46,7 +46,7 @@ def target_document(path, navigation):
 @app.route("/search")
 def search_drive():
     query = request.args.get("q", "")
-    search_results = drive.search_drive(query)
+    search_results = get_google_drive_instance().search_drive(query)
     return flask.render_template(
         "search.html",
         search_results=search_results,
@@ -62,8 +62,10 @@ def document(path=None):
     The entire site is rendered by this function. As all pages use the same
     template, the only difference between them is the content.
     """
-    global 
+    global doc_reference_dict
+
     navigation = NavigationBuilder(get_google_drive_instance(), ROOT)
+    doc_reference_dict = navigation.doc_reference_dict
 
     try:
         target_document = get_target_document(path, navigation.hierarchy)
