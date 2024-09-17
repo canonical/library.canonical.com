@@ -50,6 +50,7 @@ const Folder: React.FC<FolderProps> = ({
     // ---------------  STATE MANAGEMENT ------------
     // ----------------------------------------------
     const [open, setOpen] = useState(document.expanded);
+    const [mouseHover, setMouseHover] = useState(false);
 
     // ----------------------------------------------
     // ---------------  RENDER FUNCTIONS ------------
@@ -187,7 +188,12 @@ const Folder: React.FC<FolderProps> = ({
         { hideLevel ?
         renderHide()
         :
-        <div className="folder" >
+        <div 
+            className="folder"
+            onMouseEnter={() =>setMouseHover(true)} 
+            onMouseLeave={() => setMouseHover(false)}
+            style={{backgroundColor: mouseHover ? '#c4c4c4': '#EBEBEB'}} 
+            >
             {(document.mimeType === 'folder' &&  Object.keys(document.children).length > 1) ? 
             <div onClick={() => handleChevronClick()}>{open ?
             <ExpandMore/>
