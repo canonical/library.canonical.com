@@ -24,9 +24,22 @@ app = FlaskBase(
 session = talisker.requests.get_session()
 init_sso(app)
 
+# Initialize navigation_data globally
+navigation_data = {}
 
-# Helper function to find target document
+@app.before_first_request
+def initialize_navigation_data():
+    """
+    Initialize the navigation_data globally before the first request.
+    """
+    global navigation_data
+    navigation_data = NavigationBuilder(get_google_drive_instance(), ROOT)
+
+
 def target_document(path, navigation):
+    """
+    Helper function that traverses the navigation hierarchy based on the URL path and returns the target document.
+    """
     if not path:
         navigation["index"]["active"] = True
         return navigation["index"]
@@ -46,12 +59,17 @@ def target_document(path, navigation):
 
 @app.route("/search")
 def search_drive():
+    """
+    Route to search the Google Drive. The search results are displayed in a separate page.
+    """
+    global navigation_data
     query = request.args.get("q", "")
     search_results = get_google_drive_instance().search_drive(query)
+
     return flask.render_template(
         "search.html",
         search_results=search_results,
-        doc_reference_dict=doc_reference_dict,
+        doc_reference_dict=navigation_data.doc_reference_dict,
         query=query,
     )
 
@@ -61,16 +79,13 @@ def search_drive():
 @app.route("/<path:path>")
 def document(path=None):
     """
-    The entire site is rendered by this function. As all pages use the same
+    The entire site is rendered by this function (except /search). As all pages use the same
     template, the only difference between them is the content.
     """
-    global doc_reference_dict
-
-    navigation = NavigationBuilder(get_google_drive_instance(), ROOT)
-    doc_reference_dict = navigation.doc_reference_dict
+    global navigation_data
 
     try:
-        target_document = get_target_document(path, navigation.hierarchy)
+        target_document = get_target_document(path, navigation_data.hierarchy)
     except KeyError:
         err = "Error, document does not exist."
         flask.abort(404, description=err)
@@ -78,7 +93,7 @@ def document(path=None):
     soup = Parser(
         get_google_drive_instance(),
         target_document["id"],
-        navigation.doc_reference_dict,
+        navigation_data.doc_reference_dict,
         target_document["name"],
     )
 
@@ -87,7 +102,7 @@ def document(path=None):
 
     return flask.render_template(
         "index.html",
-        navigation=navigation.hierarchy,
+        navigation=navigation_data.hierarchy,
         html=soup.html,
         root_name=ROOT,
         document=target_document,
