@@ -45,7 +45,7 @@
     {% for search_result in search_results %}
       {% if search_result.id in doc_reference_dict %}
         {% set library_obj = doc_reference_dict[search_result.id] %}
-        {% if library_obj.full_path %}
+        {% if library_obj.full_path and library_obj.mimeType != "folder" %}
           <div class="p-strip is-shallow u-fixed-width u-text-max-width">
             <p class="p-heading--5">
               <a href="{% if library_obj.full_path %}{{ library_obj.full_path }}{% else %}/{{ library_obj.slug }}{% endif %}"
