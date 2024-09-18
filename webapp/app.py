@@ -24,18 +24,8 @@ app = FlaskBase(
 session = talisker.requests.get_session()
 init_sso(app)
 
-# Initialize navigation_data globally
+# Initialize global variable to store navigation data
 navigation_data = {}
-
-
-@app.before_first_request
-def initialize_navigation_data():
-    """
-    Initialize the navigation_data globally before the first request.
-    """
-    global navigation_data
-    navigation_data = NavigationBuilder(get_google_drive_instance(), ROOT)
-
 
 def target_document(path, navigation):
     """
@@ -65,9 +55,9 @@ def search_drive():
     Route to search the Google Drive. The search results are displayed in a
     separate page.
     """
-    global navigation_data
     query = request.args.get("q", "")
     search_results = get_google_drive_instance().search_drive(query)
+    navigation_data = get_navigation_data()
 
     return flask.render_template(
         "search.html",
@@ -120,6 +110,16 @@ def get_google_drive_instance():
     if not hasattr(get_google_drive_instance, "_instance"):
         get_google_drive_instance._instance = GoogleDrive()
     return get_google_drive_instance._instance
+
+
+def get_navigation_data():
+    """
+    Return a singleton instance of navigation_data
+    """
+    global navigation_data
+    if not navigation_data:
+        navigation_data = NavigationBuilder(get_google_drive_instance(), ROOT)
+    return navigation_data
 
 
 def get_target_document(path, navigation):
