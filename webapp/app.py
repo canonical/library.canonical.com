@@ -27,6 +27,7 @@ init_sso(app)
 # Initialize navigation_data globally
 navigation_data = {}
 
+
 @app.before_first_request
 def initialize_navigation_data():
     """
@@ -38,7 +39,8 @@ def initialize_navigation_data():
 
 def target_document(path, navigation):
     """
-    Helper function that traverses the navigation hierarchy based on the URL path and returns the target document.
+    Helper function that traverses the navigation hierarchy based on the URL 
+    path and returns the target document.
     """
     if not path:
         navigation["index"]["active"] = True
@@ -60,7 +62,8 @@ def target_document(path, navigation):
 @app.route("/search")
 def search_drive():
     """
-    Route to search the Google Drive. The search results are displayed in a separate page.
+    Route to search the Google Drive. The search results are displayed in a 
+    separate page.
     """
     global navigation_data
     query = request.args.get("q", "")
@@ -79,8 +82,9 @@ def search_drive():
 @app.route("/<path:path>")
 def document(path=None):
     """
-    The entire site is rendered by this function (except /search). As all pages use the same
-    template, the only difference between them is the content.
+    The entire site is rendered by this function (except /search). As all 
+    pages use the same template, the only difference between them is the 
+    content.
     """
     global navigation_data
 
