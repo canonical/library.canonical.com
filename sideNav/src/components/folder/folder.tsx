@@ -66,12 +66,7 @@ const Folder: React.FC<FolderProps> = ({
             }
             return a.position - b.position;
           }).map((doc) => {
-            if(doc.name.includes('!')){
-                doc.isSoftRoot = true;
-                doc.name = doc.name.replace('!', '');
-            }
             if(doc.name !== 'index'){
-            
                 return <Folder
                         document={doc}
                         level={level+1}

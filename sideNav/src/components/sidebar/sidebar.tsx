@@ -39,6 +39,8 @@ const Sidebar: React.FC<sidebarProps> = ({
     const [lastInteracted, setLastInteracted] = useState<levelDocument|null>(null);
     const [softRoot, setSoftRoot] = useState<levelDocument|null>(null);
 
+
+    // TODO: Implement a backend call to get the list of documents
     const navItems = window.__NAV_ITEMS__||testlist;
     // ----------------------------------------------
     // ------------  HIERARCHY CREATION  ------------
@@ -74,7 +76,6 @@ const Sidebar: React.FC<sidebarProps> = ({
       window.location.href = newUrl;
       
     }
-    
     // ----------------------------------------------
     // ----------------  RENDERING  -----------------
     // ----------------------------------------------
