@@ -195,7 +195,7 @@ const Folder: React.FC<FolderProps> = ({
         renderHide()
         :
         <div 
-            className="folder"
+            className="navigation__folder"
             onMouseEnter={() =>setMouseHover(true)} 
             onMouseLeave={() => setMouseHover(false)}
             style={{backgroundColor: mouseHover ? '#c4c4c4': '#EBEBEB'}} 
@@ -206,7 +206,7 @@ const Folder: React.FC<FolderProps> = ({
             : <ChevronRight/>}
             </div>
             :null}
-            <p className='folderTittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
+            <p className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
         </div>
         }
         <div style={{paddingLeft: hideLevel? '0' : '5%'}}>

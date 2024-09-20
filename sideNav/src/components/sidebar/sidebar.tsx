@@ -79,9 +79,9 @@ const Sidebar: React.FC<sidebarProps> = ({
     // ----------------  RENDERING  -----------------
     // ----------------------------------------------
     return (
-        <div className="mainSidebar">
-          <div className='about'>
-           <p className='aboutTittle' onClick={() => handleAboutClick()}>About the Library</p>
+        <div className="navigation">
+          <div className='navigation__about-container'>
+           <p className='navigation__about-tittle' onClick={() => handleAboutClick()}>About the Library</p>
           </div>
           {testRoot.postChildren?.sort((a,b) => {
             if (a.position === null || b.position === null) {

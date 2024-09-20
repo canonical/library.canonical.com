@@ -120,7 +120,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
                     setOpenPopUp(true);
                 };
                 return (
-                <div className="hidden" onClick={(e) => HandleHiddenClick(e)}>... </div>
+                <div className="navigation__hidden-options" onClick={(e) => HandleHiddenClick(e)}>... </div>
                 )
             }
         }
@@ -130,7 +130,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
                 setOpenPopUp(true);
             };
             return (
-            <div className="hidden" onClick={(e) => HandleHiddenClick(e)}>... </div>
+            <div className="navigation__hidden-options" onClick={(e) => HandleHiddenClick(e)}>... </div>
             )
         }
         
@@ -159,9 +159,9 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             position.y = position.y - 152;
         }
         return (
-            <div className='popUp' style={{top: position.y, left: position.x}} onMouseLeave={() => handleMouseLeave()}>
+            <div className='navigation__popup' style={{top: position.y, left: position.x}} onMouseLeave={() => handleMouseLeave()}>
                 {hiddenOptions.sort((a,b) => a.level - b.level).map(option => {
-                    return <div className='popUpOption' onClick={() => handelOptionClick(option)}>{option.name}</div>
+                    return <div className='navigation__popup-tittle ' onClick={() => handelOptionClick(option)}>{option.name}</div>
                 })}
             </div>
         )
@@ -178,7 +178,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             window.location.href = newUrl;
         }
         return (
-            <div className="hiddenChild" onClick={() => handleClick()} style={{paddingLeft: selected ? padding + 'px' : '20px'}}>... ({selected?.name}) </div>
+            <div className="navigation__slected-hidden-option" onClick={() => handleClick()} style={{paddingLeft: selected ? padding + 'px' : '20px'}}>... ({selected?.name}) </div>
         )
     }
 
@@ -243,7 +243,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
         renderHide()
         :
         <div 
-            className="folder" 
+            className="navigation__folder" 
             onMouseEnter={() =>setMouseHover(true)} 
             onMouseLeave={() => setMouseHover(false)}
             style={{backgroundColor: mouseHover ? '#c4c4c4': '#EBEBEB'}}
@@ -254,7 +254,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             : <ChevronRight/>}
             </div> 
             : null}
-            <p className='folderTittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
+            <p className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
         </div>
         }
         <div style={{paddingLeft: hideLevel? '0' : '5%'}}>
