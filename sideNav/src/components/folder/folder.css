@@ -1,4 +1,4 @@
-.folder {
+.navigation__folder {
     display: flex;
     flex-direction: row;
     justify-content: left;
@@ -11,7 +11,7 @@
     min-height: 32px;
 }
 
-.folderTittle {
+.navigation__folder-tittle {
     font-size: 14px;
     color: #000000;
     font-family: "Ubuntu Sans", sans-serif;
@@ -24,12 +24,12 @@
     padding-top: 0;
 }
 
-.hidden {
+.navigation__hidden-options {
     padding-left: 20px;
     cursor: pointer;
 }
 
-.hiddenChild {
+.navigation__slected-hidden-option {
     cursor: pointer;
     font-size: 14px;
     color: #000000;
@@ -42,7 +42,7 @@
 
 }
 
-.popUp {
+.navigation__popup {
     position: absolute;
     width: auto;
     height: auto;
@@ -51,7 +51,7 @@
     z-index: 1002;
     overflow: auto;
   }
-.popUpOption {
+.navigation__popup-tittle {
     display: flex;
     font-size: 14px;
     color: #000000;;
