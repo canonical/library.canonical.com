@@ -57,7 +57,10 @@
                 {% endif %}
               </a>
             </p>
-            {% if search_result.description %}<p>{{ search_result.description }}</p>{% endif %}
+            {% if search_result.description %}<p>{{ search_result.description }}</p>
+            {% else %}
+              <p>This document doesn't have description yet, you can add one to the metadata of the document: <a href="https://drive.google.com/drive/u/0/folders/{{TARGET_DRIVE}}/{{library_obj.id}}">https://drive.google.com/drive/u/0/folders/{{TARGET_DRIVE}}/{{library_obj.id}}</a></p>
+            {% endif %}
             <a href="{{ library_obj.full_path }}">https://library.canonical.com{{ library_obj.full_path }}</a>
           </div>
           <hr class="is-muted is-fixed-width u-no-margin--bottom">

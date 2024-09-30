@@ -11,6 +11,8 @@ from webapp.sso import init_sso
 
 # Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")
+TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
+
 app = FlaskBase(
     __name__,
     "library.canonical.com",
@@ -87,6 +89,7 @@ def search_drive():
         search_results=search_results,
         doc_reference_dict=navigation_data.doc_reference_dict,
         query=query,
+        TARGET_DRIVE=TARGET_DRIVE,
     )
 
 
