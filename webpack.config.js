@@ -4,6 +4,7 @@ const production = process.env.ENVIRONMENT !== "devel";
 module.exports = {
   entry: {
     main: "./static/js/main.js",
+    search: "./static/js/search.js"
   },
   output: {
     filename: "[name].js",
