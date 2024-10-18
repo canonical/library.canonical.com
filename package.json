@@ -23,7 +23,6 @@
     "@canonical/cookie-policy": "3.4.0",
     "@canonical/global-nav": "3.2.4",
     "autoprefixer": "10.4.13",
-    "sass": "1.57.1",
     "postcss": "8.4.21",
     "vanilla-framework": "4.14.0"
   },
