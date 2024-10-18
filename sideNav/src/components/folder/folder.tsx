@@ -184,6 +184,8 @@ const Folder: React.FC<FolderProps> = ({
     if(isChildSoft){ 
         hideLevel = false;
     }
+
+    const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB'
     return (
         <>
         { hideLevel ?
@@ -193,7 +195,7 @@ const Folder: React.FC<FolderProps> = ({
             className="navigation__folder"
             onMouseEnter={() =>setMouseHover(true)} 
             onMouseLeave={() => setMouseHover(false)}
-            style={{backgroundColor: mouseHover ? '#c4c4c4': '#EBEBEB'}} 
+            style={{backgroundColor: backgroundColor, paddingLeft:document.mimeType === 'folder' &&  Object.keys(document.children).length > 1 ? '2%': '5%'}} 
             >
             {(document.mimeType === 'folder' &&  Object.keys(document.children).length > 1) ? 
             <div onClick={() => handleChevronClick()}>{open ?

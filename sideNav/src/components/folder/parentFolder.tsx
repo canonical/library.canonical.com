@@ -232,7 +232,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     const levelcondition = maxLevel - level >= MAX_NUMBER_LEVELS;
     const hideLevel = levelcondition ||(softRoot !== null && document.id !== softRoot.id)
     const hiddenChild =  selected &&selected.level > localMaxLevel && selected.parentId === parentId && selected.id !== lastInteracted?.id; 
-
+    const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB'
     return (
         <>
         { hideLevel  ?
@@ -242,9 +242,9 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             className="navigation__folder" 
             onMouseEnter={() =>setMouseHover(true)} 
             onMouseLeave={() => setMouseHover(false)}
-            style={{backgroundColor: mouseHover ? '#c4c4c4': '#EBEBEB'}}
+            style={{backgroundColor: backgroundColor, paddingLeft:Object.keys(document.children).length > 1 ? '2%': '5%'}}
             >
-            {(document.mimeType === 'folder' ||  document.postChildren !== null && document.postChildren.length > 1) ? 
+            {( Object.keys(document.children).length > 1) ? 
             <div onClick={() => handleChevronClick()}>{open ?
             <ExpandMore/>
             : <ChevronRight/>}
