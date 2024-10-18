@@ -78,7 +78,7 @@ class NavigationBuilder:
             temp_name = remove_leading_number(doc["name"])
             if temp_name == "Index":
                 temp_name = "index"
-            doc['isSoftRoot'] = '!' in temp_name
+            doc['isSoftRoot'] = "!" in temp_name
             doc["name"] = temp_name.replace("!", "")
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
