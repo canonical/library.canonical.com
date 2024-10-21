@@ -78,7 +78,7 @@ class NavigationBuilder:
             temp_name = remove_leading_number(doc["name"])
             if temp_name == "Index":
                 temp_name = "index"
-            doc['isSoftRoot'] = "!" in temp_name
+            doc["isSoftRoot"] = "!" in temp_name
             doc["name"] = temp_name.replace("!", "")
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
@@ -88,8 +88,7 @@ class NavigationBuilder:
             # is a drive ID (<20 chars) and not 'root', skip it in the
             # reference dict/navigation.
             if doc["parents"] and (
-                len(doc["parents"][0]) > 20
-                or doc["name"].lower() == self.root_folder
+                len(doc["parents"][0]) > 20 or doc["name"].lower() == self.root_folder
             ):
                 doc_reference_dict[doc["id"]] = doc
 
