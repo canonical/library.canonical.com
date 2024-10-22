@@ -22,4 +22,12 @@ dotrun
 
 Once the server has started, you can visit <http://0.0.0.0:8051> in your browser.
 
+Run the SideNavigation
+```bash
+cd sideNav
+npm install
+npm run dev
+```
+Once the server has started, you can visit <http://localhost:5173> in your browser.
+
 With ♥ from Canonical

@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu+Sans:ital,wght@0,100..800;1,100..800&display=swap');
+
+#root {
+  max-width: 100vw;
+  margin: 0 auto;
+}
+
+.sidenav {
+  display: flex;
+  flex-direction: column;
+  align-items: right;
+  width: 100%;
+  min-height: 100vh;
+}
