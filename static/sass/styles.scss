@@ -126,3 +126,11 @@ body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {
 .p-notification--caution {
   background-position: 1.5rem 1.15rem;
 }
+
+.vsc-initialized {
+  flex-flow: column;
+}
+
+.p-navigation {
+  min-width: 100vw;
+}
