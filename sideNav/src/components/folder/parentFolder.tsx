@@ -250,7 +250,9 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             : <ChevronRight/>}
             </div> 
             : null}
-            <p className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
+            <a href={document.full_path} style={{textDecoration:'none'}}>
+                <p className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
+            </a>
         </div>
         }
         <div style={{paddingLeft: hideLevel? '0' : '5%'}}>
