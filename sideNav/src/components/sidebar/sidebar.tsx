@@ -76,6 +76,7 @@ const Sidebar: React.FC<sidebarProps> = ({
       window.location.href = newUrl;
       
     }
+
     // ----------------------------------------------
     // ----------------  RENDERING  -----------------
     // ----------------------------------------------
@@ -85,10 +86,16 @@ const Sidebar: React.FC<sidebarProps> = ({
            <p className='navigation__about-tittle' onClick={() => handleAboutClick()}>About the Library</p>
           </div>
           {testRoot.postChildren?.sort((a,b) => {
-            if (a.position === null || b.position === null) {
+            if (a.position === null && b.position === null) {
+              return a.name.localeCompare(b.name);
+            }
+            if (a.position === null && b.position !== null) {
               return 1;
             }
-            return a.position - b.position;
+            if (a.position !== null && b.position === null) {
+              return -1;
+            }
+            return (a.position ?? 0) - (b.position ?? 0);
           }).map((doc) => {
             if(doc.name !== 'index'){
               const processChildren = Object.keys(doc.children).map((key) => doc.children[key]);

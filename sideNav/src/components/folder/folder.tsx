@@ -59,12 +59,15 @@ const Folder: React.FC<FolderProps> = ({
         doc.postChildren = processChildren;
         return doc.postChildren.sort((a,b) => {
             if (a.position === null && b.position === null) {
+                return a.name.localeCompare(b.name);
+              }
+              if (a.position === null && b.position !== null) {
+                return 1;
+              }
+              if (a.position !== null && b.position === null) {
                 return -1;
-            }
-            if (a.position === null || b.position === null) {
-              return 1;
-            }
-            return a.position - b.position;
+              }
+              return (a.position ?? 0) - (b.position ?? 0);
           }).map((doc) => {
             if(doc.name !== 'index'){
                 return <Folder
