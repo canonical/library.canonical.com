@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react';
 import { testlist } from './Lists/testlist';
-import './sidebar.css';
+import './sidebar.scss';
 import ParentFolder from '../folder/parentFolder';
 export interface Document {
     mimeType: string;

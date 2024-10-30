@@ -4,7 +4,8 @@ import { ExpandMore, ChevronRight} from '@mui/icons-material';
 import { Document, levelDocument } from '../sidebar/sidebar';
 import  Folder  from '../folder/folder';
 import { MAX_NUMBER_LEVELS } from '../sidebar/sidebar';
-import './folder.css';
+import './folder.scss';
+import classNames from "classnames";
 
 interface ParentFolderProps {
     document: Document;
