@@ -72,7 +72,7 @@ const Sidebar: React.FC<sidebarProps> = ({
     
     
     const handleAboutClick = () => {
-      const newUrl = '/' || window.location.href;
+      const newUrl = '/';
       window.location.href = newUrl;
       
     }
