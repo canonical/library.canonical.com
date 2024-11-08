@@ -13,6 +13,10 @@ body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {
   padding-top: 0.55rem;
 }
 
+body {
+  flex-flow: column;
+}
+
 // Sometimes the entire document is put in a table and it adds padding
 .l-docs__main > table > tbody > tr > td {
   padding: 0;
