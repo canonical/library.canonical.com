@@ -8,6 +8,7 @@ from webapp.googledrive import GoogleDrive
 from webapp.parser import Parser
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
+from flask_caching import Cache
 
 # Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")
@@ -26,6 +27,9 @@ app = FlaskBase(
 session = talisker.requests.get_session()
 init_sso(app)
 
+# Initialize caching
+cache = Cache(app, config={"CACHE_TYPE": "simple"})
+
 
 def get_google_drive_instance():
     """
@@ -33,7 +37,7 @@ def get_google_drive_instance():
     object.
     """
     if "google_drive" not in g:
-        g.google_drive = GoogleDrive()
+        g.google_drive = GoogleDrive(cache)
     return g.google_drive
 
 

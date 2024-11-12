@@ -8,12 +8,13 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
 from webapp.settings import SERVICE_ACCOUNT_INFO
+import time
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 
 
 class GoogleDrive:
-    def __init__(self):
+    def __init__(self, cache):
         scopes = [
             "https://www.googleapis.com/auth/drive",
         ]
@@ -23,6 +24,7 @@ class GoogleDrive:
         self.service = build(
             "drive", "v3", credentials=credentials, cache_discovery=False
         )
+        self.cache = cache
 
     def search_drive(self, query):
         try:
@@ -65,7 +67,7 @@ class GoogleDrive:
                     supportsAllDrives=True,
                     includeItemsFromAllDrives=True,
                     spaces="drive",
-                    fields="files(id, name, parents, mimeType, owners)",
+                    fields="files(id, name, parents, mimeType, owners, modifiedTime)",
                     pageSize=1000,
                 )
                 .execute()
@@ -76,14 +78,35 @@ class GoogleDrive:
             abort(500, description=err)
 
         items = results.get("files", [])
+        docDic = {}
+        for item in items:
+            docDic[item['id']] = item
+        self.cache.set('docDic', docDic)
         return items
+
+    def get_document(self, document_id):
+        if self.cache.get(document_id) != None:
+                print('\n\n\n',"CACHED",'\n\n\n')
+                start = time.time()
+                docInfo = self.cache.get('docDic')[document_id]
+                cachedDoc = self.cache.get(document_id)
+                stop = time.time()
+                print(f"Time: {stop - start}")
+                if docInfo['modifiedTime']> cachedDoc['modifiedTime']:
+                    print('\n\n\n',"NOT UPDATED",'\n\n\n')
+                    return self.fetch_document(document_id)
+                else:
+                    print('\n\n\n',"UP TO DATE",'\n\n\n')
+                    return cachedDoc['html']
+        else:
+            print('\n\n\n',"NOT CACHED",'\n\n\n')
+            return self.fetch_document(document_id)
 
     def fetch_document(self, document_id):
         try:
             request = self.service.files().export(
-                fileId=document_id, mimeType="text/html"
+            fileId=document_id, mimeType="text/html"
             )
-
             file = io.BytesIO()
             downloader = MediaIoBaseDownload(file, request)
             done = False
@@ -92,6 +115,13 @@ class GoogleDrive:
             html = file.getvalue().decode("utf-8")
 
             if html:
+                docs = self.cache.get('docDic')
+                info = {
+                    "id": document_id,
+                    "html": html,
+                    "modifiedTime": docs[document_id]['modifiedTime'],
+                }
+                self.cache.set(document_id, info)
                 return html
             else:
                 err = "Error, document not found."
