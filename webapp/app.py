@@ -1,7 +1,7 @@
 import os
 import flask
 import talisker
-from flask import request, g
+from flask import request, g, session
 from canonicalwebteam.flask_base.app import FlaskBase
 
 from webapp.googledrive import GoogleDrive
@@ -9,6 +9,8 @@ from webapp.parser import Parser
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
 from flask_caching import Cache
+
+import time
 
 # Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")
@@ -24,7 +26,7 @@ app = FlaskBase(
 )
 
 # Initialize session and single Drive instance
-session = talisker.requests.get_session()
+#session = talisker.requests.get_session()
 init_sso(app)
 
 # Initialize caching
@@ -36,6 +38,7 @@ def get_google_drive_instance():
     Return a singleton instance of GoogleDrive and cache in Flask's 'g'
     object.
     """
+    
     if "google_drive" not in g:
         g.google_drive = GoogleDrive(cache)
     return g.google_drive
@@ -46,10 +49,37 @@ def get_navigation_data():
     Return the navigation data from Google Drive and cache in Flask's 'g'
     object.
     """
+    start = time.time()
     if "navigation_data" not in g:
-        google_drive = get_google_drive_instance()
-        g.navigation_data = NavigationBuilder(google_drive, ROOT)
+        print(session['navigation_data_cached'])
+        if "navigation_data_cached" not in session:
+            print('\n\n\n', "NOT IN SESSION")
+            g.navigation_data = get_new_navigation_data()
+        else:
+            print('\n\n\n', "IN SESSION")
+            nav_data = cache.get('navigation')
+            if nav_data is None:
+                # Handle the case where the cache data has expired or been removed
+                g.navigation_data = get_new_navigation_data()
+            else:
+                google_drive = get_google_drive_instance()
+                g.navigation_data = NavigationBuilder(google_drive, ROOT, True, nav_data["doc_reference_dict"], nav_data["temp_hierarchy"], nav_data["file_list"], nav_data["hierarchy"])
+    stop = time.time()
+    print('\n\n\n', "Time to get navigation data:", stop - start)
     return g.navigation_data
+
+def get_new_navigation_data():
+    google_drive = get_google_drive_instance()
+    data = NavigationBuilder(google_drive, ROOT)
+    nav_data = {
+        "doc_reference_dict": data.doc_reference_dict,
+        "temp_hierarchy": data.temp_hierarchy,
+        "file_list": data.file_list,
+        "hierarchy": data.hierarchy,
+    }
+    cache.set('navigation',nav_data)
+    session["navigation_data_cached"] = True
+    return data
 
 
 def get_target_document(path, navigation):

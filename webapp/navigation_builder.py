@@ -8,13 +8,20 @@ from webapp.utils.process_leading_number import (
 
 
 class NavigationBuilder:
-    def __init__(self, google_drive: GoogleDrive, root_folder: str):
-        self.root_folder = root_folder.lower()
-        self.doc_reference_dict = {}
-        self.temp_hierarchy = {}
-        self.file_list = self.get_file_list_copy(google_drive)
-        self.initialize_reference_dict()
-        self.hierarchy = self.create_hierarchy(self.file_list)
+    def __init__(self, google_drive: GoogleDrive, root_folder: str, cache=False, doc_reference_dict=None, temp_hierarchy=None, file_list=None, hierarchy=None):
+        if not cache:
+            self.root_folder = root_folder.lower()
+            self.doc_reference_dict = {}
+            self.temp_hierarchy = {}
+            self.file_list = self.get_file_list_copy(google_drive)
+            self.initialize_reference_dict()
+            self.hierarchy = self.create_hierarchy(self.file_list)
+        else:
+            self.root_folder = root_folder.lower()
+            self.doc_reference_dict = doc_reference_dict
+            self.temp_hierarchy = temp_hierarchy
+            self.file_list = file_list
+            self.hierarchy = hierarchy
 
     def get_file_list_copy(self, google_drive: GoogleDrive):
         """
