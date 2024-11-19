@@ -23,11 +23,6 @@
 .navigation__about-tittle {
     font-size: 14px;
     color: #000000;;
-    font-family: "Ubuntu Sans", sans-serif;
-    font-optical-sizing: auto;
-    font-style: normal;
-    font-variation-settings: "wdth" 100;
-    font-weight: bold;
     overflow-wrap: break-word;
     margin: 0;
     cursor: pointer;
