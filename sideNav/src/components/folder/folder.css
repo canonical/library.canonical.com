@@ -70,3 +70,13 @@
     border-bottom: 0.5px solid lightgray;
     cursor: pointer;
 }
+
+.navigation__link {
+    text-decoration: none;
+    height: 100%;
+    width: 100%;
+}
+
+.navigation__link:hover {
+    text-decoration: none;
+}
