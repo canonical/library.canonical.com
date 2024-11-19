@@ -85,27 +85,27 @@ class GoogleDrive:
         return items
 
     def get_document(self, document_id):
-        if self.cache.get(document_id) != None:
-                print('\n\n\n',"CACHED",'\n\n\n')
-                start = time.time()
-                docInfo = self.cache.get('docDic')[document_id]
-                cachedDoc = self.cache.get(document_id)
-                stop = time.time()
-                print(f"Time: {stop - start}")
-                if docInfo['modifiedTime']> cachedDoc['modifiedTime']:
-                    print('\n\n\n',"NOT UPDATED",'\n\n\n')
-                    return self.fetch_document(document_id)
-                else:
-                    print('\n\n\n',"UP TO DATE",'\n\n\n')
-                    return cachedDoc['html']
+        if self.cache.get(document_id) is not None:
+            print('\n\n\n', "CACHED", '\n\n\n')
+            start = time.time()
+            docInfo = self.cache.get('docDic')[document_id]
+            cachedDoc = self.cache.get(document_id)
+            stop = time.time()
+            print(f"Time: {stop - start}")
+            if docInfo['modifiedTime'] > cachedDoc['modifiedTime']:
+                print('\n\n\n', "NOT UPDATED", '\n\n\n')
+                return self.fetch_document(document_id)
+            else:
+                print('\n\n\n', "UP TO DATE", '\n\n\n')
+                return cachedDoc['html']
         else:
-            print('\n\n\n',"NOT CACHED",'\n\n\n')
+            print('\n\n\n', "NOT CACHED", '\n\n\n')
             return self.fetch_document(document_id)
 
     def fetch_document(self, document_id):
         try:
             request = self.service.files().export(
-            fileId=document_id, mimeType="text/html"
+                fileId=document_id, mimeType="text/html"
             )
             file = io.BytesIO()
             downloader = MediaIoBaseDownload(file, request)
