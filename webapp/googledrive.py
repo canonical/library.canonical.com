@@ -56,6 +56,7 @@ class GoogleDrive:
         return items
 
     def get_document_list(self):
+        fields = "files(id, name, mimeType, parents, owners, modifiedTime)"
         try:
             results = (
                 self.service.files()
@@ -66,7 +67,7 @@ class GoogleDrive:
                     supportsAllDrives=True,
                     includeItemsFromAllDrives=True,
                     spaces="drive",
-                    fields="files(id, name, parents, mimeType, owners, modifiedTime)",
+                    fields=fields,
                     pageSize=1000,
                 )
                 .execute()

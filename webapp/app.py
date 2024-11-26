@@ -1,6 +1,6 @@
 import os
 import flask
-import talisker
+# import talisker
 from flask import request, g, session
 from canonicalwebteam.flask_base.app import FlaskBase
 
@@ -24,7 +24,7 @@ app = FlaskBase(
 )
 
 # Initialize session and single Drive instance
-#session = talisker.requests.get_session()
+# session = talisker.requests.get_session()
 init_sso(app)
 
 # Initialize caching
@@ -36,7 +36,6 @@ def get_google_drive_instance():
     Return a singleton instance of GoogleDrive and cache in Flask's 'g'
     object.
     """
-    
     if "google_drive" not in g:
         g.google_drive = GoogleDrive(cache)
     return g.google_drive
@@ -54,12 +53,21 @@ def get_navigation_data():
         else:
             nav_data = cache.get('navigation')
             if nav_data is None:
-                # Handle the case where the cache data has expired or been removed
+                # Handle the case where the cache data is missing
                 g.navigation_data = get_new_navigation_data()
             else:
                 google_drive = get_google_drive_instance()
-                g.navigation_data = NavigationBuilder(google_drive, ROOT, True, nav_data["doc_reference_dict"], nav_data["temp_hierarchy"], nav_data["file_list"], nav_data["hierarchy"])
+                g.navigation_data = NavigationBuilder(
+                    google_drive, 
+                    ROOT, 
+                    True, 
+                    nav_data["doc_reference_dict"], 
+                    nav_data["temp_hierarchy"], 
+                    nav_data["file_list"], 
+                    nav_data["hierarchy"]
+                )
     return g.navigation_data
+
 
 def get_new_navigation_data():
     google_drive = get_google_drive_instance()
@@ -70,7 +78,7 @@ def get_new_navigation_data():
         "file_list": data.file_list,
         "hierarchy": data.hierarchy,
     }
-    cache.set('navigation',nav_data)
+    cache.set('navigation', nav_data)
     session["navigation_data_cached"] = True
     return data
 
