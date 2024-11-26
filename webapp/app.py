@@ -10,8 +10,6 @@ from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
 from flask_caching import Cache
 
-import time
-
 # Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
@@ -49,14 +47,11 @@ def get_navigation_data():
     Return the navigation data from Google Drive and cache in Flask's 'g'
     object.
     """
-    start = time.time()
     if "navigation_data" not in g:
-        print(session['navigation_data_cached'])
+
         if "navigation_data_cached" not in session:
-            print('\n\n\n', "NOT IN SESSION")
             g.navigation_data = get_new_navigation_data()
         else:
-            print('\n\n\n', "IN SESSION")
             nav_data = cache.get('navigation')
             if nav_data is None:
                 # Handle the case where the cache data has expired or been removed
@@ -64,8 +59,6 @@ def get_navigation_data():
             else:
                 google_drive = get_google_drive_instance()
                 g.navigation_data = NavigationBuilder(google_drive, ROOT, True, nav_data["doc_reference_dict"], nav_data["temp_hierarchy"], nav_data["file_list"], nav_data["hierarchy"])
-    stop = time.time()
-    print('\n\n\n', "Time to get navigation data:", stop - start)
     return g.navigation_data
 
 def get_new_navigation_data():

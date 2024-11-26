@@ -8,7 +8,6 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
 from webapp.settings import SERVICE_ACCOUNT_INFO
-import time
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 
@@ -86,20 +85,13 @@ class GoogleDrive:
 
     def get_document(self, document_id):
         if self.cache.get(document_id) is not None:
-            print('\n\n\n', "CACHED", '\n\n\n')
-            start = time.time()
             docInfo = self.cache.get('docDic')[document_id]
             cachedDoc = self.cache.get(document_id)
-            stop = time.time()
-            print(f"Time: {stop - start}")
             if docInfo['modifiedTime'] > cachedDoc['modifiedTime']:
-                print('\n\n\n', "NOT UPDATED", '\n\n\n')
                 return self.fetch_document(document_id)
             else:
-                print('\n\n\n', "UP TO DATE", '\n\n\n')
                 return cachedDoc['html']
         else:
-            print('\n\n\n', "NOT CACHED", '\n\n\n')
             return self.fetch_document(document_id)
 
     def fetch_document(self, document_id):
