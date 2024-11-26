@@ -1,5 +1,6 @@
 import os
 import flask
+
 # import talisker
 from flask import request, g, session
 from canonicalwebteam.flask_base.app import FlaskBase
@@ -51,7 +52,7 @@ def get_navigation_data():
         if "navigation_data_cached" not in session:
             g.navigation_data = get_new_navigation_data()
         else:
-            nav_data = cache.get('navigation')
+            nav_data = cache.get("navigation")
             if nav_data is None:
                 # Handle the case where the cache data is missing
                 g.navigation_data = get_new_navigation_data()
@@ -64,7 +65,7 @@ def get_navigation_data():
                     nav_data["doc_reference_dict"],
                     nav_data["temp_hierarchy"],
                     nav_data["file_list"],
-                    nav_data["hierarchy"]
+                    nav_data["hierarchy"],
                 )
     return g.navigation_data
 
@@ -78,7 +79,7 @@ def get_new_navigation_data():
         "file_list": data.file_list,
         "hierarchy": data.hierarchy,
     }
-    cache.set('navigation', nav_data)
+    cache.set("navigation", nav_data)
     session["navigation_data_cached"] = True
     return data
 

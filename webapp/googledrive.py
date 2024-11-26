@@ -80,18 +80,18 @@ class GoogleDrive:
         items = results.get("files", [])
         docDic = {}
         for item in items:
-            docDic[item['id']] = item
-        self.cache.set('docDic', docDic)
+            docDic[item["id"]] = item
+        self.cache.set("docDic", docDic)
         return items
 
     def get_document(self, document_id):
         if self.cache.get(document_id) is not None:
-            docInfo = self.cache.get('docDic')[document_id]
+            docInfo = self.cache.get("docDic")[document_id]
             cachedDoc = self.cache.get(document_id)
-            if docInfo['modifiedTime'] > cachedDoc['modifiedTime']:
+            if docInfo["modifiedTime"] > cachedDoc["modifiedTime"]:
                 return self.fetch_document(document_id)
             else:
-                return cachedDoc['html']
+                return cachedDoc["html"]
         else:
             return self.fetch_document(document_id)
 
@@ -108,11 +108,11 @@ class GoogleDrive:
             html = file.getvalue().decode("utf-8")
 
             if html:
-                docs = self.cache.get('docDic')
+                docs = self.cache.get("docDic")
                 info = {
                     "id": document_id,
                     "html": html,
-                    "modifiedTime": docs[document_id]['modifiedTime'],
+                    "modifiedTime": docs[document_id]["modifiedTime"],
                 }
                 self.cache.set(document_id, info)
                 return html

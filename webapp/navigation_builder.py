@@ -9,15 +9,15 @@ from webapp.utils.process_leading_number import (
 
 class NavigationBuilder:
     def __init__(
-                self,
-                google_drive: GoogleDrive,
-                root_folder: str,
-                cache=False,
-                doc_reference_dict=None,
-                temp_hierarchy=None,
-                file_list=None,
-                hierarchy=None
-                ):
+        self,
+        google_drive: GoogleDrive,
+        root_folder: str,
+        cache=False,
+        doc_reference_dict=None,
+        temp_hierarchy=None,
+        file_list=None,
+        hierarchy=None,
+    ):
         if not cache:
             self.root_folder = root_folder.lower()
             self.doc_reference_dict = {}
@@ -104,8 +104,7 @@ class NavigationBuilder:
             # is a drive ID (<20 chars) and not 'root', skip it in the
             # reference dict/navigation.
             if doc["parents"] and (
-                len(doc["parents"][0]) > 20
-                or doc["name"].lower() == self.root_folder
+                len(doc["parents"][0]) > 20 or doc["name"].lower() == self.root_folder
             ):
                 doc_reference_dict[doc["id"]] = doc
 
