@@ -8,8 +8,9 @@ from webapp.utils.process_leading_number import (
 
 
 class NavigationBuilder:
-    def __init__(self, google_drive: GoogleDrive, root_folder: str, cache=False, 
-                 doc_reference_dict=None, temp_hierarchy=None, file_list=None, hierarchy=None):
+    def __init__(self, google_drive: GoogleDrive, root_folder: str,
+        cache=False, doc_reference_dict=None,
+        temp_hierarchy=None, file_list=None, hierarchy=None):
         if not cache:
             self.root_folder = root_folder.lower()
             self.doc_reference_dict = {}

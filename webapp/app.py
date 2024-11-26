@@ -58,12 +58,12 @@ def get_navigation_data():
             else:
                 google_drive = get_google_drive_instance()
                 g.navigation_data = NavigationBuilder(
-                    google_drive, 
-                    ROOT, 
-                    True, 
-                    nav_data["doc_reference_dict"], 
-                    nav_data["temp_hierarchy"], 
-                    nav_data["file_list"], 
+                    google_drive,
+                    ROOT,
+                    True,
+                    nav_data["doc_reference_dict"],
+                    nav_data["temp_hierarchy"],
+                    nav_data["file_list"],
                     nav_data["hierarchy"]
                 )
     return g.navigation_data
