@@ -2,6 +2,7 @@ import os
 import json
 from urllib.parse import unquote
 from bs4 import BeautifulSoup, NavigableString
+import re
 
 from webapp.googledrive import GoogleDrive
 
@@ -97,11 +98,21 @@ class Parser:
                     tag.wrap(self.html.new_tag(tag_name))
             del tag["style"]
 
+
     def wrap_code_blocks(self, code_block_config):
+
         start_symbol = entity_to_char(code_block_config["start"])
         end_symbol = entity_to_char(code_block_config["end"])
 
         current_code_block = None
+        f = open('test.txt', 'w')
+        f.write(str(self.html))
+        for tag in self.html.findAll("code"):
+            if tag.text == '```code':
+                tag.string = tag.text.replace('```code', start_symbol)
+            if tag.text == '```endcode':
+                tag.string = tag.text.replace('```endcode', end_symbol)
+
 
         for tag in self.html.findAll("code"):
             # Sometimes there will be a line break in the middle of a code
@@ -142,6 +153,18 @@ class Parser:
                     # pre tag on a new line
                     for tag in parent_tag.find_all("code"):
                         pre_tag.append(tag)
+
+        for tag in self.html.findAll("code"):
+            if '\uec03' in tag.contents:
+                tag.contents[0].replace_with(tag.contents[0].replace('\uec03', ''))
+                tag.contents[2].replace_with('')
+
+        for tag in self.html.findAll("p"):
+            if not tag.contents:
+                tag.decompose()
+            elif '' in tag.text:
+                tag.string = tag.text.replace('', '')
+
 
     def remove_ids_from_tags(self, tag):
         if tag.has_attr("id"):
