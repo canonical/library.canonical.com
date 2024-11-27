@@ -105,8 +105,6 @@ class Parser:
         end_symbol = entity_to_char(code_block_config["end"])
 
         current_code_block = None
-        f = open('test.txt', 'w')
-        f.write(str(self.html))
         for tag in self.html.findAll("code"):
             if tag.text == '```code':
                 tag.string = tag.text.replace('```code', start_symbol)
