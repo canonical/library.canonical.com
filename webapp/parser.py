@@ -2,7 +2,6 @@ import os
 import json
 from urllib.parse import unquote
 from bs4 import BeautifulSoup, NavigableString
-import re
 
 from webapp.googledrive import GoogleDrive
 
@@ -105,6 +104,7 @@ class Parser:
         end_symbol = entity_to_char(code_block_config["end"])
 
         current_code_block = None
+        # Identify code blocks by the start and end symbols
         for tag in self.html.findAll("code"):
             if tag.text == '```code':
                 tag.string = tag.text.replace('```code', start_symbol)
@@ -151,17 +151,17 @@ class Parser:
                     # pre tag on a new line
                     for tag in parent_tag.find_all("code"):
                         pre_tag.append(tag)
-
+        # Clean up any unicode items that are left in the code blocks
         for tag in self.html.findAll("code"):
             if '\uec03' in tag.contents:
                 tag.contents[0].replace_with(tag.contents[0].replace('\uec03', ''))
                 tag.contents[2].replace_with('')
-
+        # Clean up empty p tags and clean unicode items in p tags
         for tag in self.html.findAll("p"):
             if not tag.contents:
                 tag.decompose()
-            elif '' in tag.text:
-                tag.string = tag.text.replace('', '')
+            elif '\uec02' in tag.text:
+                tag.string = tag.text.replace('\uec02', '')
 
 
     def remove_ids_from_tags(self, tag):
