@@ -105,10 +105,10 @@ class Parser:
         current_code_block = None
         # Identify code blocks by the start and end symbols
         for tag in self.html.findAll("code"):
-            if tag.text == '```code':
-                tag.string = tag.text.replace('```code', start_symbol)
-            if tag.text == '```endcode':
-                tag.string = tag.text.replace('```endcode', end_symbol)
+            if tag.text == "```code":
+                tag.string = tag.text.replace("```code", start_symbol)
+            if tag.text == "```endcode":
+                tag.string = tag.text.replace("```endcode", end_symbol)
 
         for tag in self.html.findAll("code"):
             # Sometimes there will be a line break in the middle of a code
@@ -151,17 +151,17 @@ class Parser:
                         pre_tag.append(tag)
         # Clean up any unicode items that are left in the code blocks
         for tag in self.html.findAll("code"):
-            if '\uec03' in tag.contents:
+            if "\uec03" in tag.contents:
                 tag.contents[0].replace_with(
-                    tag.contents[0].replace('\uec03', '')
+                    tag.contents[0].replace("\uec03", "")
                 )
-                tag.contents[2].replace_with('')
+                tag.contents[2].replace_with("")
         # Clean up empty p tags and clean unicode items in p tags
         for tag in self.html.findAll("p"):
             if not tag.contents:
                 tag.decompose()
-            elif '\uec02' in tag.text:
-                tag.string = tag.text.replace('\uec02', '')
+            elif "\uec02" in tag.text:
+                tag.string = tag.text.replace("\uec02", "")
 
     def remove_ids_from_tags(self, tag):
         if tag.has_attr("id"):
