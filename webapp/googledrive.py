@@ -53,13 +53,14 @@ class GoogleDrive:
 
         items = results.get("files", [])
         return items
-    
-    # Added the next page token to be able to obtain the whole list of files 
-    # in the drive, since when the fields contains files(..., parents) 
+
+    # Added the next page token to be able to obtain the whole list of files
+    # in the drive, since when the fields contains files(..., parents)
     # the maximum number of files that can be obtained is 460.
     def get_document_list(self):
         next_page_token = ""
         items = []
+        fields = "nextPageToken, files(id, name, parents, mimeType)"
         try:
             while (next_page_token is not None) or (next_page_token == ""):
                 results = (
@@ -71,7 +72,7 @@ class GoogleDrive:
                         supportsAllDrives=True,
                         includeItemsFromAllDrives=True,
                         spaces="drive",
-                        fields="nextPageToken, files(id, name, parents, mimeType)",
+                        fields=fields,
                         pageSize=1000,
                         pageToken=next_page_token,
                     )
