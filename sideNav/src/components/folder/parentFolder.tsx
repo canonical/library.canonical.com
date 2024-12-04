@@ -20,6 +20,8 @@ interface ParentFolderProps {
     setPosition: (position: {x:number, y:number}) => void;
     openPopUp: boolean;
     setOpenPopUp: (openPopUp: boolean) => void;
+    softRootChildren: levelDocument[];
+    setSoftRootChildren: (softRootChildren: levelDocument[]) => void;
 }
 
 
@@ -50,7 +52,9 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     position,
     setPosition,
     openPopUp,
-    setOpenPopUp
+    setOpenPopUp,
+    softRootChildren,
+    setSoftRootChildren
     }) => {
     // ----------------------------------------------
     // ---------------  STATE MANAGEMENT ------------
@@ -97,6 +101,8 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
                         setLastInteracted={setLastInteracted}
                         openedChildren={openedChildren}
                         setOpenedChildren={setOpenedChildren}
+                        softRootChildren={softRootChildren}
+                        setSoftRootChildren={setSoftRootChildren}
                         />;
             }
           });
@@ -152,6 +158,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             setHiddenOptions([]);
             setOpenPopUp(false);
             setSoftRoot(null);
+            localStorage.setItem('softRoot', 'null');
             const newUrl = option.full_path || window.location.href;
             window.location.href = newUrl;
         }   
@@ -202,6 +209,9 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
                 setSoftRoot({...document, 'level': level, 'parentId': parentId});
             }
         }
+        if (softRoot && document.id === softRoot.id){
+            setSoftRootChildren(document.postChildren?.map((doc) => {return {...doc, 'level': level+1, 'parentId': parentId}}) as levelDocument[]);
+        }
     },[])
 
     // ----------------------------------------------
@@ -214,6 +224,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
         if(document.isSoftRoot){
             const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
             setSoftRoot(levelDoc);
+            setSoftRootChildren([...softRootChildren, levelDoc]);
         }
         if(level< localMaxLevel){
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};

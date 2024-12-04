@@ -24,6 +24,8 @@ interface FolderProps {
     setLastInteracted: (lastInteracted: levelDocument|null) => void;
     openedChildren: levelDocument[];
     setOpenedChildren: (openedChildren: levelDocument[]) => void;
+    softRootChildren: levelDocument[];
+    setSoftRootChildren: (softRootChildren: levelDocument[]) => void;
   }
 
 const Folder: React.FC<FolderProps> = ({ 
@@ -43,7 +45,9 @@ const Folder: React.FC<FolderProps> = ({
     lastInteracted, 
     setLastInteracted,
     openedChildren,
-    setOpenedChildren,
+    setOpenedChildren,    
+    softRootChildren,
+    setSoftRootChildren
     }) => {
     // ----------------------------------------------
     // ---------------  STATE MANAGEMENT ------------
@@ -80,6 +84,8 @@ const Folder: React.FC<FolderProps> = ({
                         setLastInteracted={setLastInteracted}
                         openedChildren={openedChildren}
                         setOpenedChildren={setOpenedChildren}  
+                        softRootChildren={softRootChildren}
+                        setSoftRootChildren={setSoftRootChildren}
                         />;
             }
           });
@@ -126,14 +132,21 @@ const Folder: React.FC<FolderProps> = ({
     // On click of the folder tittle, the folder is selected and it is open to show its children
     // If the folder is not in the opened children, it is added to the list
     const handleFolderClick = (doc: Document) => {
+        console.log('handleFolderClick', doc)
+        if(softRoot){
+            localStorage.setItem('softRoot', JSON.stringify(softRoot));
+        }
         if(document.isSoftRoot){
+            console.log('isSoftRoot')
             const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
             setSoftRoot(levelDoc);
         }
         if(level< maxLevel){
+            console.log('not over maxLevel')
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
             setSelected({...levelDoc});
         } else {
+            console.log('over maxLevel')
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
             setSelected({...levelDoc});
             if(!open){

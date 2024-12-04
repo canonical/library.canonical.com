@@ -35,13 +35,15 @@ export interface sidebarProps {
 const Sidebar: React.FC<sidebarProps> = ({
 }) => {
     const root = "1QLSNL1QhMMHJmDVFyTXoQ2V6RBtc8mjx";
+    const tempSoftRoot = localStorage.getItem('softRoot')=== 'null'? null: JSON.parse(localStorage.getItem('softRoot') as string);
     // ----------------------------------------------
     // ---------------  STATE MANAGEMENT ------------
     // ----------------------------------------------
     const [maxLevel, setMaxLevel] = useState(1);
     const [selected, setSelected] = useState<levelDocument|null>(null);
     const [lastInteracted, setLastInteracted] = useState<levelDocument|null>(null);
-    const [softRoot, setSoftRoot] = useState<levelDocument|null>(null);
+    const [softRoot, setSoftRoot] = useState<levelDocument|null>(tempSoftRoot || null);
+    const [softRootChildren, setSoftRootChildren] = useState<levelDocument[]>([]);
     // Pop Up configuration to manage the position of the pop up and its visibility
     const [position, setPosition] = useState<position>({x: 0, y: 0});
     const [openPopUp, setOpenPopUp] = useState(false);
@@ -97,6 +99,7 @@ const Sidebar: React.FC<sidebarProps> = ({
             setMaxLevel(1);
             setOpenPopUp(false);
             setSoftRoot(null);
+            localStorage.setItem('softRoot', 'null');
             const newUrl = option.full_path || window.location.href;
             window.location.href = newUrl;
         }   
@@ -138,6 +141,9 @@ const Sidebar: React.FC<sidebarProps> = ({
       window.location.href = newUrl;
       
     }
+    console.log(testRoot)
+    console.log(softRoot)
+    console.log(softRootChildren)
     // ----------------------------------------------
     // ----------------  RENDERING  -----------------
     // ----------------------------------------------
@@ -177,6 +183,8 @@ const Sidebar: React.FC<sidebarProps> = ({
                         setPosition={setPosition}
                         openPopUp={openPopUp}
                         setOpenPopUp={setOpenPopUp}
+                        softRootChildren={softRootChildren}
+                        setSoftRootChildren={setSoftRootChildren}
                       />;
             }
           })}
