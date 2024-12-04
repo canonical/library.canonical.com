@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ExpandMore, ChevronRight} from '@mui/icons-material';
 import { Document, levelDocument } from '../sidebar/sidebar';
 import  Folder  from '../folder/folder';
@@ -16,12 +16,13 @@ interface ParentFolderProps {
     setSoftRoot: (softRoot: levelDocument|null) => void;
     lastInteracted: levelDocument|null;
     setLastInteracted: (lastInteracted: levelDocument|null) => void;
+    position: {x:number, y:number};
+    setPosition: (position: {x:number, y:number}) => void;
+    openPopUp: boolean;
+    setOpenPopUp: (openPopUp: boolean) => void;
 }
 
-interface position {
-    x: number;
-    y: number;
-}
+
 
 export function sortChildren(a: Document, b: Document): number {
     if (a.position === null && b.position === null) {
@@ -45,7 +46,11 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     softRoot,
     setSoftRoot, 
     lastInteracted,
-    setLastInteracted
+    setLastInteracted,
+    position,
+    setPosition,
+    openPopUp,
+    setOpenPopUp
     }) => {
     // ----------------------------------------------
     // ---------------  STATE MANAGEMENT ------------
@@ -60,9 +65,6 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     //const [breadcrumb, setBreadcrumb] = useState<levelDocument[]>([]);
     // Help separate the max level currently open per parent folder
     const [localMaxLevel, setLocalMaxLevel] = useState(1);
-    // Pop Up configuration to manage the position of the pop up and its visibility
-    const [position, setPosition] = useState<position>({x: 0, y: 0});
-    const [openPopUp, setOpenPopUp] = useState(false);
     // Manage and stores the opened children of the parent folder
     // so navigation is independant pero child 
     const [openedChildren, setOpenedChildren] = useState<levelDocument[]>([]);  
@@ -119,7 +121,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
         if(softRoot){
             if (level === 1 && softRoot?.parentId === document.id) {
                 const HandleHiddenClick = (e: React.MouseEvent<HTMLDivElement>) => {
-                    setPosition({x: e.clientX, y: e.clientY});
+                    setPosition({x: e.clientX -10, y: e.clientY -10});
                     setOpenPopUp(true);
                 };
                 return (
@@ -184,6 +186,23 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             <div className="navigation__slected-hidden-option" onClick={() => handleClick()} style={{paddingLeft: selected ? padding + 'px' : '20px'}}>... ({selected?.name}) </div>
         )
     }
+    // ----------------------------------------------
+    // ---------------  USE EFFECTS ----------------
+    // ----------------------------------------------
+    useEffect(() => {
+        if(document.active){
+            setSelected({...document, 'level': level, 'parentId': parentId});
+            if(localMaxLevel<level){
+                setLocalMaxLevel(level);
+            }
+            if(document.isSoftRoot){
+                if(localMaxLevel<level){
+                    setLocalMaxLevel(level);
+                }
+                setSoftRoot({...document, 'level': level, 'parentId': parentId});
+            }
+        }
+    },[])
 
     // ----------------------------------------------
     // ---------------  HANDLER FUNCTIONS -----------
@@ -191,6 +210,11 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     // On click of the folder tittle, the folder is selected and it is open to show its children
     // If the folder is not in the opened children, it is added to the list
     const handleFolderClick = (doc : Document) => {
+
+        if(document.isSoftRoot){
+            const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
+            setSoftRoot(levelDoc);
+        }
         if(level< localMaxLevel){
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
             setSelected({...levelDoc});

@@ -414,6 +414,7 @@ export const testlist = {
       "id": "1rRGHiFilfPAM5tgnywlq64QC3YTnxtsu",
       "mimeType": "folder",
       "name": "Documentation",
+      "isSoftRoot":true,
       "parents": [
         "1QLSNL1QhMMHJmDVFyTXoQ2V6RBtc8mjx"
       ],
@@ -10373,6 +10374,7 @@ export const testlist = {
       "full_path": "/training-and-development",
       "id": "1Kv-N02kF-ruJLS0NKzoTUmdJFcgnpyhP",
       "mimeType": "folder",
+      "isSoftRoot":true,
       "name": "Training and development",
       "parents": [
         "1QLSNL1QhMMHJmDVFyTXoQ2V6RBtc8mjx"
