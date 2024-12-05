@@ -15,8 +15,6 @@ interface ParentFolderProps {
     setSoftRoot: (softRoot: levelDocument|null) => void;
     lastInteracted: levelDocument|null;
     setLastInteracted: (lastInteracted: levelDocument|null) => void;
-    softRootChildren: levelDocument[];
-    setSoftRootChildren: (softRootChildren: levelDocument[]) => void;
 }
   
 const ParentFolder: React.FC<ParentFolderProps> = ({ 
@@ -29,8 +27,6 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     setSoftRoot, 
     lastInteracted,
     setLastInteracted,
-    softRootChildren,
-    setSoftRootChildren
     }) => {
     // ----------------------------------------------
     // ---------------  STATE MANAGEMENT ------------
@@ -78,8 +74,6 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
                         setLastInteracted={setLastInteracted}
                         openedChildren={openedChildren}
                         setOpenedChildren={setOpenedChildren}
-                        softRootChildren={softRootChildren}
-                        setSoftRootChildren={setSoftRootChildren}
                         />;
             }
           });
@@ -186,9 +180,6 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
                 setSoftRoot({...document, 'level': level, 'parentId': parentId});
             }
         }
-        if (softRoot && document.id === softRoot.id){
-            setSoftRootChildren(document.postChildren?.map((doc) => {return {...doc, 'level': level+1, 'parentId': parentId}}) as levelDocument[]);
-        }
     },[])
 
     // ----------------------------------------------
@@ -197,11 +188,9 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     // On click of the folder tittle, the folder is selected and it is open to show its children
     // If the folder is not in the opened children, it is added to the list
     const handleFolderClick = (doc : Document) => {
-
         if(document.isSoftRoot){
             const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
             setSoftRoot(levelDoc);
-            setSoftRootChildren([...softRootChildren, levelDoc]);
         }
         if(level< localMaxLevel){
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};

@@ -20,10 +20,10 @@ const Sidebar: React.FC<sidebarProps> = ({
     const [selected, setSelected] = useState<levelDocument|null>(null);
     const [lastInteracted, setLastInteracted] = useState<levelDocument|null>(null);
     const [softRoot, setSoftRoot] = useState<levelDocument|null>(tempSoftRoot || null);
-    const [softRootChildren, setSoftRootChildren] = useState<levelDocument[]>([]);
     // Pop Up configuration to manage the position of the pop up and its visibility
     const [positionRoot, setPositionRoot] = useState<position>({x: 0, y: 0});
     const [openPopUpRoot, setOpenPopUpRoot] = useState(false);
+    // Pop up options specific for the softRoot
     const [hiddenOptionsRoot, setHiddenOptionsRoot] = useState<levelDocument[]>([]);
 
     // TODO: Implement a backend call to get the list of documents
@@ -110,6 +110,7 @@ const Sidebar: React.FC<sidebarProps> = ({
       }
       return null;
     }
+    
     // ----------------------------------------------
     // ---------------  HANDLER FUNCTIONS -----------
     // ----------------------------------------------
@@ -118,6 +119,7 @@ const Sidebar: React.FC<sidebarProps> = ({
       window.location.href = newUrl;
       
     }
+
     // Show the hidden folders when the softRoot is selected
     // from one of the parent folders
     const showHidden = softRoot && testRoot.postChildren?.find((elem) => elem.id === softRoot.id) !== undefined;
@@ -148,8 +150,6 @@ const Sidebar: React.FC<sidebarProps> = ({
                         setSoftRoot={setSoftRoot} 
                         lastInteracted={lastInteracted}
                         setLastInteracted={setLastInteracted}
-                        softRootChildren={softRootChildren}
-                        setSoftRootChildren={setSoftRootChildren}
                       />;
             }
           })}

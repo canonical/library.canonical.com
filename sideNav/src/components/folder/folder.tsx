@@ -22,8 +22,6 @@ interface FolderProps {
     setLastInteracted: (lastInteracted: levelDocument|null) => void;
     openedChildren: levelDocument[];
     setOpenedChildren: (openedChildren: levelDocument[]) => void;
-    softRootChildren: levelDocument[];
-    setSoftRootChildren: (softRootChildren: levelDocument[]) => void;
 }
 
 const Folder: React.FC<FolderProps> = ({ 
@@ -43,9 +41,7 @@ const Folder: React.FC<FolderProps> = ({
     lastInteracted, 
     setLastInteracted,
     openedChildren,
-    setOpenedChildren,    
-    softRootChildren,
-    setSoftRootChildren
+    setOpenedChildren,
     }) => {
     // ----------------------------------------------
     // ---------------  STATE MANAGEMENT ------------
@@ -81,9 +77,7 @@ const Folder: React.FC<FolderProps> = ({
                         lastInteracted={lastInteracted}
                         setLastInteracted={setLastInteracted}
                         openedChildren={openedChildren}
-                        setOpenedChildren={setOpenedChildren}  
-                        softRootChildren={softRootChildren}
-                        setSoftRootChildren={setSoftRootChildren}
+                        setOpenedChildren={setOpenedChildren}
                         />;
             }
           });
