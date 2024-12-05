@@ -3,34 +3,11 @@ import { useState, useEffect } from 'react';
 import { testlist } from './Lists/testlist';
 import './sidebar.css';
 import ParentFolder from '../folder/parentFolder';
-export interface Document {
-    mimeType: string;
-    name: string;
-    id: string;
-    parent: string|null;
-    children: any;
-    postChildren: Document[]|null;
-    isSoftRoot: boolean;
-    position: number|null;
-    active?: boolean;
-    expanded?: boolean;
-    full_path: string;
-    slug: string;
-}
-export interface levelDocument extends Document{
-  level: number;
-  parentId: string
-}
-interface position {
-  x: number;
-  y: number;
-}
-export const MAX_NUMBER_LEVELS = 6
+import { sortChildren, levelDocument, position, Document } from '../utils';
 
-export interface sidebarProps {
+interface sidebarProps {
   documents?: any,
 }
-
 
 const Sidebar: React.FC<sidebarProps> = ({
 }) => {
@@ -45,9 +22,9 @@ const Sidebar: React.FC<sidebarProps> = ({
     const [softRoot, setSoftRoot] = useState<levelDocument|null>(tempSoftRoot || null);
     const [softRootChildren, setSoftRootChildren] = useState<levelDocument[]>([]);
     // Pop Up configuration to manage the position of the pop up and its visibility
-    const [position, setPosition] = useState<position>({x: 0, y: 0});
-    const [openPopUp, setOpenPopUp] = useState(false);
-    const [hiddenOptions, setHiddenOptions] = useState<levelDocument[]>([]);
+    const [positionRoot, setPositionRoot] = useState<position>({x: 0, y: 0});
+    const [openPopUpRoot, setOpenPopUpRoot] = useState(false);
+    const [hiddenOptionsRoot, setHiddenOptionsRoot] = useState<levelDocument[]>([]);
 
     // TODO: Implement a backend call to get the list of documents
     const navItems = window.__NAV_ITEMS__||testlist;
@@ -84,7 +61,7 @@ const Sidebar: React.FC<sidebarProps> = ({
     // ----------------------------------------------
     useEffect(() => {
       if(softRoot && testRoot.postChildren?.find(doc => doc.id === softRoot.id)){
-        setHiddenOptions(testRoot.postChildren?.filter(doc => (doc.id !== softRoot.id && doc.name !== 'index')) as levelDocument[]);
+        setHiddenOptionsRoot(testRoot.postChildren?.filter(doc => (doc.id !== softRoot.id && doc.name !== 'index')) as levelDocument[]);
       }
     },[softRoot])
 
@@ -97,7 +74,7 @@ const Sidebar: React.FC<sidebarProps> = ({
         // Handles States so local max level, the max level, selected files, hidden, and opened children to match the selection
         const handelOptionClick = (option: levelDocument) => {
             setMaxLevel(1);
-            setOpenPopUp(false);
+            setOpenPopUpRoot(false);
             setSoftRoot(null);
             localStorage.setItem('softRoot', 'null');
             const newUrl = option.full_path || window.location.href;
@@ -105,15 +82,15 @@ const Sidebar: React.FC<sidebarProps> = ({
         }   
         // Closes the popUp when the mouse leaves
         const handleMouseLeave = () => {
-            setPosition({x: 0, y: 0}); 
-            setOpenPopUp(false);
+            setPositionRoot({x: 0, y: 0}); 
+            setOpenPopUpRoot(false);
         }
-        if(position.y > 152){
-            position.y = position.y - 152;
+        if(positionRoot.y > 152){
+            positionRoot.y = positionRoot.y - 152;
         }
         return (
-            <div className='navigation__popup' style={{top: position.y, left: position.x}} onMouseLeave={() => handleMouseLeave()}>
-                {hiddenOptions.sort((a,b) => a.level - b.level).map(option => {
+            <div className='navigation__popup' style={{top: positionRoot.y, left: positionRoot.x}} onMouseLeave={() => handleMouseLeave()}>
+                {hiddenOptionsRoot.sort((a,b) => a.level - b.level).map(option => {
                     return <div className='navigation__popup-tittle ' onClick={() => handelOptionClick(option)}>{option.name}</div>
                 })}
             </div>
@@ -124,8 +101,8 @@ const Sidebar: React.FC<sidebarProps> = ({
     const renderHide = () => {
       if(softRoot){
         const HandleHiddenClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        setPosition({x: e.clientX - 10, y: e.clientY - 10});
-        setOpenPopUp(true);
+        setPositionRoot({x: e.clientX - 10, y: e.clientY - 10});
+        setOpenPopUpRoot(true);
         };
         return (
           <div className="navigation__hidden-options" onClick={(e) => HandleHiddenClick(e)}>... </div>
@@ -141,9 +118,10 @@ const Sidebar: React.FC<sidebarProps> = ({
       window.location.href = newUrl;
       
     }
-    console.log(testRoot)
-    console.log(softRoot)
-    console.log(softRootChildren)
+    // Show the hidden folders when the softRoot is selected
+    // from one of the parent folders
+    const showHidden = softRoot && testRoot.postChildren?.find((elem) => elem.id === softRoot.id) !== undefined;
+
     // ----------------------------------------------
     // ----------------  RENDERING  -----------------
     // ----------------------------------------------
@@ -153,19 +131,10 @@ const Sidebar: React.FC<sidebarProps> = ({
            <p className='navigation__about-tittle' onClick={() => handleAboutClick()}>About the Library</p>
           </div>
           <div>
-          {(softRoot && testRoot.postChildren?.find((elem) => elem.id === softRoot.id)) && renderHide()}
+          {showHidden && renderHide()}
           {testRoot.postChildren?.sort((a,b) => {
-            if (a.position === null && b.position === null) {
-              return a.name.localeCompare(b.name);
-            }
-            if (a.position === null && b.position !== null) {
-              return 1;
-            }
-            if (a.position !== null && b.position === null) {
-              return -1;
-            }
-            return (a.position ?? 0) - (b.position ?? 0);
-          }).map((doc) => {
+            return sortChildren(a,b);
+        }).map((doc) => {
             if(doc.name !== 'index'){
               const processChildren = Object.keys(doc.children).map((key) => doc.children[key]);
               doc.postChildren = processChildren;
@@ -179,17 +148,13 @@ const Sidebar: React.FC<sidebarProps> = ({
                         setSoftRoot={setSoftRoot} 
                         lastInteracted={lastInteracted}
                         setLastInteracted={setLastInteracted}
-                        position={position}
-                        setPosition={setPosition}
-                        openPopUp={openPopUp}
-                        setOpenPopUp={setOpenPopUp}
                         softRootChildren={softRootChildren}
                         setSoftRootChildren={setSoftRootChildren}
                       />;
             }
           })}
           </div>
-          {openPopUp && renderPopUp()}
+          {openPopUpRoot && renderPopUp()}
         </div>
     )
 

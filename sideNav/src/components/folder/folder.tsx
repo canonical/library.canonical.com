@@ -1,10 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react';
 import { ExpandMore, ChevronRight} from '@mui/icons-material';
-import { Document, MAX_NUMBER_LEVELS } from '../sidebar/sidebar';
+import { Document, MAX_NUMBER_LEVELS, levelDocument, sortChildren } from '../utils';
 import './folder.css';
-import { levelDocument } from '../sidebar/sidebar';
-import { sortChildren } from './parentFolder';
 
 interface FolderProps {
     document: Document;
@@ -26,7 +24,7 @@ interface FolderProps {
     setOpenedChildren: (openedChildren: levelDocument[]) => void;
     softRootChildren: levelDocument[];
     setSoftRootChildren: (softRootChildren: levelDocument[]) => void;
-  }
+}
 
 const Folder: React.FC<FolderProps> = ({ 
     document,
@@ -132,21 +130,17 @@ const Folder: React.FC<FolderProps> = ({
     // On click of the folder tittle, the folder is selected and it is open to show its children
     // If the folder is not in the opened children, it is added to the list
     const handleFolderClick = (doc: Document) => {
-        console.log('handleFolderClick', doc)
         if(softRoot){
             localStorage.setItem('softRoot', JSON.stringify(softRoot));
         }
         if(document.isSoftRoot){
-            console.log('isSoftRoot')
             const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
             setSoftRoot(levelDoc);
         }
         if(level< maxLevel){
-            console.log('not over maxLevel')
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
             setSelected({...levelDoc});
         } else {
-            console.log('over maxLevel')
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
             setSelected({...levelDoc});
             if(!open){

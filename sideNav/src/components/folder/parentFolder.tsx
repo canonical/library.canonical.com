@@ -1,9 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { ExpandMore, ChevronRight} from '@mui/icons-material';
-import { Document, levelDocument } from '../sidebar/sidebar';
+import { Document, levelDocument, MAX_NUMBER_LEVELS, sortChildren, position } from '../utils';
 import  Folder  from '../folder/folder';
-import { MAX_NUMBER_LEVELS } from '../sidebar/sidebar';
 import './folder.css';
 
 interface ParentFolderProps {
@@ -16,27 +15,8 @@ interface ParentFolderProps {
     setSoftRoot: (softRoot: levelDocument|null) => void;
     lastInteracted: levelDocument|null;
     setLastInteracted: (lastInteracted: levelDocument|null) => void;
-    position: {x:number, y:number};
-    setPosition: (position: {x:number, y:number}) => void;
-    openPopUp: boolean;
-    setOpenPopUp: (openPopUp: boolean) => void;
     softRootChildren: levelDocument[];
     setSoftRootChildren: (softRootChildren: levelDocument[]) => void;
-}
-
-
-
-export function sortChildren(a: Document, b: Document): number {
-    if (a.position === null && b.position === null) {
-        return a.name.localeCompare(b.name);
-    }
-    if (a.position === null && b.position !== null) {
-        return 1;
-    }
-    if (a.position !== null && b.position === null) {
-        return -1;
-    }
-    return (a.position ?? 0) - (b.position ?? 0);
 }
   
 const ParentFolder: React.FC<ParentFolderProps> = ({ 
@@ -49,10 +29,6 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     setSoftRoot, 
     lastInteracted,
     setLastInteracted,
-    position,
-    setPosition,
-    openPopUp,
-    setOpenPopUp,
     softRootChildren,
     setSoftRootChildren
     }) => {
@@ -65,13 +41,14 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     const parentId = document.id;
     // Manage and stores the hidden folders based on maximum level shown
     const [hiddenOptions, setHiddenOptions] = useState<levelDocument[]>([]);
-    // Manage and stores the breadcrumb of the selected folder
-    //const [breadcrumb, setBreadcrumb] = useState<levelDocument[]>([]);
     // Help separate the max level currently open per parent folder
     const [localMaxLevel, setLocalMaxLevel] = useState(1);
     // Manage and stores the opened children of the parent folder
     // so navigation is independant pero child 
     const [openedChildren, setOpenedChildren] = useState<levelDocument[]>([]);  
+        // Pop Up configuration to manage the position of the pop up and its visibility
+    const [position, setPosition] = useState<position>({x: 0, y: 0});
+    const [openPopUp, setOpenPopUp] = useState(false);
     // ----------------------------------------------
     // ---------------  RENDER FUNCTIONS ------------
     // ----------------------------------------------
@@ -272,9 +249,10 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
         setMaxLevel(localMaxLevel);
     } 
     const levelcondition = maxLevel - level >= MAX_NUMBER_LEVELS;
-    const hideLevel = levelcondition ||(softRoot !== null && document.id !== softRoot.id)
+    const hideLevel = levelcondition ||(softRoot !== null && document.id !== softRoot.id);
     const hiddenChild =  selected &&selected.level > localMaxLevel && selected.parentId === parentId && selected.id !== lastInteracted?.id; 
-    const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB'
+    const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB';
+
     return (
         <>
         { hideLevel  ?
