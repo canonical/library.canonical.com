@@ -10,6 +10,7 @@ from google.oauth2 import service_account
 from webapp.settings import SERVICE_ACCOUNT_INFO
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
+URL_FILE = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
 
 
 class GoogleDrive:
@@ -102,6 +103,31 @@ class GoogleDrive:
 
             if html:
                 return html
+            else:
+                err = "Error, document not found."
+                print(f"{err}\n")
+                abort(404, description=err)
+
+        except Exception as error:
+            err = "Error retrieving HTML or caching document."
+            print(f"{err}\n {error}")
+            abort(500, description=err)
+    
+    def fetch_spreadsheet(self, document_id):
+        try:
+            request = self.service.files().export(
+                fileId=document_id, mimeType="text/csv"
+            )
+
+            file = io.BytesIO()
+            downloader = MediaIoBaseDownload(file, request)
+            done = False
+            while done is False:
+                _, done = downloader.next_chunk()
+            csv = file.getvalue().decode("utf-8")
+
+            if csv:
+                return csv
             else:
                 err = "Error, document not found."
                 print(f"{err}\n")
