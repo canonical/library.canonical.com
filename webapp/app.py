@@ -47,10 +47,10 @@ def get_list_of_urls():
         google_drive = get_google_drive_instance()
         urls = []
         list = google_drive.fetch_spreadsheet(URL_DOC)
-        lines = list.split('\n')[1:]
+        lines = list.split("\n")[1:]
         for line in lines:
-            url = line.split(',')
-            urls.append({'old': url[0], 'new': url[1].replace('\r', '')})
+            url = line.split(",")
+            urls.append({"old": url[0], "new": url[1].replace("\r", "")})
         g.list_of_urls = urls
 
 
@@ -59,8 +59,8 @@ def find_broken_url(url):
     Find the new url for a given old url
     """
     for u in g.list_of_urls:
-        if u['old'] == url:
-            return u['new']
+        if u["old"] == url:
+            return u["new"]
     return None
 
 
@@ -137,7 +137,7 @@ def document(path=None):
         new_path = find_broken_url(path)
         if new_path:
             path = new_path
-            return flask.redirect("/"+path)
+            return flask.redirect("/" + path)
         else:
             err = "Error, document does not exist."
             flask.abort(404, description=err)
