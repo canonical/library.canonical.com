@@ -65,8 +65,10 @@ class GoogleDrive:
         next_page_token = ""
         items = []
         fields = (
-            "nextPageToken, files(id, name, mimeType, parents, owners, modifiedTime)"
+            "nextPageToken, files(id, name, mimeType, parents, owners, "
+            "modifiedTime)"
         )
+        print(fields)
         try:
             while (next_page_token is not None) or (next_page_token == ""):
                 results = (
@@ -104,8 +106,10 @@ class GoogleDrive:
             dateformat = "%Y-%m-%dT%H:%M:%S.%fZ"
             date = cachedDoc["modifiedTime"]
             cachedDocDate = datetime.strptime(date, dateformat)
-            if (docInfo["modifiedTime"] > cachedDoc["modifiedTime"]
-            or (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE):
+            if (
+                docInfo["modifiedTime"] > cachedDoc["modifiedTime"]
+                or (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE
+            ):
                 return self.fetch_document(document_id)
             else:
                 return cachedDoc["html"]
