@@ -134,11 +134,7 @@ def document(path=None):
         new_path = find_broken_url(path)
         if new_path:
             path = new_path
-            try:
-                target_document = get_target_document(path, navigation_data.hierarchy)
-            except KeyError:
-                err = "Error, document does not exist."
-                flask.abort(404, description=err)
+            return flask.redirect("/"+path)
         else:
             err = "Error, document does not exist."
             flask.abort(404, description=err)
