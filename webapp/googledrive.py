@@ -98,7 +98,6 @@ class GoogleDrive:
         if self.cache.get(document_id) is not None:
             docInfo = self.cache.get("docDic")[document_id]
             cachedDoc = self.cache.get(document_id)
-            print("mod Time",cachedDoc['modifiedTime'])
             dateformat = "%Y-%m-%dT%H:%M:%S.%fZ"
             cachedDocDate = datetime.strptime(cachedDoc['modifiedTime'], dateformat)
             if (docInfo["modifiedTime"] > cachedDoc["modifiedTime"] 
