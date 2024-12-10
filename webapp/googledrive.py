@@ -101,7 +101,7 @@ class GoogleDrive:
             dateformat = "%Y-%m-%dT%H:%M:%S.%fZ"
             cachedDocDate = datetime.strptime(cachedDoc['modifiedTime'], dateformat)
             if (docInfo["modifiedTime"] > cachedDoc["modifiedTime"] 
-                or datetime.today() - cachedDocDate >= MAX_CACHE_AGE):
+                or (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE):
                 return self.fetch_document(document_id)
             else:
                 return cachedDoc["html"]
