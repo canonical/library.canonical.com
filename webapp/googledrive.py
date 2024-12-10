@@ -10,7 +10,6 @@ from google.oauth2 import service_account
 from webapp.settings import SERVICE_ACCOUNT_INFO
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
-URL_FILE = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
 
 
 class GoogleDrive:
@@ -112,7 +111,7 @@ class GoogleDrive:
             err = "Error retrieving HTML or caching document."
             print(f"{err}\n {error}")
             abort(500, description=err)
-    
+
     def fetch_spreadsheet(self, document_id):
         try:
             request = self.service.files().export(
