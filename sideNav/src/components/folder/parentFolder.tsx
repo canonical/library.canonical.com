@@ -22,6 +22,19 @@ interface position {
     x: number;
     y: number;
 }
+
+export function sortChildren(a: Document, b: Document): number {
+    if (a.position === null && b.position === null) {
+        return a.name.localeCompare(b.name);
+    }
+    if (a.position === null && b.position !== null) {
+        return 1;
+    }
+    if (a.position !== null && b.position === null) {
+        return -1;
+    }
+    return (a.position ?? 0) - (b.position ?? 0);
+}
   
 const ParentFolder: React.FC<ParentFolderProps> = ({ 
     document,
@@ -61,14 +74,8 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
         const processChildren = Object.keys(doc.children).map((key) => doc.children[key]);
         doc.postChildren = processChildren;
         return doc.postChildren.sort((a,b) => {
-            if (a.position === null && b.position === null) {
-              return -1;
-            }
-            if (a.position === null || b.position === null) {
-              return 1;
-            }
-            return a.position - b.position;
-          }).map((doc) => {
+            return sortChildren(a,b);
+        }).map((doc) => {
             if(doc.name !== 'index'){
                 return <Folder 
                         document={doc}
@@ -250,7 +257,9 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             : <ChevronRight/>}
             </div> 
             : null}
-            <p className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
+            <a href={document.full_path} className='navigation__link'>
+                <span className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</span>
+            </a>
         </div>
         }
         <div style={{paddingLeft: hideLevel? '0' : '5%'}}>

@@ -13,10 +13,6 @@
 .navigation__folder-tittle {
     font-size: 14px;
     color: #000000;
-    font-family: "Ubuntu Sans", sans-serif;
-    font-optical-sizing: auto;
-    font-style: normal;
-    font-variation-settings: "wdth" 100;
     overflow-wrap: break-word;
     margin: 0;
     cursor: pointer;
@@ -69,4 +65,14 @@
     padding-left: 10px;
     border-bottom: 0.5px solid lightgray;
     cursor: pointer;
+}
+
+.navigation__link {
+    text-decoration: none;
+    height: 100%;
+    width: 100%;
+}
+
+.navigation__link:hover {
+    text-decoration: none;
 }
