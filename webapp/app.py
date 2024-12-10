@@ -25,6 +25,8 @@ app = FlaskBase(
 )
 
 # Initialize session and single Drive instance
+# TODO: Implement Talisker
+# It is used to manage error logging
 # session = talisker.requests.get_session()
 init_sso(app)
 
@@ -44,18 +46,18 @@ def get_google_drive_instance():
 
 def get_navigation_data():
     """
-    Return the navigation data from Google Drive and cache in Flask's 'g'
-    object.
+    Return the navigation data that was cached
+    in case it is available, otherwise construct it.
     """
     if "navigation_data" not in g:
 
         if "navigation_data_cached" not in session:
-            g.navigation_data = get_new_navigation_data()
+            g.navigation_data = construct_navigation_data()
         else:
             nav_data = cache.get("navigation")
             if nav_data is None:
                 # Handle the case where the cache data is missing
-                g.navigation_data = get_new_navigation_data()
+                g.navigation_data = construct_navigation_data()
             else:
                 google_drive = get_google_drive_instance()
                 g.navigation_data = NavigationBuilder(
@@ -70,7 +72,10 @@ def get_navigation_data():
     return g.navigation_data
 
 
-def get_new_navigation_data():
+def construct_navigation_data():
+    """
+    Construct the navigation data and cache it.
+    """
     google_drive = get_google_drive_instance()
     data = NavigationBuilder(google_drive, ROOT)
     nav_data = {
