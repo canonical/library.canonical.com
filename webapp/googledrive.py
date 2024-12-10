@@ -14,6 +14,7 @@ from datetime import datetime
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 MAX_CACHE_AGE = 14
 
+
 class GoogleDrive:
     def __init__(self, cache):
         scopes = [
@@ -63,7 +64,9 @@ class GoogleDrive:
     def get_document_list(self):
         next_page_token = ""
         items = []
-        fields = "nextPageToken, files(id, name, mimeType, parents, owners, modifiedTime)"
+        fields = (
+            "nextPageToken, files(id, name, mimeType, parents, owners, modifiedTime)"
+        )
         try:
             while (next_page_token is not None) or (next_page_token == ""):
                 results = (
@@ -99,9 +102,10 @@ class GoogleDrive:
             docInfo = self.cache.get("docDic")[document_id]
             cachedDoc = self.cache.get(document_id)
             dateformat = "%Y-%m-%dT%H:%M:%S.%fZ"
-            cachedDocDate = datetime.strptime(cachedDoc['modifiedTime'], dateformat)
-            if (docInfo["modifiedTime"] > cachedDoc["modifiedTime"] 
-                or (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE):
+            date = cachedDoc["modifiedTime"]
+            cachedDocDate = datetime.strptime(date, dateformat)
+            if (docInfo["modifiedTime"] > cachedDoc["modifiedTime"]
+            or (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE):
                 return self.fetch_document(document_id)
             else:
                 return cachedDoc["html"]
