@@ -54,28 +54,37 @@ class GoogleDrive:
         items = results.get("files", [])
         return items
 
+    # Added the next page token to be able to obtain the whole list of files
+    # in the drive, since when the fields contains files(..., parents)
+    # the maximum number of files that can be obtained is 460.
     def get_document_list(self):
+        next_page_token = ""
+        items = []
+        fields = "nextPageToken, files(id, name, parents, mimeType)"
         try:
-            results = (
-                self.service.files()
-                .list(
-                    q="trashed=false",
-                    corpora="drive",
-                    driveId=TARGET_DRIVE,
-                    supportsAllDrives=True,
-                    includeItemsFromAllDrives=True,
-                    spaces="drive",
-                    fields="files(id, name, parents, mimeType, owners)",
-                    pageSize=1000,
+            while (next_page_token is not None) or (next_page_token == ""):
+                results = (
+                    self.service.files()
+                    .list(
+                        q="trashed=false",
+                        corpora="drive",
+                        driveId=TARGET_DRIVE,
+                        supportsAllDrives=True,
+                        includeItemsFromAllDrives=True,
+                        spaces="drive",
+                        fields=fields,
+                        pageSize=1000,
+                        pageToken=next_page_token,
+                    )
+                    .execute()
                 )
-                .execute()
-            )
+                items.extend(results.get("files", []))
+                next_page_token = results.get("nextPageToken", None)
         except Exception as error:
             err = "Error fetching document list."
             print(f"{err}\n {error}")
             abort(500, description=err)
 
-        items = results.get("files", [])
         return items
 
     def fetch_document(self, document_id):
