@@ -104,13 +104,14 @@ class Parser:
 
         current_code_block = None
         # Identify code blocks by the start and end symbols
-        for tag in self.html.findAll("code"):
+        code_tags = self.html.findAll("code")
+        for tag in code_tags:
             if tag.text == "```code":
                 tag.string = tag.text.replace("```code", start_symbol)
             if tag.text == "```endcode":
                 tag.string = tag.text.replace("```endcode", end_symbol)
 
-        for tag in self.html.findAll("code"):
+        for tag in code_tags:
             # Sometimes there will be a line break in the middle of a code
             # block, so we need to unwrap it
             if tag.find("br"):
@@ -150,12 +151,11 @@ class Parser:
                     for tag in parent_tag.find_all("code"):
                         pre_tag.append(tag)
         # Clean up any unicode items that are left in the code blocks
-        for tag in self.html.findAll("code"):
-            if "\uec03" in tag.contents:
-                tag.contents[0].replace_with(
+        for tag in self.html.select("code:contains(\uec03)"):
+            tag.contents[0].replace_with(
                     tag.contents[0].replace("\uec03", "")
                 )
-                tag.contents[2].replace_with("")
+            tag.contents[2].replace_with("")
         # Clean up empty p tags and clean unicode items in p tags
         for tag in self.html.findAll("p"):
             if not tag.contents:
