@@ -11,9 +11,7 @@ ROOT = os.getenv("ROOT_FOLDER", "library")
 
 
 class Parser:
-    def __init__(
-        self, google_drive: GoogleDrive, doc_id: str, doc_dict, doc_name: str
-    ):
+    def __init__(self, google_drive: GoogleDrive, doc_id: str, doc_dict, doc_name: str):
         self.doc_id = doc_id
         self.doc_dict = doc_dict
         self.html = self.get_html(google_drive)
@@ -49,17 +47,10 @@ class Parser:
             if "start" in ol["class"]:
                 # if its top level add the counter class
                 if numeric_suffix == "0":
-                    ol["class"] = ol.get("class", []) + [
-                        "p-list--nested-counter"
-                    ]
+                    ol["class"] = ol.get("class", []) + ["p-list--nested-counter"]
                 # check if there's already a list with a lower level of nesting
-                if (
-                    numeric_suffix
-                    and str(int(numeric_suffix) - 1) in previous_ols
-                ):
-                    target_location = previous_ols[
-                        str(int(numeric_suffix) - 1)
-                    ]
+                if numeric_suffix and str(int(numeric_suffix) - 1) in previous_ols:
+                    target_location = previous_ols[str(int(numeric_suffix) - 1)]
                     if target_location.name == "li":
                         target_location.append(ol)
                     elif target_location.name == "ol":
