@@ -152,9 +152,7 @@ class Parser:
                         pre_tag.append(tag)
         # Clean up any unicode items that are left in the code blocks
         for tag in self.html.select("code:contains(\uec03)"):
-            tag.contents[0].replace_with(
-                tag.contents[0].replace("\uec03", "")
-            )
+            tag.contents[0].replace_with(tag.contents[0].replace("\uec03", ""))
             tag.contents[2].replace_with("")
         # Clean up empty p tags and clean unicode items in p tags
         for tag in self.html.findAll("p"):
@@ -190,9 +188,7 @@ class Parser:
             rows = table.find_all("tr")
             for row in rows:
                 columns = row.find_all("td")
-                key = (
-                    columns[0].get_text(strip=True).replace(" ", "_").lower()
-                )
+                key = columns[0].get_text(strip=True).replace(" ", "_").lower()
                 value = columns[1].get_text(strip=True)
                 self.metadata[key] = value
 
