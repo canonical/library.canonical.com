@@ -9,11 +9,14 @@ from google.oauth2 import service_account
 
 from webapp.settings import SERVICE_ACCOUNT_INFO
 
+from datetime import datetime
+
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
+MAX_CACHE_AGE = 14
 
 
 class GoogleDrive:
-    def __init__(self):
+    def __init__(self, cache):
         scopes = [
             "https://www.googleapis.com/auth/drive",
         ]
@@ -23,6 +26,7 @@ class GoogleDrive:
         self.service = build(
             "drive", "v3", credentials=credentials, cache_discovery=False
         )
+        self.cache = cache
 
     def search_drive(self, query):
         try:
@@ -60,7 +64,11 @@ class GoogleDrive:
     def get_document_list(self):
         next_page_token = ""
         items = []
-        fields = "nextPageToken, files(id, name, parents, mimeType)"
+        fields = (
+            "nextPageToken, files(id, name, mimeType, parents, owners, "
+            "modifiedTime)"
+        )
+        print(fields)
         try:
             while (next_page_token is not None) or (next_page_token == ""):
                 results = (
@@ -85,14 +93,34 @@ class GoogleDrive:
             print(f"{err}\n {error}")
             abort(500, description=err)
 
+        docDic = {}
+        for item in items:
+            docDic[item["id"]] = item
+        self.cache.set("docDic", docDic)
         return items
+
+    def get_document(self, document_id):
+        if self.cache.get(document_id) is not None:
+            docInfo = self.cache.get("docDic")[document_id]
+            cachedDoc = self.cache.get(document_id)
+            dateformat = "%Y-%m-%dT%H:%M:%S.%fZ"
+            date = cachedDoc["modifiedTime"]
+            cachedDocDate = datetime.strptime(date, dateformat)
+            if (
+                docInfo["modifiedTime"] > cachedDoc["modifiedTime"]
+                or (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE
+            ):
+                return self.fetch_document(document_id)
+            else:
+                return cachedDoc["html"]
+        else:
+            return self.fetch_document(document_id)
 
     def fetch_document(self, document_id):
         try:
             request = self.service.files().export(
                 fileId=document_id, mimeType="text/html"
             )
-
             file = io.BytesIO()
             downloader = MediaIoBaseDownload(file, request)
             done = False
@@ -101,6 +129,13 @@ class GoogleDrive:
             html = file.getvalue().decode("utf-8")
 
             if html:
+                docs = self.cache.get("docDic")
+                info = {
+                    "id": document_id,
+                    "html": html,
+                    "modifiedTime": docs[document_id]["modifiedTime"],
+                }
+                self.cache.set(document_id, info)
                 return html
             else:
                 err = "Error, document not found."
