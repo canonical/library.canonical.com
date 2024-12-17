@@ -25,7 +25,9 @@ class NavigationBuilder:
             self.file_list = self.get_file_list_copy(google_drive)
             self.initialize_reference_dict()
             self.hierarchy = self.create_hierarchy(self.file_list)
-            self.doc_reference_dict = self.update_references_dict(self.hierarchy)
+            self.doc_reference_dict = self.update_references_dict(
+                self.hierarchy
+            )
         else:
             self.root_folder = root_folder.lower()
             self.doc_reference_dict = doc_reference_dict
@@ -171,6 +173,8 @@ class NavigationBuilder:
         for key in hierarchy_obj.keys():
             new_dict[hierarchy_obj[key]["id"]] = hierarchy_obj[key]
             if hierarchy_obj[key]["mimeType"] == "folder":
-                children = self.update_references_dict(hierarchy_obj[key]["children"])
+                children = self.update_references_dict(
+                    hierarchy_obj[key]["children"]
+                )
                 new_dict.update(children)
         return new_dict
