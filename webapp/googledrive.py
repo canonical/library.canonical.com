@@ -68,7 +68,6 @@ class GoogleDrive:
             "nextPageToken, files(id, name, mimeType, parents, owners, "
             "modifiedTime)"
         )
-        print(fields)
         try:
             while (next_page_token is not None) or (next_page_token == ""):
                 results = (
