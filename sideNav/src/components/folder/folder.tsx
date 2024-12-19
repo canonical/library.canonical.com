@@ -130,6 +130,7 @@ const Folder: React.FC<FolderProps> = ({
         if(document.isSoftRoot){
             const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
             setSoftRoot(levelDoc);
+            localStorage.setItem('softRoot', JSON.stringify(levelDoc));
         }
         if(level< maxLevel){
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
