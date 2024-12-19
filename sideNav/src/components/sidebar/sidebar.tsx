@@ -68,6 +68,7 @@ const Sidebar: React.FC<sidebarProps> = ({
     useEffect(() => {
       if(localStorage.getItem('softRoot') === null || localStorage.getItem('softRoot') === '' || localStorage.getItem('softRoot') === undefined){
         localStorage.setItem('softRoot', 'null');
+        setSoftRoot(null);
       }
     },[])
 
@@ -132,8 +133,9 @@ const Sidebar: React.FC<sidebarProps> = ({
     const showHidden = softRoot && testRoot.postChildren?.find((elem) => elem.id === softRoot.id) !== undefined;
     const activeChild = testRoot.postChildren?.find((elem) => elem.active);
 
-    if(activeChild && activeChild.name === 'index'){
+    if(activeChild && activeChild.name === 'index' && localStorage.getItem('softRoot') !== 'null'){
       localStorage.setItem('softRoot', 'null');
+      setSoftRoot(null);
     }
     // ----------------------------------------------
     // ----------------  RENDERING  -----------------
