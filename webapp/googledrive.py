@@ -97,7 +97,7 @@ class GoogleDrive:
                 print(item)
                 items.remove(item)
                 break
-        docDic = {} 
+        docDic = {}
         for item in items:
             docDic[item["id"]] = item
         self.cache.set("docDic", docDic)
