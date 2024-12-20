@@ -65,6 +65,13 @@ const Sidebar: React.FC<sidebarProps> = ({
       }
     },[softRoot])
 
+    useEffect(() => {
+      if(localStorage.getItem('softRoot') === null || localStorage.getItem('softRoot') === '' || localStorage.getItem('softRoot') === undefined){
+        localStorage.setItem('softRoot', 'null');
+        setSoftRoot(null);
+      }
+    },[])
+
     // ----------------------------------------------
     // ---------------  RENDER FUNCTIONS ------------
     // ----------------------------------------------
@@ -115,6 +122,7 @@ const Sidebar: React.FC<sidebarProps> = ({
     // ---------------  HANDLER FUNCTIONS -----------
     // ----------------------------------------------
     const handleAboutClick = () => {
+      localStorage.setItem('softRoot', 'null');
       const newUrl = '/';
       window.location.href = newUrl;
       
@@ -123,7 +131,12 @@ const Sidebar: React.FC<sidebarProps> = ({
     // Show the hidden folders when the softRoot is selected
     // from one of the parent folders
     const showHidden = softRoot && testRoot.postChildren?.find((elem) => elem.id === softRoot.id) !== undefined;
+    const activeChild = testRoot.postChildren?.find((elem) => elem.active);
 
+    if(activeChild && activeChild.name === 'index' && localStorage.getItem('softRoot') !== 'null'){
+      localStorage.setItem('softRoot', 'null');
+      setSoftRoot(null);
+    }
     // ----------------------------------------------
     // ----------------  RENDERING  -----------------
     // ----------------------------------------------

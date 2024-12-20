@@ -12,6 +12,7 @@ from webapp.settings import SERVICE_ACCOUNT_INFO
 from datetime import datetime
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
+URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
 MAX_CACHE_AGE = 14
 
 
@@ -91,7 +92,11 @@ class GoogleDrive:
             err = "Error fetching document list."
             print(f"{err}\n {error}")
             abort(500, description=err)
-
+        for item in items:
+            if item["id"] == URL_DOC:
+                print(item)
+                items.remove(item)
+                break
         docDic = {}
         for item in items:
             docDic[item["id"]] = item
