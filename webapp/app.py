@@ -1,17 +1,20 @@
 import os
 import flask
-import talisker
-from flask import request, g
+
+# import talisker
+from flask import request, g, session
 from canonicalwebteam.flask_base.app import FlaskBase
 
 from webapp.googledrive import GoogleDrive
 from webapp.parser import Parser
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
+from flask_caching import Cache
 
 # Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
+URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
 
 app = FlaskBase(
     __name__,
@@ -23,8 +26,13 @@ app = FlaskBase(
 )
 
 # Initialize session and single Drive instance
-session = talisker.requests.get_session()
+# TODO: Implement Talisker
+# It is used to manage error logging
+# session = talisker.requests.get_session()
 init_sso(app)
+
+# Initialize caching
+cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
 
 def get_google_drive_instance():
@@ -33,19 +41,79 @@ def get_google_drive_instance():
     object.
     """
     if "google_drive" not in g:
-        g.google_drive = GoogleDrive()
+        g.google_drive = GoogleDrive(cache)
     return g.google_drive
+
+
+def get_list_of_urls():
+    """
+    Return a list of urls from Google Drive and cache in Flask's 'g'
+    object.
+    """
+    if "list_of_urls" not in g:
+        google_drive = get_google_drive_instance()
+        urls = []
+        list = google_drive.fetch_spreadsheet(URL_DOC)
+        lines = list.split("\n")[1:]
+        for line in lines:
+            url = line.split(",")
+            urls.append({"old": url[0], "new": url[1].replace("\r", "")})
+        g.list_of_urls = urls
+
+
+def find_broken_url(url):
+    """
+    Find the new url for a given old url
+    """
+    for u in g.list_of_urls:
+        if u["old"] == url:
+            return u["new"]
+    return None
 
 
 def get_navigation_data():
     """
-    Return the navigation data from Google Drive and cache in Flask's 'g'
-    object.
+    Return the navigation data that was cached
+    in case it is available, otherwise construct it.
     """
     if "navigation_data" not in g:
-        google_drive = get_google_drive_instance()
-        g.navigation_data = NavigationBuilder(google_drive, ROOT)
+
+        if "navigation_data_cached" not in session:
+            g.navigation_data = construct_navigation_data()
+        else:
+            nav_data = cache.get("navigation")
+            if nav_data is None:
+                # Handle the case where the cache data is missing
+                g.navigation_data = construct_navigation_data()
+            else:
+                google_drive = get_google_drive_instance()
+                g.navigation_data = NavigationBuilder(
+                    google_drive,
+                    ROOT,
+                    True,
+                    nav_data["doc_reference_dict"],
+                    nav_data["temp_hierarchy"],
+                    nav_data["file_list"],
+                    nav_data["hierarchy"],
+                )
     return g.navigation_data
+
+
+def construct_navigation_data():
+    """
+    Construct the navigation data and cache it.
+    """
+    google_drive = get_google_drive_instance()
+    data = NavigationBuilder(google_drive, ROOT)
+    nav_data = {
+        "doc_reference_dict": data.doc_reference_dict,
+        "temp_hierarchy": data.temp_hierarchy,
+        "file_list": data.file_list,
+        "hierarchy": data.hierarchy,
+    }
+    cache.set("navigation", nav_data)
+    session["navigation_data_cached"] = True
+    return data
 
 
 def get_target_document(path, navigation):
@@ -101,13 +169,19 @@ def document(path=None):
     pages use the same template, the only difference between them is the
     content.
     """
+    get_list_of_urls()
     navigation_data = get_navigation_data()
 
     try:
         target_document = get_target_document(path, navigation_data.hierarchy)
     except KeyError:
-        err = "Error, document does not exist."
-        flask.abort(404, description=err)
+        new_path = find_broken_url(path)
+        if new_path:
+            path = new_path
+            return flask.redirect("/" + path)
+        else:
+            err = "Error, document does not exist."
+            flask.abort(404, description=err)
 
     soup = Parser(
         get_google_drive_instance(),

@@ -1,9 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react';
 import { ExpandMore, ChevronRight} from '@mui/icons-material';
-import { Document, MAX_NUMBER_LEVELS } from '../sidebar/sidebar';
+import { Document, MAX_NUMBER_LEVELS, levelDocument, sortChildren } from '../utils';
 import './folder.css';
-import { levelDocument } from '../sidebar/sidebar';
 
 interface FolderProps {
     document: Document;
@@ -23,7 +22,7 @@ interface FolderProps {
     setLastInteracted: (lastInteracted: levelDocument|null) => void;
     openedChildren: levelDocument[];
     setOpenedChildren: (openedChildren: levelDocument[]) => void;
-  }
+}
 
 const Folder: React.FC<FolderProps> = ({ 
     document,
@@ -58,14 +57,8 @@ const Folder: React.FC<FolderProps> = ({
         const processChildren = Object.keys(doc.children).map((key) => doc.children[key]);
         doc.postChildren = processChildren;
         return doc.postChildren.sort((a,b) => {
-            if (a.position === null && b.position === null) {
-                return -1;
-            }
-            if (a.position === null || b.position === null) {
-              return 1;
-            }
-            return a.position - b.position;
-          }).map((doc) => {
+            return sortChildren(a,b);
+        }).map((doc) => {
             if(doc.name !== 'index'){
                 return <Folder
                         document={doc}
@@ -84,7 +77,7 @@ const Folder: React.FC<FolderProps> = ({
                         lastInteracted={lastInteracted}
                         setLastInteracted={setLastInteracted}
                         openedChildren={openedChildren}
-                        setOpenedChildren={setOpenedChildren}  
+                        setOpenedChildren={setOpenedChildren}
                         />;
             }
           });
@@ -131,9 +124,13 @@ const Folder: React.FC<FolderProps> = ({
     // On click of the folder tittle, the folder is selected and it is open to show its children
     // If the folder is not in the opened children, it is added to the list
     const handleFolderClick = (doc: Document) => {
+        if(softRoot){
+            localStorage.setItem('softRoot', JSON.stringify(softRoot));
+        }
         if(document.isSoftRoot){
             const levelDoc: levelDocument= {...document, 'level': level, 'parentId': parentId};
             setSoftRoot(levelDoc);
+            localStorage.setItem('softRoot', JSON.stringify(levelDoc));
         }
         if(level< maxLevel){
             const levelDoc: levelDocument= {...doc, 'level': level, 'parentId': parentId};
@@ -203,7 +200,9 @@ const Folder: React.FC<FolderProps> = ({
             : <ChevronRight/>}
             </div>
             :null}
-            <p className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</p>
+            <a href={document.full_path} className='navigation__link'>
+                <span className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</span>
+            </a>
         </div>
         }
         <div style={{paddingLeft: hideLevel? '0' : '5%'}}>

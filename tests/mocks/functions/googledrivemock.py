@@ -11,6 +11,15 @@ class GoogleDriveMock:
         self.mock_google_doc = mock_google_doc
         self.mock_file_list = mock_file_list["file_list"]
 
+    def get_document(self, document_id):
+        """
+        Mocks getting a Google Doc.
+
+        :param document_id: Does nothing and only allows it to
+        work within the Parser
+        """
+        return self.mock_google_doc
+
     def fetch_document(self, document_id):
         """
         Mocks fetching a Google Doc.

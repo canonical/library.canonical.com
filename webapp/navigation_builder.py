@@ -8,13 +8,32 @@ from webapp.utils.process_leading_number import (
 
 
 class NavigationBuilder:
-    def __init__(self, google_drive: GoogleDrive, root_folder: str):
-        self.root_folder = root_folder.lower()
-        self.doc_reference_dict = {}
-        self.temp_hierarchy = {}
-        self.file_list = self.get_file_list_copy(google_drive)
-        self.initialize_reference_dict()
-        self.hierarchy = self.create_hierarchy(self.file_list)
+    def __init__(
+        self,
+        google_drive: GoogleDrive,
+        root_folder: str,
+        cache=False,
+        doc_reference_dict=None,
+        temp_hierarchy=None,
+        file_list=None,
+        hierarchy=None,
+    ):
+        if not cache:
+            self.root_folder = root_folder.lower()
+            self.doc_reference_dict = {}
+            self.temp_hierarchy = {}
+            self.file_list = self.get_file_list_copy(google_drive)
+            self.initialize_reference_dict()
+            self.hierarchy = self.create_hierarchy(self.file_list)
+            self.doc_reference_dict = self.update_references_dict(
+                self.hierarchy
+            )
+        else:
+            self.root_folder = root_folder.lower()
+            self.doc_reference_dict = doc_reference_dict
+            self.temp_hierarchy = temp_hierarchy
+            self.file_list = file_list
+            self.hierarchy = hierarchy
 
     def get_file_list_copy(self, google_drive: GoogleDrive):
         """
@@ -145,3 +164,17 @@ class NavigationBuilder:
 
         new_children = {k: children[k] for k in ordered_slugs}
         parent_obj["children"] = new_children
+
+    def update_references_dict(self, hierarchy_obj):
+        """
+        Recursively updates the reference dictionary with the hierarchy object.
+        """
+        new_dict = {}
+        for key in hierarchy_obj.keys():
+            new_dict[hierarchy_obj[key]["id"]] = hierarchy_obj[key]
+            if hierarchy_obj[key]["mimeType"] == "folder":
+                children = self.update_references_dict(
+                    hierarchy_obj[key]["children"]
+                )
+                new_dict.update(children)
+        return new_dict
