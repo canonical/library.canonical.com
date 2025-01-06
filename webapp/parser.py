@@ -97,6 +97,21 @@ class Parser:
                     tag.wrap(self.html.new_tag(tag_name))
             del tag["style"]
 
+    def wrap_inline_text(self, tag):
+        while '```code' in tag.contents[-1]:
+            text = tag.contents[-1].text
+            posStart = text.find('```code')
+            posEnd = text.find('```endcode')
+            preCode = text[0:posStart] 
+            code = text[posStart+7:posEnd]
+            new_tag= self.html.new_tag("code")
+            new_tag.string = code
+            postCode = text[posEnd+10:]
+            tag.contents[-1].replace_with(preCode)
+            tag.append(new_tag)
+            tag.append(postCode)
+
+
     def wrap_code_blocks(self, code_block_config):
 
         start_symbol = entity_to_char(code_block_config["start"])
@@ -158,6 +173,8 @@ class Parser:
         for tag in self.html.findAll("p"):
             if not tag.contents:
                 tag.decompose()
+            elif "```code" in tag.text:
+                self.wrap_inline_text(tag)
             elif "\uec02" in tag.text:
                 tag.string = tag.text.replace("\uec02", "")
 
