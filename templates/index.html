@@ -8,35 +8,40 @@ Canonical Reference Library is single source of information for all corporate kn
 {% block content %}
 <div class="l-site">
   <div class="l-docs">
-    <div class="l-docs__header">
-      {% include "_partial/_navigation.html" %}
-      <section class="l-docs__subgrid p-strip is-bordered u-no-padding">
-        <div class="l-docs__main u-no-padding">
-          <div class="p-notification--caution" style="margin-top: 1rem;">
-            <div class="p-notification__content">
-              <h5 class="p-notification__title">The library is still a work in progress.
-                <a href="/the-library">Learn more about the project</a>.
-              </h5>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
 
     <aside class="l-docs__sidebar">
       {% include "_partial/_side-navigation.html" %}
     </aside>
-
-    <div class="l-docs__title">
-      {% if document["breadcrumbs"]|length > 1 %}
-      {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1
-      col-order-small-1adcrumbs"] %}
-      {% include "_partial/_breadcrumbs.html" %}
-      {% endwith %}
-      {% endif %}
+    
+    <div class="l-docs__title u-fixed-width">
+      <script src="/static/js/build/search.js"></script>
+      <div class="l-docs__main " style="padding-top: 10px;">
+        <form action="/search" class="p-search-box u-no-margin">
+          <label class="u-off-screen" for="search">Search</label>
+          <input type="search" class="p-search-box__input" name="q" placeholder="Search our sites" required="" aria-label="Search our sites">
+          <button type="reset" class="p-search-box__reset">
+            <i class="p-icon--close"></i>
+          </button>
+          <button type="submit" class="p-search-box__button">
+            <i class="p-icon--search"></i>
+          </button>
+        </form>
+      </div>
+      <div>
+        {% if document["breadcrumbs"]|length > 1 %}
+        {% with page_list = document["brecol-2 col-medium-6 col-small-4 col-order-large-2 col-order-medium-1
+        col-order-small-1adcrumbs"] %}
+        {% include "_partial/_breadcrumbs.html" %}
+        {% endwith %}
+        {% endif %}
+      </div>
     </div>
 
-    <div class="l-docs__meta">
+    <div class="l-docs__title">
+      
+    </div>
+
+    <div class="l-docs__meta" style="padding-top: 70px;">
       <div class="l-docs__sticky-container">
         {% with document = document %}
         {% include "_partial/_table-of-content.html" %}
