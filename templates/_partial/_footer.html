@@ -1,26 +1,14 @@
-<footer class="p-strip is-dark l-docs__subgrid ">
-  <div class="l-docs__main">
-    <div class="u-fixed-width">
-      <p>
-          &copy; {{ now("%Y") }} Canonical Ltd. Ubuntu and Canonical are registered trademarks of Canonical&nbsp;Ltd.
-      </p>
-      <nav>
-          <ul class="p-inline-list--middot">
-          <li class="p-inline-list__item">
-              <a href="https://www.ubuntu.com/legal">Legal information</a>
-          </li>
-          <li class="p-inline-list__item">
-            <a href="" class="js-revoke-cookie-manager">Manage your tracker settings</a>
-          </li>
-          <li class="p-inline-list__item">
-              <a class="p-footer__link" href="https://github.com/canonical/library.canonical.com/issues/new">Report a bug on this site</a>
-          </li>
-          </ul>
-          <span class="u-off-screen">
-          <a href="#">Go to the top of the page</a>
-          </span>
-      </nav>
+<footer class="p-strip is-dark u-no-padding" style="position: fixed; bottom: 0;">
+    <div class="u-fixed-width" style="display: flex; flex-flow: row; padding-top: 0.5rem; padding-bottom: 0.7rem;">
+      <div class="p-notification--caution is-borderless u-no-margin" style="width: 80%;">
+          <p class="u-no-margin">The library is still a work in progress.
+            <a href="/the-library">Learn how to contribute to the library</a>.
+          </p>
+      </div>
+      <a href="https://docs.google.com/document/d/{{document.id}}">
+        <button class="p-button is-dark u-no-margin--bottom" style="position:fixed; right: 0; margin-right: 20px;">Suggest an edit</button>
+      </a>
     </div>
-  </div>
+    </div>
 </footer>
 <script src="/static/js/build/main.js"></script>
