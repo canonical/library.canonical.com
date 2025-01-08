@@ -5,9 +5,13 @@
 @import "vanilla-framework";
 @include vanilla;
 
+@include vf-p-icons;
+@include vf-p-icon-submit-bug;
+
 // Import cookie policy
 @import "@canonical/cookie-policy/build/css/cookie-policy";
 
+$increase-font-size-on-larger-screens: false;
 // Override vanilla styles
 body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {
   padding-top: 0.55rem;
@@ -15,6 +19,11 @@ body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {
 
 body {
   flex-flow: column;
+}
+
+.l-docs {
+  background-color: #f3f3f3;
+  grid-template-columns: 344px minmax(0, 1fr) 456px;
 }
 
 // Sometimes the entire document is put in a table and it adds padding
@@ -28,10 +37,20 @@ body {
 
 .l-docs__main {
   padding-bottom: 1.5rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.l-docs__main-search {
+  padding-top: 8px;
 }
 
 .l-docs__sidebar {
   background-color: #EBEBEB;
+  width: 344px;
+  border-right: $color-mid-light;
+  border-style: solid;
+  border-width: 0 1.5px 0 0;
 }
 
 // This makes it align to the breadcrumbs
@@ -119,6 +138,12 @@ body {
 }
 
 .l-docs__meta {
+  width: 448px;
+  border-left: $color-mid-light;
+  border-style: solid;
+  padding-left: 8px;
+  padding-top: 70px; 
+  border-width: 0 0 0 1.5px;
   .l-docs__sticky-container {
     @extend .u-fixed-width;
 
