@@ -260,7 +260,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             : <Icon name='chevron-right'/>}
             </div> 
             : null}
-            <a href={document.full_path} className='navigation__link'>
+            <a href={document.full_path} className='navigation__link' style={{textDecoration: 'none'}}>
                 <span className='navigation__folder-tittle'  style={{paddingLeft: document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0.5rem" : "1.5rem" }} onClick={() => handleFolderClick(document)}>{document.name}</span>
             </a>
         </div>

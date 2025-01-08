@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@canonical/react-components';
 import { Document, MAX_NUMBER_LEVELS, levelDocument, sortChildren } from '../utils';
-import './folder.css';
+import './folder.scss';
 
 interface FolderProps {
     document: Document;
@@ -200,7 +200,7 @@ const Folder: React.FC<FolderProps> = ({
             : <Icon name='chevron-right'/>}
             </div>
             :null}
-            <a href={document.full_path} className='navigation__link'>
+            <a href={document.full_path} className='navigation__link' style={{textDecoration: 'none'}}>
                 <span className='navigation__folder-tittle'  style={{paddingLeft: document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0.5rem" : "1.5rem" }} onClick={() => handleFolderClick(document)}>{document.name}</span>
             </a>
         </div>
