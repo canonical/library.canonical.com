@@ -17,27 +17,19 @@ $background-color_1: #EBEBEB;
 .navigation__folder-tittle {
 	font-size: 14px;
 	color: $color_1;
-	font-family: $font-family_1;
-	font-optical-sizing: auto;
-	font-style: normal;
-	font-variation-settings: "wdth" 100;
 	overflow-wrap: break-word;
 	margin: 0;
 	cursor: pointer;
 	padding-top: 0;
 }
 .navigation__hidden-options {
-	padding-left: 20px;
+	padding-left: 1.8rem;
 	cursor: pointer;
 }
 .navigation__slected-hidden-option {
 	cursor: pointer;
 	font-size: 14px;
 	color: $color_1;
-	font-family: $font-family_1;
-	font-optical-sizing: auto;
-	font-style: normal;
-	font-variation-settings: "wdth" 100;
 	overflow-wrap: break-word;
 	font-weight: bold;
 }
@@ -54,10 +46,6 @@ $background-color_1: #EBEBEB;
 	display: flex;
 	font-size: 14px;
 	color: $color_1;
-	font-family: $font-family_1;
-	font-optical-sizing: auto;
-	font-style: normal;
-	font-variation-settings: "wdth" 100;
 	overflow-wrap: break-word;
 	align-items: center;
 	justify-items: center;

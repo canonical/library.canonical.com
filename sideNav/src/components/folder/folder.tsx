@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { ExpandMore, ChevronRight} from '@mui/icons-material';
+import { Icon } from '@canonical/react-components';
 import { Document, MAX_NUMBER_LEVELS, levelDocument, sortChildren } from '../utils';
 import './folder.css';
 
@@ -192,20 +192,20 @@ const Folder: React.FC<FolderProps> = ({
             className="navigation__folder"
             onMouseEnter={() =>setMouseHover(true)} 
             onMouseLeave={() => setMouseHover(false)}
-            style={{backgroundColor: backgroundColor, paddingLeft:document.mimeType === 'folder' &&  Object.keys(document.children).length > 1 ? '2%': '5%'}} 
+            style={{backgroundColor: backgroundColor, paddingLeft:"1.69rem"}} 
             >
             {(document.mimeType === 'folder' &&  Object.keys(document.children).length > 1) ? 
             <div onClick={() => handleChevronClick()}>{open ?
-            <ExpandMore/>
-            : <ChevronRight/>}
+            <Icon name='chevron-down'/>
+            : <Icon name='chevron-right'/>}
             </div>
             :null}
             <a href={document.full_path} className='navigation__link'>
-                <span className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</span>
+                <span className='navigation__folder-tittle'  style={{paddingLeft: document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0.5rem" : "1.5rem" }} onClick={() => handleFolderClick(document)}>{document.name}</span>
             </a>
         </div>
         }
-        <div style={{paddingLeft: hideLevel? '0' : '5%'}}>
+        <div style={{paddingLeft: hideLevel? '0' : '2rem'}}>
             {open && renderChildren(document)
             }
         </div>

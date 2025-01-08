@@ -2,7 +2,13 @@
 @include vanilla;
 $color_1: $color-x-dark;
 $font-family_1: $font-base-family;
-$background-color_1:$color-mid-x-light;
+$background-color_1:#EBEBEB;
+@include vf-p-icon-chevron;
+
+.l-docs {
+	background-color: #f3f3f3;
+	grid-template-columns: 344px minmax(0, 1fr) 456px;
+}
 
 .navigation {
 	display: flex;
@@ -29,14 +35,10 @@ $background-color_1:$color-mid-x-light;
 .navigation__about-tittle {
 	font-size: 14px;
 	color: $color_1;
-	font-family: $font-family_1;
-	font-optical-sizing: auto;
-	font-style: normal;
-	font-variation-settings: "wdth" 100;
 	font-weight: bold;
 	overflow-wrap: break-word;
 	margin: 0;
 	cursor: pointer;
-	padding-left: 5%;
+	padding-left: 2.1rem;
 	padding-top: 5%;
 }
