@@ -78,7 +78,8 @@ jobs:
 
       - name: Install python dependencies
         run: |
-          sudo pip3 install flake8 black
+          sudo apt update
+          sudo apt install --only-upgrade python3-pip # install from package manager not pip
 
       - name: Lint python
         run: yarn lint-python
