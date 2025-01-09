@@ -1,2 +1,4 @@
 [flake8]
 exclude = webapp/settings.py
+ignore = E203
+max-line-length = 79

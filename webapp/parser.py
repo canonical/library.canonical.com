@@ -140,10 +140,10 @@ class Parser:
             pos_start = text.find("```code")
             pos_end = text.find("```endcode")
             pre_code = text[0:pos_start]
-            code = text[pos_start + 7:pos_end]
+            code = text[pos_start + 7 : pos_end]
             new_tag = self.html.new_tag("code")
             new_tag.string = code
-            post_code = text[pos_end + 10:]
+            post_code = text[pos_end + 10 :]
             tag.contents[-1].replace_with(pre_code)
             tag.append(new_tag)
             tag.append(post_code)
