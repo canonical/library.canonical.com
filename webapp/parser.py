@@ -135,19 +135,18 @@ class Parser:
             del tag["style"]
 
     def wrap_inline_text(self, tag):
-        while '```code' in tag.contents[-1]:
+        while "```code" in tag.contents[-1]:
             text = tag.contents[-1].text
-            posStart = text.find('```code')
-            posEnd = text.find('```endcode')
-            preCode = text[0:posStart] 
-            code = text[posStart+7:posEnd]
-            new_tag= self.html.new_tag("code")
+            posStart = text.find("```code")
+            posEnd = text.find("```endcode")
+            preCode = text[0:posStart]
+            code = text[posStart + 7 : posEnd]
+            new_tag = self.html.new_tag("code")
             new_tag.string = code
-            postCode = text[posEnd+10:]
+            postCode = text[posEnd + 10 :]
             tag.contents[-1].replace_with(preCode)
             tag.append(new_tag)
             tag.append(postCode)
-
 
     def wrap_code_blocks(self, code_block_config):
 
