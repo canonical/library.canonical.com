@@ -240,29 +240,29 @@ class Parser:
     def insert_chip_under_title(self):
         tittle = self.html.find("h1")
         type = self.metadata["type"]
-        if type == "how-to":
-            tag = self.html.new_tag(
-                "div", attrs={"class": "p-chip--information u-no-margin"}
-            )
-            tag.string = type
-        elif type == "Explanation":
-            tag = self.html.new_tag(
-                "a", href="https://diataxis.fr/explanation/"
-            )
-            tag["style"] = "color:inherit"
-            inner_tag = self.html.new_tag(
-                "div", attrs={"class": "p-chip--caution u-no-margin"}
-            )
-            inner_tag.string = type
-            tag.append(inner_tag)
-        else:
-            tag = self.html.new_tag(
-                "div", attrs={"class": "p-chip u-no-margin"}
-            )
-            tag.string = type
-
-        print(tag)
-        tittle.insert_after(tag)
+        if not type.empty:
+            if type == "how-to":
+                tag = self.html.new_tag(
+                    "div", attrs={"class": "p-chip--information u-no-margin"}
+                )
+                tag.string = type
+            elif type == "Explanation":
+                tag = self.html.new_tag(
+                    "a", href="https://diataxis.fr/explanation/"
+                )
+                tag["style"] = "color:inherit"
+                inner_tag = self.html.new_tag(
+                    "div", attrs={"class": "p-chip--caution u-no-margin"}
+                )
+                inner_tag.string = type
+                tag.append(inner_tag)
+            else:
+                tag = self.html.new_tag(
+                    "div", attrs={"class": "p-chip u-no-margin"}
+                )
+                tag.string = type
+            tittle.insert_after(tag)
+        
 
     def generate_headings_map(self):
         self.headings_map = []
