@@ -94,7 +94,6 @@ class GoogleDrive:
             abort(500, description=err)
         for item in items:
             if item["id"] == URL_DOC:
-                print(item)
                 items.remove(item)
                 break
         docDic = {}

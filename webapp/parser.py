@@ -244,7 +244,8 @@ class Parser:
             if not type.empty:
                 if type == "how-to":
                     tag = self.html.new_tag(
-                        "div", attrs={"class": "p-chip--information u-no-margin"}
+                        "div",
+                        attrs={"class": "p-chip--information u-no-margin"},
                     )
                     tag.string = type
                 elif type == "Explanation":
@@ -263,7 +264,6 @@ class Parser:
                     )
                     tag.string = type
                 tittle.insert_after(tag)
-        
 
     def generate_headings_map(self):
         self.headings_map = []
