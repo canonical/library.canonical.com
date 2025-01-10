@@ -156,14 +156,14 @@ body {
 }
 
 .l-docs__footer-message {
-  border-left: 2px;
   border-color: $color-caution;
+  border-left: 2px;
   border-left-style: solid;
   display: flex;
   flex-flow: row;
-  padding-top: 0.5rem;
   padding-bottom: 0.7rem;
   padding-left: 0.5rem;
+  padding-top: 0.5rem;
 }
 
 .p-notification--caution {
