@@ -141,20 +141,29 @@ body {
   border-left: $color-mid-light;
   border-style: solid;
   border-width: 0 0 0 1.5px;
-  padding-left: 8px;
-  padding-top: 70px;
+  padding-left: 1.5rem;
+  margin-top: 70px;
   width: 448px;
 
   .l-docs__sticky-container {
     @extend .u-fixed-width;
-
-    padding-top: 1rem;
 
     @media (min-width: calc($breakpoint-large + $l-documentation-sidebar-width)) {
       padding-left: 0;
       padding-right: 0;
     }
   }
+}
+
+.l-docs__footer-message {
+  display: flex; 
+  flex-flow: row; 
+  padding-top: 0.5rem; 
+  padding-bottom: 0.7rem;
+  padding-left: 0.5rem;
+  border-left: 2px;
+  border-color: $color-caution;
+  border-left-style: solid;
 }
 
 .p-notification--caution {

@@ -18,7 +18,7 @@ Canonical Reference Library is single source of information for all corporate kn
       <div class="l-docs__main-search">
         <form action="/search" class="p-search-box u-no-margin">
           <label class="u-off-screen" for="search">Search</label>
-          <input type="search" class="p-search-box__input" name="q" placeholder="Search our sites" required="" aria-label="Search our sites">
+          <input type="search" class="p-search-box__input" name="q" placeholder="Search our sites" required="" aria-label="Search our sites" style="border-top-color: transparent;">
           <button type="reset" class="p-search-box__reset">
             <i class="p-icon--close"></i>
           </button>
@@ -33,13 +33,6 @@ Canonical Reference Library is single source of information for all corporate kn
         col-order-small-1adcrumbs"] %}
         {% include "_partial/_breadcrumbs.html" %}
         {% endwith %}
-        {% endif %}
-        {% if document["metadata"]["type"] %}
-          <div style="padding-top: 8px;">
-            {% with document_type = document["metadata"]["type"] %}
-            {% include "_partial/_doc-type.html" %}
-            {% endwith %}
-          </div>
         {% endif %}
       </div>
     </div>
