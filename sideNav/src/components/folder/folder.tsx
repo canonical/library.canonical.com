@@ -183,6 +183,7 @@ const Folder: React.FC<FolderProps> = ({
     }
 
     const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB'
+    const paddingleft = 1.5*(level-1) +1.69
     return (
         <>
         { hideLevel ?
@@ -192,20 +193,26 @@ const Folder: React.FC<FolderProps> = ({
             className="navigation__folder"
             onMouseEnter={() =>setMouseHover(true)} 
             onMouseLeave={() => setMouseHover(false)}
-            style={{backgroundColor: backgroundColor, paddingLeft:"1.69rem"}} 
+            style={{
+                backgroundColor: backgroundColor, 
+                paddingLeft:paddingleft+"rem",
+                borderLeftColor: "black",
+                borderLeftStyle:'solid',
+                borderLeftWidth: document.active? '2px': "0px"
+            }} 
             >
             {(document.mimeType === 'folder' &&  Object.keys(document.children).length > 1) ? 
-            <div onClick={() => handleChevronClick()}>{open ?
+            <div onClick={() => handleChevronClick()} style={{ marginRight: "0.5rem"}}>{open ?
             <Icon name='chevron-down'/>
             : <Icon name='chevron-right'/>}
             </div>
             :null}
-            <a href={document.full_path} className='navigation__link' style={{textDecoration: 'none'}}>
-                <span className='navigation__folder-tittle'  style={{paddingLeft: document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0.5rem" : "1.5rem" }} onClick={() => handleFolderClick(document)}>{document.name}</span>
+            <a href={document.full_path} className='navigation__link' style={{textDecoration: 'none', paddingLeft: document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0" : "1.4rem" }}>
+                <span className='navigation__folder-tittle'  onClick={() => handleFolderClick(document)}>{document.name}</span>
             </a>
         </div>
         }
-        <div style={{paddingLeft: hideLevel? '0' : '2rem'}}>
+        <div>
             {open && renderChildren(document)
             }
         </div>

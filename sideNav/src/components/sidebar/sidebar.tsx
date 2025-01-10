@@ -26,6 +26,9 @@ const Sidebar: React.FC<sidebarProps> = ({
     // Pop up options specific for the softRoot
     const [hiddenOptionsRoot, setHiddenOptionsRoot] = useState<levelDocument[]>([]);
 
+    //Hover for about the library
+    const [mouseHover,setMouseHover] = useState<boolean>(false);
+
     // TODO: Implement a backend call to get the list of documents
     const navItems = window.__NAV_ITEMS__||testlist;
     // ----------------------------------------------
@@ -140,10 +143,23 @@ const Sidebar: React.FC<sidebarProps> = ({
     // ----------------------------------------------
     // ----------------  RENDERING  -----------------
     // ----------------------------------------------
+    const aboutSelected = window.location.pathname === "/";
+    const backgroundColor = aboutSelected || mouseHover ?'#c4c4c4': '#EBEBEB';
     return (
         <div className="navigation">
-          <div className='navigation__about-container'>
-           <p className='navigation__about-tittle' onClick={() => handleAboutClick()}>About the Library</p>
+          <div className='navigation__about-container'
+          onMouseEnter={() => setMouseHover(true)}
+          onMouseLeave={() => setMouseHover(false)}
+          style = {{
+            backgroundColor: backgroundColor,
+            borderLeftColor: "black",
+            borderLeftStyle:'solid',
+            borderLeftWidth: aboutSelected? '2px': "0px"
+          }} 
+          >
+           <p className='navigation__about-tittle' 
+           onClick={() => handleAboutClick()}
+           >About the Library</p>
           </div>
           <div>
           {showHidden && renderHide()}

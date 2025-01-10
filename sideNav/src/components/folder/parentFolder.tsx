@@ -252,7 +252,13 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             className="navigation__folder" 
             onMouseEnter={() =>setMouseHover(true)} 
             onMouseLeave={() => setMouseHover(false)}
-            style={{backgroundColor: backgroundColor, paddingLeft:"1.69rem"}}
+            style={{
+                backgroundColor: backgroundColor, 
+                paddingLeft:"1.69rem",
+                borderLeftColor: "black",
+                borderLeftStyle:'solid',
+                borderLeftWidth: document.active? '2px': "0px"
+            }}
             >
             {( Object.keys(document.children).length > 1) ? 
             <div onClick={() => handleChevronClick()}>{open ?
@@ -265,7 +271,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             </a>
         </div>
         }
-        <div style={{paddingLeft: hideLevel? '0' : '2rem'}}>
+        <div>
             {open && renderChildren(document)
             } 
         </div>

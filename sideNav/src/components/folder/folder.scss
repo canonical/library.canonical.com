@@ -3,6 +3,8 @@ $color_1: #000000;
 $font-family_1: "Ubuntu Sans", sans-serif;
 $background-color_1: #EBEBEB;
 
+$increase-font-size-on-larger-screens: false;
+
 .navigation__folder {
 	display: flex;
 	flex-direction: row;
@@ -16,7 +18,7 @@ $background-color_1: #EBEBEB;
 }
 
 .navigation__folder-tittle {
-	font-size: 14px;
+	font-size: 1rem;
 	color: $color_1;
 	overflow-wrap: break-word;
 	margin: 0;
