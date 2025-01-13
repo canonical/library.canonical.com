@@ -241,7 +241,7 @@ class Parser:
         tittle = self.html.find("h1")
         if not self.metadata.get("type") is None:
             type = self.metadata["type"]
-            if not type=="":
+            if not type== "":
                 if type == "how-to":
                     tag = self.html.new_tag(
                         "div",
