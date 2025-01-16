@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from urllib.parse import unquote
 from bs4 import BeautifulSoup, NavigableString
 
@@ -20,7 +21,10 @@ class Parser:
         self.process_html(doc_name)
 
     def get_html(self, google_drive: GoogleDrive):
+        start = time.time()
         raw_html = google_drive.get_document(self.doc_id)
+        stop = time.time()
+        print(f"Time to get document: {stop - start}")
         return BeautifulSoup(raw_html, features="lxml")
 
     def process_html(self, doc_name):

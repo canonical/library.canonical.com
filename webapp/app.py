@@ -1,6 +1,6 @@
 import os
 import flask
-
+import time
 # import talisker
 from flask import request, g, session
 from canonicalwebteam.flask_base.app import FlaskBase
@@ -173,6 +173,7 @@ def document(path=None):
     navigation_data = get_navigation_data()
 
     try:
+        
         target_document = get_target_document(path, navigation_data.hierarchy)
     except KeyError:
         new_path = find_broken_url(path)
