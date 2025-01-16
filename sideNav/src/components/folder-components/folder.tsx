@@ -183,7 +183,19 @@ const Folder: React.FC<FolderProps> = ({
     }
 
     const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB'
-    const paddingleft = 1.5*(level-1) +1.69
+    const paddingCalc = () => {
+        if(level === 1){
+            return 1.69;
+        }
+        if(softRoot){
+            return 1.5*(level-softRoot.level) +1.69;
+        }
+        if(level > MAX_NUMBER_LEVELS){
+            return 1.5*(level-(level-MAX_NUMBER_LEVELS)) +1.69;
+        }
+        return 1.5*(level-1) +1.69;
+    }
+    const paddingleft = paddingCalc();
 
     const documentPadding = document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0" : "1.4rem" 
     return (
