@@ -104,33 +104,22 @@ class GoogleDrive:
 
     def get_document(self, document_id):
         if self.cache.get(document_id) is not None:
-            print("IS CACHED")
             docInfo = self.cache.get("docDic")[document_id]
             cachedDoc = self.cache.get(document_id)
             dateformat = "%Y-%m-%dT%H:%M:%S.%fZ"
             date = cachedDoc["lastFetch"]
             cachedDocDate = datetime.strptime(date, dateformat)
-            if (
-                docInfo["modifiedTime"] > cachedDoc["modifiedTime"]
-            ):
-                print("IS OUT_OF_DATE")
-                print(docInfo["modifiedTime"], cachedDoc["modifiedTime"], docInfo["modifiedTime"] > cachedDoc["modifiedTime"]),
-                print(datetime.today(), cachedDocDate, (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE)
+            if docInfo["modifiedTime"] > cachedDoc["modifiedTime"]:
                 return self.fetch_document(document_id)
             elif (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE:
-                print("CACHED OLDER THAT PERMITTED")
-                print("lastFetch is older than 14 days")
                 return self.fetch_document(document_id)
             else:
-                print("IS UP_TO_DATE")
                 return cachedDoc["html"]
         else:
-            print("IS NOT CACHED")
             return self.fetch_document(document_id)
 
     def fetch_document(self, document_id):
         try:
-            print("FETCHING")
             request = self.service.files().export(
                 fileId=document_id, mimeType="text/html"
             )
@@ -147,7 +136,9 @@ class GoogleDrive:
                     "id": document_id,
                     "html": html,
                     "modifiedTime": docs[document_id]["modifiedTime"],
-                    "lastFetch": datetime.today().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                    "lastFetch": datetime.today().strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ),
                 }
                 self.cache.set(document_id, info)
                 return html

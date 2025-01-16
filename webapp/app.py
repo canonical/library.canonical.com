@@ -1,6 +1,7 @@
 import os
 import flask
 import redis
+
 # import talisker
 from flask import request, g, session
 from canonicalwebteam.flask_base.app import FlaskBase
@@ -37,6 +38,7 @@ cache.init_app(app)
 
 # Initialize Redis
 redis = redis.Redis(host="localhost", port=6379, db=0)
+
 
 def get_google_drive_instance():
     """
@@ -166,7 +168,7 @@ def search_drive():
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout=604800) #7 days cached
+@cache.cached(timeout=604800)  # 7 days cached
 def document(path=None):
     """
     The entire site is rendered by this function (except /search). As all
@@ -177,7 +179,7 @@ def document(path=None):
     navigation_data = get_navigation_data()
 
     try:
-        
+
         target_document = get_target_document(path, navigation_data.hierarchy)
     except KeyError:
         new_path = find_broken_url(path)
