@@ -184,6 +184,8 @@ const Folder: React.FC<FolderProps> = ({
 
     const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB'
     const paddingleft = 1.5*(level-1) +1.69
+
+    const documentPadding = document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0" : "1.4rem" 
     return (
         <>
         { hideLevel ?
@@ -202,12 +204,12 @@ const Folder: React.FC<FolderProps> = ({
             }} 
             >
             {(document.mimeType === 'folder' &&  Object.keys(document.children).length > 1) ? 
-            <div onClick={() => handleChevronClick()} style={{ marginRight: "0.5rem"}}>{open ?
+            <div className='navigation__chevron' onClick={() => handleChevronClick()}>{open ?
             <Icon name='chevron-down'/>
             : <Icon name='chevron-right'/>}
             </div>
             :null}
-            <a href={document.full_path} className='navigation__link' style={{textDecoration: 'none', paddingLeft: document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0" : "1.4rem" }}>
+            <a href={document.full_path} className='navigation__link' style={{textDecoration: 'none', paddingLeft: documentPadding}}>
                 <span className='navigation__folder-tittle'  onClick={() => handleFolderClick(document)}>{document.name}</span>
             </a>
         </div>

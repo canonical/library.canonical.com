@@ -37,7 +37,6 @@ class TestRoutes(unittest.TestCase):
         we should return a 200 status code
         """
         response = self.app.get("https://library.canonical.com/")
-        print(response)
         self.assertEqual(response.status_code, 200)
 
     def test_not_found(self):

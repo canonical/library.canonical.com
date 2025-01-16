@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { testlist } from './Lists/testlist';
 import './sidebar.scss';
-import ParentFolder from '../folder/parentFolder';
+import ParentFolder from '../folder-components/parentFolder';
 import { sortChildren, levelDocument, position, Document } from '../utils';
 
 interface sidebarProps {

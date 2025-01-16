@@ -1,6 +1,5 @@
 @import "vanilla-framework";
 @include vanilla;
-$color_1: $color-x-dark;
 $font-family_1: $font-base-family;
 $background-color_1:#EBEBEB;
 @include vf-p-icon-chevron;
@@ -20,8 +19,8 @@ $increase-font-size-on-larger-screens: false;
 	background-color: $background-color_1;
 	min-height: 100vh;
 	max-height: 100vh;
-	color: $color_1;
-	overflow: scroll;
+	color: $color-x-dark;
+	overflow: auto;
 }
 .navigation__about-container {
 	display: flex;
@@ -35,7 +34,7 @@ $increase-font-size-on-larger-screens: false;
 }
 .navigation__about-tittle {
 	font-size: 1rem;
-	color: $color_1;
+	color: $color-x-dark;
 	font-weight: bold;
 	overflow-wrap: break-word;
 	margin: 0;
