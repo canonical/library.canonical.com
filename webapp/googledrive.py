@@ -107,12 +107,11 @@ class GoogleDrive:
             docInfo = self.cache.get("docDic")[document_id]
             cachedDoc = self.cache.get(document_id)
             dateformat = "%Y-%m-%dT%H:%M:%S.%fZ"
-            date = cachedDoc["modifiedTime"]
+            date = cachedDoc["lastFetch"]
             cachedDocDate = datetime.strptime(date, dateformat)
-            if (
-                docInfo["modifiedTime"] > cachedDoc["modifiedTime"]
-                or (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE
-            ):
+            if docInfo["modifiedTime"] > cachedDoc["modifiedTime"]:
+                return self.fetch_document(document_id)
+            elif (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE:
                 return self.fetch_document(document_id)
             else:
                 return cachedDoc["html"]
@@ -137,6 +136,9 @@ class GoogleDrive:
                     "id": document_id,
                     "html": html,
                     "modifiedTime": docs[document_id]["modifiedTime"],
+                    "lastFetch": datetime.today().strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ),
                 }
                 self.cache.set(document_id, info)
                 return html
