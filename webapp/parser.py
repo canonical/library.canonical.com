@@ -29,6 +29,7 @@ class Parser:
 
         self.parse_metadata()
         self.parse_nested_lists()
+        self.parse_nested_bullet_lists()
         self.parse_links()
         self.parse_tags(bs4_ignores)
         self.wrap_code_blocks(bs4_ignores["code_block"])
@@ -78,6 +79,42 @@ class Parser:
                         target_location.append(li)
                 previous_ols[numeric_suffix] = li_eles[-1]
 
+    def parse_nested_bullet_lists(self):
+        ul_elements = self.html.find_all(
+            "ul", class_=lambda x: x and x.startswith("lst-kix")
+        )
+        previous_uls = {}
+
+        for ul in ul_elements:
+            # print(ul)
+            # get the level of nesting from the class name
+            numeric_suffix = ul["class"][0][len("lst-kix") :][-1]  # noqa: E203
+            # check if it is the start of a new list
+            if "start" in ul["class"]:
+                if (
+                    numeric_suffix
+                    and str(int(numeric_suffix) - 1) in previous_uls
+                ):
+                    target_location = previous_uls[
+                        str(int(numeric_suffix) - 1)
+                    ]
+                    if target_location.name == "li":
+                        target_location.append(ul)
+                    elif target_location.name == "ul":
+                        target_location.find_all("li")[-1].append(ul)
+                # add the current list to the previous_ols dict
+                previous_uls[numeric_suffix] = ul
+            # if it's not the start of a new list extract the indervidual li's
+            else:
+                target_location = previous_uls[str(int(numeric_suffix))]
+                li_eles = ul.find_all("li")
+                for li in li_eles:
+                    if target_location.name == "li":
+                        target_location.append(li)
+                    elif target_location.name == "ul":
+                        target_location.append(li)
+                previous_uls[numeric_suffix] = li_eles[-1]
+
     def remove_head(self):
         head = self.html.select_one("head")
         if head:
@@ -98,8 +135,21 @@ class Parser:
                     tag.wrap(self.html.new_tag(tag_name))
             del tag["style"]
 
-    def wrap_code_blocks(self, code_block_config):
+    def wrap_inline_text(self, tag):
+        while "```code" in tag.contents[-1]:
+            text = tag.contents[-1].text
+            pos_start = text.find("```code")
+            pos_end = text.find("```endcode")
+            pre_code = text[0:pos_start]
+            code = text[pos_start + 7 : pos_end]
+            new_tag = self.html.new_tag("code")
+            new_tag.string = code
+            post_code = text[pos_end + 10 :]
+            tag.contents[-1].replace_with(pre_code)
+            tag.append(new_tag)
+            tag.append(post_code)
 
+    def wrap_code_blocks(self, code_block_config):
         start_symbol = entity_to_char(code_block_config["start"])
         end_symbol = entity_to_char(code_block_config["end"])
 
@@ -159,6 +209,8 @@ class Parser:
         for tag in self.html.findAll("p"):
             if not tag.contents:
                 tag.decompose()
+            elif "```code" in tag.text:
+                self.wrap_inline_text(tag)
             elif "\uec02" in tag.text:
                 tag.string = tag.text.replace("\uec02", "")
 
