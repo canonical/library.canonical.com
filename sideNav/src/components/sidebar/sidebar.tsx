@@ -159,7 +159,7 @@ const Sidebar: React.FC<sidebarProps> = ({
           >
            <p className='navigation__about-tittle' 
            onClick={() => handleAboutClick()}
-           >About the Library</p>
+           >The Library</p>
           </div>
           <div>
           {showHidden && renderHide()}
