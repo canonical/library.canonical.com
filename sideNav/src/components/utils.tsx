@@ -33,7 +33,9 @@ export interface position {
 }
 
 // Max levels of the hierarchy before levels get hidden
-export const MAX_NUMBER_LEVELS = 6
+export const MAX_NUMBER_LEVELS = 6;
+
+export const PADDING_CONSTANT = 2;
 
 // Function to sort the children of a document
 export function sortChildren(a: Document, b: Document): number {

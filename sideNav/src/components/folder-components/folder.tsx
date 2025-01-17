@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { ExpandMore, ChevronRight} from '@mui/icons-material';
+import { Icon } from '@canonical/react-components';
 import { Document, MAX_NUMBER_LEVELS, levelDocument, sortChildren } from '../utils';
-import './folder.css';
+import './folder.scss';
 
 interface FolderProps {
     document: Document;
@@ -183,6 +183,21 @@ const Folder: React.FC<FolderProps> = ({
     }
 
     const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB'
+    const paddingCalc = () => {
+        if(level === 1){
+            return 1.69;
+        }
+        if(softRoot){
+            return 1.5*(level-softRoot.level) +1.69;
+        }
+        if(level > MAX_NUMBER_LEVELS){
+            return 1.5*(level-(level-MAX_NUMBER_LEVELS)) +1.69;
+        }
+        return 1.5*(level-1) +1.69;
+    }
+    const paddingleft = paddingCalc();
+
+    const documentPadding = document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0" : "1.4rem" 
     return (
         <>
         { hideLevel ?
@@ -192,20 +207,26 @@ const Folder: React.FC<FolderProps> = ({
             className="navigation__folder"
             onMouseEnter={() =>setMouseHover(true)} 
             onMouseLeave={() => setMouseHover(false)}
-            style={{backgroundColor: backgroundColor, paddingLeft:document.mimeType === 'folder' &&  Object.keys(document.children).length > 1 ? '2%': '5%'}} 
+            style={{
+                backgroundColor: backgroundColor, 
+                paddingLeft:paddingleft+"rem",
+                borderLeftColor: "black",
+                borderLeftStyle:'solid',
+                borderLeftWidth: document.active? '2px': "0px"
+            }} 
             >
             {(document.mimeType === 'folder' &&  Object.keys(document.children).length > 1) ? 
-            <div onClick={() => handleChevronClick()}>{open ?
-            <ExpandMore/>
-            : <ChevronRight/>}
+            <div className='navigation__chevron' onClick={() => handleChevronClick()}>{open ?
+            <Icon name='chevron-down'/>
+            : <Icon name='chevron-right'/>}
             </div>
             :null}
-            <a href={document.full_path} className='navigation__link'>
-                <span className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</span>
+            <a href={document.full_path} className='navigation__link' style={{textDecoration: 'none', paddingLeft: documentPadding}}>
+                <span className='navigation__folder-tittle'  onClick={() => handleFolderClick(document)}>{document.name}</span>
             </a>
         </div>
         }
-        <div style={{paddingLeft: hideLevel? '0' : '5%'}}>
+        <div>
             {open && renderChildren(document)
             }
         </div>

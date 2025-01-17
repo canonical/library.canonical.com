@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { ExpandMore, ChevronRight} from '@mui/icons-material';
-import { Document, levelDocument, MAX_NUMBER_LEVELS, sortChildren, position } from '../utils';
-import  Folder  from '../folder/folder';
-import './folder.css';
+import { Document, levelDocument, MAX_NUMBER_LEVELS, sortChildren, position, PADDING_CONSTANT } from '../utils';
+import { Icon } from '@canonical/react-components';
+import  Folder  from './folder';
+import './folder.scss';
 
 interface ParentFolderProps {
     document: Document;
@@ -149,11 +149,11 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             </div>
         )
     }
-    // Render the tittle of a selected Child that is no longer visible by navigation
+    // Render the title of a selected Child that is no longer visible by navigation
     // E.G selected document is level 7 but navigation is only up to level 3 
-    // This will shoe ... Tittle (selected document)
+    // This will show ... Title (selected document)
     const renderHiddenChild = () => {
-        const padding = localMaxLevel*10;
+        const padding = localMaxLevel*PADDING_CONSTANT;
         const handleClick = () => {
             setLocalMaxLevel(selected ? selected.level: 1);
             setMaxLevel(selected ? selected.level: 1);
@@ -161,7 +161,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             window.location.href = newUrl;
         }
         return (
-            <div className="navigation__slected-hidden-option" onClick={() => handleClick()} style={{paddingLeft: selected ? padding + 'px' : '20px'}}>... ({selected?.name}) </div>
+            <div className="navigation__slected-hidden-option" onClick={() => handleClick()} style={{paddingLeft: selected ? padding + "rem" : "0px"}}>... ({selected?.name}) </div>
         )
     }
     // ----------------------------------------------
@@ -242,7 +242,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     const hideLevel = levelcondition ||(softRoot !== null && document.id !== softRoot.id);
     const hiddenChild =  selected &&selected.level > localMaxLevel && selected.parentId === parentId && selected.id !== lastInteracted?.id; 
     const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB';
-
+    const documentPadding = document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0.5rem" : "1.5rem" 
     return (
         <>
         { hideLevel  ?
@@ -252,27 +252,33 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
             className="navigation__folder" 
             onMouseEnter={() =>setMouseHover(true)} 
             onMouseLeave={() => setMouseHover(false)}
-            style={{backgroundColor: backgroundColor, paddingLeft:Object.keys(document.children).length > 1 ? '2%': '5%'}}
+            style={{
+                backgroundColor: backgroundColor, 
+                paddingLeft:"1.69rem",
+                borderLeftColor: "black",
+                borderLeftStyle:'solid',
+                borderLeftWidth: document.active? '2px': "0px"
+            }}
             >
             {( Object.keys(document.children).length > 1) ? 
             <div onClick={() => handleChevronClick()}>{open ?
-            <ExpandMore/>
-            : <ChevronRight/>}
+            <Icon name='chevron-down'/>
+            : <Icon name='chevron-right'/>}
             </div> 
             : null}
-            <a href={document.full_path} className='navigation__link'>
-                <span className='navigation__folder-tittle' onClick={() => handleFolderClick(document)}>{document.name}</span>
+            <a href={document.full_path} className='navigation__link' style={{textDecoration: 'none'}}>
+                <span className='navigation__folder-tittle'  style={{paddingLeft: documentPadding}} onClick={() => handleFolderClick(document)}>{document.name}</span>
             </a>
         </div>
         }
-        <div style={{paddingLeft: hideLevel? '0' : '5%'}}>
+        <div>
             {open && renderChildren(document)
             } 
         </div>
         {openPopUp && renderPopUp()}
         {(hiddenChild) 
             &&
-            <div id='hiddenContainer' style={{paddingLeft:'5%'}}>
+            <div id='hiddenContainer' style={{paddingLeft:'1.2rem'}}>
                 {renderHiddenChild()}
             </div>
         } 

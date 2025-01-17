@@ -35,6 +35,7 @@ class Parser:
         self.wrap_code_blocks(bs4_ignores["code_block"])
         self.remove_head()
         self.insert_h1_if_missing(doc_name)
+        self.insert_chip_under_title()
         self.generate_headings_map()
 
     def parse_nested_lists(self):
@@ -287,6 +288,37 @@ class Parser:
             else:
                 return all(self.tag_is_empty(child) for child in tag.contents)
         return False
+
+    def insert_chip_under_title(self):
+        title = self.html.select_one("h1")
+        if title is None:
+            self.insert_h1_if_missing("")
+            title = self.html.select_one("h1")
+        if not self.metadata.get("type") is None:
+            type = self.metadata["type"]
+            if not type == "":
+                if type == "how-to":
+                    tag = self.html.new_tag(
+                        "div",
+                        attrs={"class": "p-chip--information u-no-margin"},
+                    )
+                    tag.string = type
+                elif type == "Explanation":
+                    tag = self.html.new_tag(
+                        "a", href="https://diataxis.fr/explanation/"
+                    )
+                    tag["style"] = "color:inherit"
+                    inner_tag = self.html.new_tag(
+                        "div", attrs={"class": "p-chip--caution u-no-margin"}
+                    )
+                    inner_tag.string = type
+                    tag.append(inner_tag)
+                else:
+                    tag = self.html.new_tag(
+                        "div", attrs={"class": "p-chip u-no-margin"}
+                    )
+                    tag.string = type
+                title.insert_after(tag)
 
     def generate_headings_map(self):
         self.headings_map = []

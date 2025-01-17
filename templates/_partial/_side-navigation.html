@@ -1,11 +1,22 @@
-<nav id="navigation" class="p-side-navigation is-sticky">
-  <div class="p-side-navigation__list" id="merge-point"></div>
-  <script type="module" src="{{url_for('static',filename='/js/index--sTTJnWY.js')}}"></script> <!-- Point to your React build --> 
-  <script>
-    window.__NAV_ITEMS__ = {{ navigation | tojson }};
-    window.__PREVIOUS_SLUG__ = "{{ previous_slug }}";
+<div>
+  <div class="p-navigation__banner">
+    <div class="p-navigation__tagged-logo">
+      <a class="p-navigation__link" href="/">
+        <div class="p-navigation__logo-tag">
+          <img class="p-navigation__logo-icon" src="https://assets.ubuntu.com/v1/82818827-CoF_white.svg" alt="">
+        </div>
+        <span class="p-navigation__logo-title">Reference Library</span>
+      </a>
+    </div>
+  </div>
+  <nav id="navigation" class="p-side-navigation is-sticky">
+    <div class="p-side-navigation__list" id="merge-point"></div>
+    <script type="module" src="{{url_for('static',filename='/js/index-DJLQrn62.js')}}"></script> <!-- Point to your React build --> 
+    <script>
+      window.__NAV_ITEMS__ = {{ navigation | tojson }};
+      window.__PREVIOUS_SLUG__ = "{{ previous_slug }}";
     </script>
-</nav>
-
+  </nav>
+</div>
 
 
