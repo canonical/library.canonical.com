@@ -168,7 +168,7 @@ def search_drive():
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout=604800)  # 7 days cached
+@cache.cached(timeout=100)  # 7 days cached = 604800 seconds
 def document(path=None):
     """
     The entire site is rendered by this function (except /search). As all
