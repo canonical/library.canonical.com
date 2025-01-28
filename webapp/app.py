@@ -178,9 +178,9 @@ def document(path=None):
     get_list_of_urls()
     navigation_data = get_navigation_data()
 
-    if path != None and "/clear-cache" in path:
+    if path is not None and "clear-cache" in path:
         cache.clear()
-        new_path = path.replace("/clear-cache", "")
+        new_path = path.replace("clear-cache", "")
         return flask.redirect("/" + new_path)
     else:
         try:
