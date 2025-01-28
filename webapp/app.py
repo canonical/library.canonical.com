@@ -168,7 +168,7 @@ def search_drive():
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout=604800)  # 7 days cached
+@cache.cached(timeout=604800)  # 7 days cached = 604800 seconds 1 day = 86400
 def document(path=None):
     """
     The entire site is rendered by this function (except /search). As all
@@ -178,35 +178,41 @@ def document(path=None):
     get_list_of_urls()
     navigation_data = get_navigation_data()
 
-    try:
+    if path is not None and "clear-cache" in path:
+        cache.clear()
+        new_path = path.replace("clear-cache", "")
+        return flask.redirect("/" + new_path)
+    else:
+        try:
+            target_document = get_target_document(
+                path, navigation_data.hierarchy
+            )
+        except KeyError:
+            new_path = find_broken_url(path)
+            if new_path:
+                path = new_path
+                return flask.redirect("/" + path)
+            else:
+                err = "Error, document does not exist."
+                flask.abort(404, description=err)
 
-        target_document = get_target_document(path, navigation_data.hierarchy)
-    except KeyError:
-        new_path = find_broken_url(path)
-        if new_path:
-            path = new_path
-            return flask.redirect("/" + path)
-        else:
-            err = "Error, document does not exist."
-            flask.abort(404, description=err)
+        soup = Parser(
+            get_google_drive_instance(),
+            target_document["id"],
+            navigation_data.doc_reference_dict,
+            target_document["name"],
+        )
 
-    soup = Parser(
-        get_google_drive_instance(),
-        target_document["id"],
-        navigation_data.doc_reference_dict,
-        target_document["name"],
-    )
+        target_document["metadata"] = soup.metadata
+        target_document["headings_map"] = soup.headings_map
 
-    target_document["metadata"] = soup.metadata
-    target_document["headings_map"] = soup.headings_map
-
-    return flask.render_template(
-        "index.html",
-        navigation=navigation_data.hierarchy,
-        html=soup.html,
-        root_name=ROOT,
-        document=target_document,
-    )
+        return flask.render_template(
+            "index.html",
+            navigation=navigation_data.hierarchy,
+            html=soup.html,
+            root_name=ROOT,
+            document=target_document,
+        )
 
 
 if __name__ == "__main__":
