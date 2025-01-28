@@ -166,7 +166,6 @@ def search_drive():
     )
 
 
-
 @app.route("/")
 @app.route("/<path:path>")
 @cache.cached(timeout=604800)  # 7 days cached = 604800 seconds 1 day = 86400
@@ -179,13 +178,15 @@ def document(path=None):
     get_list_of_urls()
     navigation_data = get_navigation_data()
 
-    if path != None and '/clear-cache' in path:
+    if path != None and "/clear-cache" in path:
         cache.clear()
-        new_path = path.replace('/clear-cache', '')
+        new_path = path.replace("/clear-cache", "")
         return flask.redirect("/" + new_path)
-    else :
+    else:
         try:
-            target_document = get_target_document(path, navigation_data.hierarchy)
+            target_document = get_target_document(
+                path, navigation_data.hierarchy
+            )
         except KeyError:
             new_path = find_broken_url(path)
             if new_path:
