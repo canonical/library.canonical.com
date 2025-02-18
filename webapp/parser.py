@@ -310,7 +310,8 @@ class Parser:
                         )
                         tag["style"] = "color:inherit"
                         inner_tag = self.html.new_tag(
-                            "div", attrs={"class": "p-chip--caution u-no-margin"}
+                            "div",
+                            attrs={"class": "p-chip--caution u-no-margin"},
                         )
                         inner_tag.string = type
                         tag.append(inner_tag)
