@@ -8,11 +8,28 @@ Library.canonical.com is a webpage designed to serve as a centralized source of 
 
 If you have found a bug on the site or have an idea for a new feature, feel free to create a [new issue](https://github.com/canonical/library.canonical.com/issues/new), or suggest a fix by creating a [pull request](https://github.com/canonical/library.canonical.com/pulls). You can also find a link to create issues in the footer of every page of the site itself.
 
+
 ## Local development
 
-The simplest way to run the site locally is using the [`dotrun`](https://github.com/canonical-web-and-design/dotrun/) snap. Please use the installation scripts [mentioned in the README](https://github.com/canonical-web-and-design/dotrun/blob/main/README.md#installation) to install `dotrun`.
+It's simplest to run the site locally with [dotrun](https://github.com/canonical-web-and-design/dotrun/) and Docker.
 
-You will need to add the appropriate variables to `.env.local`, these can be found in LastPass by searching for library.canonical.com.
+
+### Setup
+
+First, install the [requirements of dotrun](https://github.com/canonical/dotrun/blob/main/README.md#requirements).
+
+Then, elevate the permissions of the Docker socket file:
+
+```bash
+sudo chmod 666 /var/run/docker.sock
+```
+
+Next, run the [dotrun installation script](https://github.com/canonical-web-and-design/dotrun/blob/main/README.md#installation).
+
+Lastly, in your local copy of the project, the `.env.local` file needs the correct authentication tokens for your system to access the Library servers. Ask the project owner or another contributor to share them, then add them to the file.
+
+
+### Develop interactively
 
 Run the project with:
 
@@ -22,12 +39,14 @@ dotrun
 
 Once the server has started, you can visit <http://0.0.0.0:8051> in your browser.
 
-Run the SideNavigation
+Run the SideNavigation:
+
 ```bash
 cd sideNav
 npm install
 npm run dev
 ```
+
 Once the server has started, you can visit <http://localhost:5173> in your browser.
 
 With ♥ from Canonical
