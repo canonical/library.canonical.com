@@ -1,0 +1,161 @@
+{% extends 'base_layout.html' %}
+{% block title %}Canonical Reference Library | Changes {% endblock %}
+{% block description %}Changes Canonical Reference Library{% endblock %}
+{% block content %}
+  {% include "_partial/_navigation.html" %}
+  {% if changes_results %}
+    <div class="p-strip is-shallow">
+        <div class="u-fixed-width">
+            <h1>Lates changes</h1>
+        </div>
+    </div>
+    {% else %}
+    <div class="p-strip is-shallow">
+        <div class="u-fixed-width">
+            <h1>We couldn't find any changes made</h1>
+        </div>
+    </div>
+    {% endif %}
+  {% if changes_results %}
+    {% for change_result in changes_results %}
+    {% if change_result.fileId in doc_reference_dict and change_result.type == 'file' %}
+        {% set library_obj = doc_reference_dict[change_result.fileId] %}
+        <div class="p-strip">
+            <div class="row">
+                <div class="col-6">
+                    <h3>The folowing {{library_obj.mimeType}} was changed:</h3>
+                    <h4>{{library_obj.name}}</h4>
+                    <ul class="p-list">
+                        <li class="p-list__item is-ticked">Slug: {{library_obj.slug}}</li>
+                        <li class="p-list__item is-ticked">Path: {{library_obj.full_path}}</li>
+                        <li class="p-list__item is-ticked">Parents: {{library_obj.parents}}</li>
+                    </ul>
+                </div>
+                <div class="col-6">
+                    <h3>Information</h3>
+                    <ul class="p-list">
+                        <li class="p-list__item is-ticked">
+                            Time change happened {{ change_result.time }}
+                        </li>
+                        <li class="p-list__item is-ticked">
+                            Was the file removed {{ change_result.removed }}
+                        </li>
+                        <li class="p-list__item is-ticked">
+                            File ID {{ change_result.fileId }}
+                        </li>
+                        <li class="p-list__item is-ticked">
+                            Case 1
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        {% if change_result.removed%}
+        <div class="p-strip">
+            <div class="row">
+                <div class="col-6">
+                    <h3>{{ change_result.type}} was removed, we only have this information"</h3>
+                    <strong>ID: {{ change_result.fileId }}</strong>
+                </div>
+                <div class="col-6">
+                    <h3>Happened</h3>
+                    <ul class="p-list">
+                        <li class="p-list__item is-ticked">
+                            {{ change_result.time }}
+                        </li>
+                        <li class="p-list__item is-ticked">
+                            Case 2
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% else %}
+            {% if change_result.changeType == 'drive' %}
+            <div class="p-strip">
+                <div class="row">
+                    <div class="col-6">
+                        <h3>The {{ change_result.type.split('em')[1]}} was changed, we only have this information"</h3>
+                        <p><strong>ID: {{ change_result.driveId }}</strong></p>
+                        <p><strong>Name: {{ change_result.drive.name }}</strong></p>
+                    </div>
+                    <div class="col-6">
+                        <h3>Information</h3>
+                        <ul class="p-list">
+                            <li class="p-list__item is-ticked">
+                                Time change happened {{ change_result.time }}
+                            </li>
+                            <li class="p-list__item is-ticked">
+                                Was the file removed {{ change_result.removed }}
+                            </li>
+                            <li class="p-list__item is-ticked">
+                                Drive ID {{ change_result.driveId }}
+                            </li>
+                            <li class="p-list__item is-ticked">
+                                Case 3
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+                {% if change_result.changeType == 'file' %}
+                {% if change_result.file %}
+                <div class="p-strip">
+                    <div class="row">
+                        <div class="col-6">
+                            <h3> This {{ change_result.file.mimeType.split('apps.')[1]}} change, we have this information"</h3>
+                            <p><strong>ID: {{ change_result.fileId }}</strong></p>
+                            <p><strong>Name: {{ change_result.file.name }}</strong></p>
+                        </div>
+                        <div class="col-6">
+                            <h3>Information</h3>
+                            <ul class="p-list">
+                                <li class="p-list__item is-ticked">
+                                    Time change happened {{ change_result.time }}
+                                </li>
+                                <li class="p-list__item is-ticked">
+                                    Was the file removed {{ change_result.removed }}
+                                </li>
+                                <li class="p-list__item is-ticked">
+                                    File ID {{ change_result.fileId }}
+                                </li>
+                                <li class="p-list__item is-ticked">
+                                    Case 4
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="p-strip">
+                    <div class="row">
+                        <div class="col-6">
+                            <h3>{{ change_result.type}} was removed, we only have this information"</h3>
+                            <strong>ID: {{ change_result.fileId }}</strong>
+                        </div>
+                        <div class="col-6">
+                            <h3>Happened</h3>
+                            <ul class="p-list">
+                                <li class="p-list__item is-ticked">
+                                    {{ change_result.time }}
+                                </li>
+                                <li class="p-list__item is-ticked">
+                                    Was the file removed {{ change_result.removed }}
+                                </li>
+                                <li class="p-list__item is-ticked">
+                                    Case 5
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endblock content %}

@@ -101,6 +101,45 @@ class GoogleDrive:
             docDic[item["id"]] = item
         self.cache.set("docDic", docDic)
         return items
+    
+    def get_changes(self):
+
+        next_page_token = ""
+        try:
+            tokens = self.service.changes().getStartPageToken().execute()
+            print(tokens)
+            next_page_token = tokens.get("startPageToken")
+        except Exception as error:
+            err = "Error Fetching Start Page Token."
+            print(f"{err}\n {error}")
+            abort(500, description=err)
+        items = []
+        try:
+            while (next_page_token is not None) or (next_page_token == ""):
+                results = (
+                    self.service.changes()
+                    .list(
+                        driveId=TARGET_DRIVE,
+                        supportsAllDrives=True,
+                        includeItemsFromAllDrives=True,
+                        includeCorpusRemovals=True,
+                        includeRemoved=True,
+                        pageSize=1000,
+                        pageToken=next_page_token,
+                        restrictToMyDrive=False,
+                        spaces="drive",
+                        includePermissionsForView="published",
+                        includeLabels=True,
+                    )
+                    .execute()
+                )
+                items.extend(results.get("changes", []))
+                next_page_token = results.get("nextPageToken", None)
+        except Exception as error:
+            err = "Error Fetching Changes."
+            print(f"{err}\n {error}")
+            abort(500, description=err)
+        return items
 
     def get_document(self, document_id):
         if self.cache.get(document_id) is not None:

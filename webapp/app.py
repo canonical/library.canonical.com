@@ -166,6 +166,25 @@ def search_drive():
     )
 
 
+@app.route("/changes")
+def changes_drive():
+    """
+    Route to search the Google Drive. The search results are displayed in a
+    separate page.
+    """
+    google_drive = get_google_drive_instance()
+    changes_results = google_drive.get_changes()
+    navigation_data = get_navigation_data()
+    
+
+    return flask.render_template(
+        "changes.html",
+        changes_results=changes_results,
+        TARGET_DRIVE=TARGET_DRIVE,
+        doc_reference_dict=navigation_data.doc_reference_dict,
+    )
+
+
 @app.route("/")
 @app.route("/<path:path>")
 @cache.cached(timeout=5)  # 7 days cached = 604800 seconds 1 day = 86400
