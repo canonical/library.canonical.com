@@ -86,7 +86,20 @@ class Parser:
         previous_uls = {}
 
         for ul in ul_elements:
-            # print(ul)
+            # Check if the item is the start of a new list and add the start  to class
+            alphabetic_suffix = ul["class"][0]
+            if alphabetic_suffix in previous_uls:
+                # Find the previous mention of that list
+                previous_list = previous_uls[alphabetic_suffix]
+                if previous_list is not None:
+                    # Check the previous list to see if it has a sibling
+                    next_siblings = previous_list.findNextSiblings()
+                    if len(next_siblings) != 0:
+                        next = previous_list.next_sibling()
+                        if len(next) != 0 and next[0].name != "li":
+                            # if the previous list has a sibling that is not a list add start to mark it as a new list
+                            ul["class"].append("start")
+
             # get the level of nesting from the class name
             numeric_suffix = ul["class"][0][len("lst-kix") :][-1]  # noqa: E203
             # check if it is the start of a new list
@@ -104,6 +117,7 @@ class Parser:
                         target_location.find_all("li")[-1].append(ul)
                 # add the current list to the previous_ols dict
                 previous_uls[numeric_suffix] = ul
+                previous_uls[alphabetic_suffix] = ul
             # if it's not the start of a new list extract the indervidual li's
             else:
                 target_location = previous_uls[str(int(numeric_suffix))]
