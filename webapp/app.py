@@ -84,7 +84,13 @@ def find_broken_url(url):
         if u["old"] == url:
             return u["new"]
     return None
-
+def scheduled_get_changes():
+    global nav_changes
+    google_drive = gdrive_changes
+    changes = google_drive.get_changes()
+    latest = get_last_hour_changes(changes)
+    nav_changes= process_changes(latest,  nav_changes, gdrive_changes)
+    print("\n\n EXECUTED SCHEDULED JOB")
 
 def get_last_hour_changes(changes):
     """
@@ -218,6 +224,15 @@ def search_drive():
         TARGET_DRIVE=TARGET_DRIVE,
     )
 
+@app.route("/update-urls")
+def changes_drive(path=None):
+    """
+    Route to search the Google Drive. The search results are displayed in a
+    separate page.
+    """
+    scheduled_get_changes()
+    new_path = path.replace("update-urls", "")
+    return flask.redirect("/" + new_path)
 
 @app.route("/changes")
 def changes_drive():
@@ -289,14 +304,6 @@ def document(path=None):
 gdrive_changes = GoogleDrive(cache)
 nav_changes = NavigationBuilder(gdrive_changes, ROOT)
 
-
-def scheduled_get_changes():
-    global nav_changes
-    google_drive = gdrive_changes
-    changes = google_drive.get_changes()
-    latest = get_last_hour_changes(changes)
-    nav_changes= process_changes(latest,  nav_changes, gdrive_changes)
-    print("\n\n EXECUTED SCHEDULED JOB")
 
 print("\n\nSTARTING SCHUDULER")
 scheduler = BackgroundScheduler()
