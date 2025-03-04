@@ -1,6 +1,8 @@
 import os
 import flask
 import redis
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime, timedelta
 
 # import talisker
 from flask import request, g, session
@@ -11,6 +13,7 @@ from webapp.parser import Parser
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
 from flask_caching import Cache
+
 
 # Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")
@@ -75,6 +78,35 @@ def find_broken_url(url):
             return u["new"]
     return None
 
+
+def get_last_hour_changes(changes):
+    """
+    Get the changes from the last hour
+    """
+    last_hour = []
+    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    for change in changes:
+        change_time = datetime.strptime(change['time'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        if change_time > one_hour_ago:
+            last_hour.append(change)
+    return last_hour
+
+def process_changes(changes, navigation_data):
+    """
+    Process the changes
+    """
+    for change in changes:
+        print(change)
+        if change["removed"]:
+            print("REMOVED")
+            print(change)
+        else:
+            print("ADDED")
+            if "fileId" in change:
+                print(change["fileId"])
+                print(navigation_data.doc_reference_dict[change["fileId"]])
+
+    return None
 
 def get_navigation_data():
     """
@@ -233,6 +265,19 @@ def document(path=None):
             document=target_document,
         )
 
+
+def scheduled_get_changes():
+    google_drive = GoogleDrive(cache)
+    changes = google_drive.get_changes()
+    latest = get_last_hour_changes(changes)
+    process_changes(latest,  NavigationBuilder(google_drive, ROOT))
+    print("\n\n EXECUTED SCHEDULED JOB")
+
+print("\n\nSTARTING SCHUDULER")
+scheduler = BackgroundScheduler()
+scheduler.add_job(scheduled_get_changes)
+scheduler.add_job(scheduled_get_changes, 'interval', minutes=60)
+scheduler.start()
 
 if __name__ == "__main__":
     app.run()
