@@ -69,10 +69,6 @@ def get_list_of_urls():
         for line in lines:
             url = line.split(",")
             urls.append({"old": url[0], "new": url[1].replace("\r", "")})
-        url = url_cache.get("urls")
-        if url is not None:
-            for u in url:
-                urls.append(u)
         g.list_of_urls = urls
 
 
@@ -84,13 +80,16 @@ def find_broken_url(url):
         if u["old"] == url:
             return u["new"]
     return None
+
+
 def scheduled_get_changes():
     global nav_changes
     google_drive = gdrive_changes
     changes = google_drive.get_changes()
     latest = get_last_hour_changes(changes)
-    nav_changes= process_changes(latest,  nav_changes, gdrive_changes)
+    nav_changes = process_changes(latest, nav_changes, gdrive_changes)
     print("\n\n EXECUTED SCHEDULED JOB")
+
 
 def get_last_hour_changes(changes):
     """
@@ -99,16 +98,19 @@ def get_last_hour_changes(changes):
     last_hour = []
     one_hour_ago = datetime.utcnow() - timedelta(hours=1)
     for change in changes:
-        change_time = datetime.strptime(change['time'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        change_time = datetime.strptime(
+            change["time"], "%Y-%m-%dT%H:%M:%S.%fZ"
+        )
         if change_time > one_hour_ago:
             last_hour.append(change)
     return last_hour
+
 
 def process_changes(changes, navigation_data, google_drive):
     """
     Process the changes
     """
-    new_nav= NavigationBuilder(google_drive, ROOT)
+    new_nav = NavigationBuilder(google_drive, ROOT)
     for change in changes:
         print(change)
         if change["removed"]:
@@ -118,14 +120,16 @@ def process_changes(changes, navigation_data, google_drive):
             print("ADDED")
             if "fileId" in change:
                 print(change["fileId"])
-                if(change["fileId"] in navigation_data.doc_reference_dict):
+                if change["fileId"] in navigation_data.doc_reference_dict:
                     print("IN DICT")
-                    nav_item = navigation_data.doc_reference_dict[change["fileId"]]
+                    nav_item = navigation_data.doc_reference_dict[
+                        change["fileId"]
+                    ]
                     new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
-                    if nav_item['full_path'] != new_nav_item['full_path']:
-                        #Location Change process
-                        old_path = nav_item['full_path']
-                        new_path = new_nav_item['full_path']
+                    if nav_item["full_path"] != new_nav_item["full_path"]:
+                        # Location Change process
+                        old_path = nav_item["full_path"]
+                        new_path = new_nav_item["full_path"]
                         print("CHANGE IN DOC!")
                         print(f"OLD PATH: {old_path}")
                         print(f"NEW PATH: {new_path}")
@@ -134,6 +138,7 @@ def process_changes(changes, navigation_data, google_drive):
                     print("NOT FOUND")
 
     return new_nav
+
 
 def get_navigation_data():
     """
@@ -224,6 +229,7 @@ def search_drive():
         TARGET_DRIVE=TARGET_DRIVE,
     )
 
+
 @app.route("/update-urls")
 def changes_drive(path=None):
     """
@@ -234,6 +240,7 @@ def changes_drive(path=None):
     new_path = path.replace("update-urls", "")
     return flask.redirect("/" + new_path)
 
+
 @app.route("/changes")
 def changes_drive():
     """
@@ -243,7 +250,6 @@ def changes_drive():
     google_drive = get_google_drive_instance()
     changes_results = google_drive.get_changes()
     navigation_data = get_navigation_data()
-    
 
     return flask.render_template(
         "changes.html",
@@ -301,6 +307,7 @@ def document(path=None):
             document=target_document,
         )
 
+
 gdrive_changes = GoogleDrive(cache)
 nav_changes = NavigationBuilder(gdrive_changes, ROOT)
 
@@ -308,7 +315,7 @@ nav_changes = NavigationBuilder(gdrive_changes, ROOT)
 print("\n\nSTARTING SCHUDULER")
 scheduler = BackgroundScheduler()
 scheduler.add_job(scheduled_get_changes)
-scheduler.add_job(scheduled_get_changes,  'interval', minutes=2)
+scheduler.add_job(scheduled_get_changes, "interval", minutes=2)
 scheduler.start()
 
 if __name__ == "__main__":

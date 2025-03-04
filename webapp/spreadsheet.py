@@ -34,12 +34,16 @@ class GoggleSheet:
         try:
             # Append data to the spreadsheet
             data_to_append = [[self.old_url, self.new_url]]
-            append_request = self.service.spreadsheets().values().append(
-                spreadsheetId=URL_DOC,
-                range="A:B",
-                valueInputOption="RAW",
-                insertDataOption="INSERT_ROWS",
-                body={"values": data_to_append},
+            append_request = (
+                self.service.spreadsheets()
+                .values()
+                .append(
+                    spreadsheetId=URL_DOC,
+                    range="A:B",
+                    valueInputOption="RAW",
+                    insertDataOption="INSERT_ROWS",
+                    body={"values": data_to_append},
+                )
             )
             append_request.execute()
         except Exception as error:

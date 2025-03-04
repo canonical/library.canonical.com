@@ -101,7 +101,7 @@ class GoogleDrive:
             docDic[item["id"]] = item
         self.cache.set("docDic", docDic)
         return items
-    
+
     def get_changes(self):
 
         next_page_token = ""
