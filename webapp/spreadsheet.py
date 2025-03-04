@@ -1,15 +1,12 @@
-import io
 import os
 
 from flask import abort
 
-from apiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
 from webapp.settings import SERVICE_ACCOUNT_INFO
 
-from datetime import datetime
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")

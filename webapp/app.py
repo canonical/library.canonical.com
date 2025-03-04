@@ -231,7 +231,7 @@ def search_drive():
 
 
 @app.route("/update-urls")
-def changes_drive(path=None):
+def update_urls(path=None):
     """
     Route to search the Google Drive. The search results are displayed in a
     separate page.
