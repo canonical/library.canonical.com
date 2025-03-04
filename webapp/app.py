@@ -12,6 +12,7 @@ from webapp.googledrive import GoogleDrive
 from webapp.parser import Parser
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
+from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 
 
@@ -19,6 +20,7 @@ from flask_caching import Cache
 ROOT = os.getenv("ROOT_FOLDER", "library")
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
+
 
 app = FlaskBase(
     __name__,
@@ -38,6 +40,7 @@ init_sso(app)
 # Initialize caching
 cache = Cache(app, config={"CACHE_TYPE": "simple"})
 cache.init_app(app)
+
 
 # Initialize Redis
 redis = redis.Redis(host="localhost", port=6379, db=0)
@@ -66,6 +69,10 @@ def get_list_of_urls():
         for line in lines:
             url = line.split(",")
             urls.append({"old": url[0], "new": url[1].replace("\r", "")})
+        url = url_cache.get("urls")
+        if url is not None:
+            for u in url:
+                urls.append(u)
         g.list_of_urls = urls
 
 
@@ -91,10 +98,11 @@ def get_last_hour_changes(changes):
             last_hour.append(change)
     return last_hour
 
-def process_changes(changes, navigation_data):
+def process_changes(changes, navigation_data, google_drive):
     """
     Process the changes
     """
+    new_nav= NavigationBuilder(google_drive, ROOT)
     for change in changes:
         print(change)
         if change["removed"]:
@@ -104,9 +112,22 @@ def process_changes(changes, navigation_data):
             print("ADDED")
             if "fileId" in change:
                 print(change["fileId"])
-                print(navigation_data.doc_reference_dict[change["fileId"]])
+                if(change["fileId"] in navigation_data.doc_reference_dict):
+                    print("IN DICT")
+                    nav_item = navigation_data.doc_reference_dict[change["fileId"]]
+                    new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
+                    if nav_item['full_path'] != new_nav_item['full_path']:
+                        #Location Change process
+                        old_path = nav_item['full_path']
+                        new_path = new_nav_item['full_path']
+                        print("CHANGE IN DOC!")
+                        print(f"OLD PATH: {old_path}")
+                        print(f"NEW PATH: {new_path}")
+                        GoggleSheet(old_path, new_path).update_urls()
+                else:
+                    print("NOT FOUND")
 
-    return None
+    return new_nav
 
 def get_navigation_data():
     """
@@ -265,18 +286,22 @@ def document(path=None):
             document=target_document,
         )
 
+gdrive_changes = GoogleDrive(cache)
+nav_changes = NavigationBuilder(gdrive_changes, ROOT)
+
 
 def scheduled_get_changes():
-    google_drive = GoogleDrive(cache)
+    global nav_changes
+    google_drive = gdrive_changes
     changes = google_drive.get_changes()
     latest = get_last_hour_changes(changes)
-    process_changes(latest,  NavigationBuilder(google_drive, ROOT))
+    nav_changes= process_changes(latest,  nav_changes, gdrive_changes)
     print("\n\n EXECUTED SCHEDULED JOB")
 
 print("\n\nSTARTING SCHUDULER")
 scheduler = BackgroundScheduler()
 scheduler.add_job(scheduled_get_changes)
-scheduler.add_job(scheduled_get_changes, 'interval', minutes=60)
+scheduler.add_job(scheduled_get_changes,  'interval', minutes=2)
 scheduler.start()
 
 if __name__ == "__main__":
