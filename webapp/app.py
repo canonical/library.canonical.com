@@ -61,15 +61,15 @@ def get_list_of_urls():
     Return a list of urls from Google Drive and cache in Flask's 'g'
     object.
     """
-    if "list_of_urls" not in g:
-        google_drive = get_google_drive_instance()
-        urls = []
-        list = google_drive.fetch_spreadsheet(URL_DOC)
-        lines = list.split("\n")[1:]
-        for line in lines:
-            url = line.split(",")
-            urls.append({"old": url[0], "new": url[1].replace("\r", "")})
-        g.list_of_urls = urls
+
+    google_drive = get_google_drive_instance()
+    urls = []
+    list = google_drive.fetch_spreadsheet(URL_DOC)
+    lines = list.split("\n")[1:]
+    for line in lines:
+        url = line.split(",")
+        urls.append({"old": url[0], "new": url[1].replace("\r", "")})
+    g.list_of_urls = urls
 
 
 def find_broken_url(url):
@@ -85,7 +85,7 @@ def find_broken_url(url):
 def scheduled_get_changes():
     global nav_changes
     google_drive = gdrive_changes
-    changes = google_drive.get_changes()
+    changes = google_drive.get_latest_changes()
     latest = get_last_hour_changes(changes)
     nav_changes = process_changes(latest, nav_changes, gdrive_changes)
     print("\n\n EXECUTED SCHEDULED JOB")
