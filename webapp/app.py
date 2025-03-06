@@ -2,7 +2,6 @@ import os
 import flask
 import redis
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
 
 # import talisker
 from flask import request, g, session

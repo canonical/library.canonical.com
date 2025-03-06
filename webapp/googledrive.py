@@ -171,7 +171,7 @@ class GoogleDrive:
                     .execute()
                 )
                 items.extend(results.get("changes", []))
-                if results.get("nextPageToken", None) == None:
+                if results.get("nextPageToken", None) is None:
                     last_usable_token = next_page_token
                 next_page_token = results.get("nextPageToken", None)
         except Exception as error:
@@ -180,7 +180,7 @@ class GoogleDrive:
             abort(500, description=err)
 
         # Store the latest startPageToken for future use
-        if next_page_token == None:
+        if next_page_token is None:
             self.cache.set("startPageToken", last_usable_token)
         # Filter changes from the last 5 minutes
         five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
