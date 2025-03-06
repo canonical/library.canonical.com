@@ -77,6 +77,7 @@ def find_broken_url(url):
     Find the new url for a given old url
     """
     for u in g.list_of_urls:
+        print(u)
         if u["old"] == url:
             return u["new"]
     return None
@@ -86,27 +87,12 @@ def scheduled_get_changes():
     global nav_changes
     google_drive = gdrive_changes
     changes = google_drive.get_latest_changes()
-    latest = get_last_hour_changes(changes)
-    nav_changes = process_changes(latest, nav_changes, gdrive_changes)
+    nav_changes = process_changes(changes, nav_changes, gdrive_changes)
     print("\n\n EXECUTED SCHEDULED JOB")
 
 
-def get_last_hour_changes(changes):
-    """
-    Get the changes from the last hour
-    """
-    last_hour = []
-    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
-    for change in changes:
-        change_time = datetime.strptime(
-            change["time"], "%Y-%m-%dT%H:%M:%S.%fZ"
-        )
-        if change_time > one_hour_ago:
-            last_hour.append(change)
-    return last_hour
-
-
 def process_changes(changes, navigation_data, google_drive):
+    global url_updated
     """
     Process the changes
     """
@@ -128,15 +114,15 @@ def process_changes(changes, navigation_data, google_drive):
                     new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
                     if nav_item["full_path"] != new_nav_item["full_path"]:
                         # Location Change process
-                        old_path = nav_item["full_path"]
-                        new_path = new_nav_item["full_path"]
+                        old_path = nav_item["full_path"][1:]
+                        new_path = new_nav_item["full_path"][1:]
                         print("CHANGE IN DOC!")
                         print(f"OLD PATH: {old_path}")
                         print(f"NEW PATH: {new_path}")
                         GoggleSheet(old_path, new_path).update_urls()
+                        url_updated = True
                 else:
                     print("NOT FOUND")
-
     return new_nav
 
 
@@ -263,13 +249,20 @@ def changes_drive():
 @app.route("/<path:path>")
 @cache.cached(timeout=5)  # 7 days cached = 604800 seconds 1 day = 86400
 def document(path=None):
+    global url_updated
     """
     The entire site is rendered by this function (except /search). As all
     pages use the same template, the only difference between them is the
     content.
     """
     get_list_of_urls()
-    navigation_data = get_navigation_data()
+    if url_updated:
+        print("URLs UPDATED")
+        url_updated = False
+        navigation_data = construct_navigation_data()
+        g.navigation_data = navigation_data
+    else:
+        navigation_data = get_navigation_data()
 
     if path is not None and "clear-cache" in path:
         cache.clear()
@@ -281,6 +274,7 @@ def document(path=None):
                 path, navigation_data.hierarchy
             )
         except KeyError:
+            print("BROKEN URL")
             new_path = find_broken_url(path)
             if new_path:
                 path = new_path
@@ -310,12 +304,12 @@ def document(path=None):
 
 gdrive_changes = GoogleDrive(cache)
 nav_changes = NavigationBuilder(gdrive_changes, ROOT)
-
+url_updated = False
 
 print("\n\nSTARTING SCHUDULER")
 scheduler = BackgroundScheduler()
 scheduler.add_job(scheduled_get_changes)
-scheduler.add_job(scheduled_get_changes, "interval", minutes=2)
+scheduler.add_job(scheduled_get_changes, "interval", minutes=5) # Discuss soft caching for 5 minutes
 scheduler.start()
 
 if __name__ == "__main__":
