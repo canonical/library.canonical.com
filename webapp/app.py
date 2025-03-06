@@ -77,7 +77,6 @@ def find_broken_url(url):
     Find the new url for a given old url
     """
     for u in g.list_of_urls:
-        print(u)
         if u["old"] == url:
             return u["new"]
     return None
@@ -88,7 +87,6 @@ def scheduled_get_changes():
     google_drive = gdrive_changes
     changes = google_drive.get_latest_changes()
     nav_changes = process_changes(changes, nav_changes, gdrive_changes)
-    print("\n\n EXECUTED SCHEDULED JOB")
 
 
 def process_changes(changes, navigation_data, google_drive):
@@ -98,16 +96,11 @@ def process_changes(changes, navigation_data, google_drive):
     """
     new_nav = NavigationBuilder(google_drive, ROOT)
     for change in changes:
-        print(change)
         if change["removed"]:
             print("REMOVED")
-            print(change)
         else:
-            print("ADDED")
             if "fileId" in change:
-                print(change["fileId"])
                 if change["fileId"] in navigation_data.doc_reference_dict:
-                    print("IN DICT")
                     nav_item = navigation_data.doc_reference_dict[
                         change["fileId"]
                     ]
@@ -116,13 +109,8 @@ def process_changes(changes, navigation_data, google_drive):
                         # Location Change process
                         old_path = nav_item["full_path"][1:]
                         new_path = new_nav_item["full_path"][1:]
-                        print("CHANGE IN DOC!")
-                        print(f"OLD PATH: {old_path}")
-                        print(f"NEW PATH: {new_path}")
                         GoggleSheet(old_path, new_path).update_urls()
                         url_updated = True
-                else:
-                    print("NOT FOUND")
     return new_nav
 
 
@@ -257,7 +245,6 @@ def document(path=None):
     """
     get_list_of_urls()
     if url_updated:
-        print("URLs UPDATED")
         url_updated = False
         navigation_data = construct_navigation_data()
         g.navigation_data = navigation_data
@@ -274,7 +261,6 @@ def document(path=None):
                 path, navigation_data.hierarchy
             )
         except KeyError:
-            print("BROKEN URL")
             new_path = find_broken_url(path)
             if new_path:
                 path = new_path
@@ -306,10 +292,11 @@ gdrive_changes = GoogleDrive(cache)
 nav_changes = NavigationBuilder(gdrive_changes, ROOT)
 url_updated = False
 
-print("\n\nSTARTING SCHUDULER")
 scheduler = BackgroundScheduler()
 scheduler.add_job(scheduled_get_changes)
-scheduler.add_job(scheduled_get_changes, "interval", minutes=5) # Discuss soft caching for 5 minutes
+scheduler.add_job(
+    scheduled_get_changes, "interval", minutes=5
+)  # Discuss soft caching for 5 minutes
 scheduler.start()
 
 if __name__ == "__main__":
