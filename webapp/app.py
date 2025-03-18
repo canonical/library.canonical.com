@@ -331,4 +331,10 @@ init_scheduler(app)
 
 
 if __name__ == "__main__":
+    nav_changes = None
+    url_updated = False 
+    gdrive_instance = None
+    with app.app_context():
+        gdrive_instance = get_google_drive_instance()
+        nav_changes = NavigationBuilder(gdrive_instance, ROOT)
     app.run()
