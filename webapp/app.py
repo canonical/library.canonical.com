@@ -333,10 +333,11 @@ def init_scheduler(app):
 
 
 
-
+with app.app_context():
+    print("CONTEXT")
+    gdrive_instance = get_google_drive_instance()
 init_scheduler(app)
 
 if __name__ == "__main__":
-    
-    
+   
     app.run()
