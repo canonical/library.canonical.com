@@ -292,17 +292,6 @@ def document(path=None):
             document=target_document,
         )
 
-nav_changes = None
-url_updated = False 
-gdrive_instance = None
-
-def init_global_vars(app):
-    global nav_changes
-    global gdrive_instance
-    with app.app_context():
-        gdrive_instance = GoogleDrive(cache)
-        nav_changes = NavigationBuilder(gdrive_instance, ROOT)
-
 def init_scheduler(app):
     print("Initializing the scheduler...")  # Debugging log
     def scheduled_task():
@@ -330,13 +319,21 @@ def init_scheduler(app):
     print("Scheduler started.")  # Debugging log
     return scheduler
 
-@app.before_first_request
-def init_scheduler_starter():
-    print("Starting the functions...")
-    init_global_vars(app)
-    init_scheduler(app)
+nav_changes = None
+url_updated = False 
+gdrive_instance = None
 
+with app.app_context():
+    print("Initializing global variables...")
+    gdrive_instance = get_google_drive_instance()
+    nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+    print("Global variables initialized.")
 
-init_scheduler_starter()
+init_scheduler(app)
+
 if __name__ == "__main__":
+    with app.app_context():
+        print("CONTEXTTTTTT\n\n\n\n HELP")
+        gdrive_instance = get_google_drive_instance()
+        nav_changes = NavigationBuilder(gdrive_instance, ROOT)
     app.run()
