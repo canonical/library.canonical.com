@@ -299,6 +299,7 @@ gdrive_instance = None
 def init_scheduler(app):
     print("Initializing the scheduler...")  # Debugging log
     global nav_changes
+    global gdrive_instance
     with app.app_context():
         print("CONTEXT")
         gdrive_instance = get_google_drive_instance()
