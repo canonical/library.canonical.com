@@ -94,10 +94,12 @@ def process_changes(changes, navigation_data, google_drive):
     Process the changes
     """
     new_nav = NavigationBuilder(google_drive, ROOT)
+    print("Processing Changes")
     for change in changes:
         if change["removed"]:
             print("REMOVED")
         else:
+
             if "fileId" in change:
                 if change["fileId"] in navigation_data.doc_reference_dict:
                     nav_item = navigation_data.doc_reference_dict[
@@ -105,6 +107,7 @@ def process_changes(changes, navigation_data, google_drive):
                     ]
                     new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
                     if nav_item["full_path"] != new_nav_item["full_path"]:
+                        print("NAME or LOCATION CHANGE")
                         # Location Change process
                         old_path = nav_item["full_path"][1:]
                         new_path = new_nav_item["full_path"][1:]
@@ -237,6 +240,7 @@ def changes_drive():
 @cache.cached(timeout=5)  # 7 days cached = 604800 seconds 1 day = 86400
 def document(path=None):
     global url_updated
+    global global_scheduler_starter
     """
     The entire site is rendered by this function (except /search). As all
     pages use the same template, the only difference between them is the
@@ -287,29 +291,42 @@ def document(path=None):
         )
 
 
-def init_scheduler(app):
-    def scheduled_task():
-        with app.app_context():
-            google_drive = get_google_drive_instance()
-            navigation = get_navigation_data()
-            changes = google_drive.get_latest_changes()
-            new_nav = process_changes(changes, navigation, google_drive)
-            global nav_changes
-            nav_changes = new_nav
-
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_task)
-    scheduler.add_job(scheduled_task, "interval", minutes=5)
-    scheduler.start()
-    return scheduler
-
 nav_changes = None
 url_updated = False
+with app.app_context():
+    gdrive_instance = get_google_drive_instance()
+    nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+
+
+def init_scheduler(app):
+    print("Initializing the scheduler...")  # Debugging log
+
+    def scheduled_task():
+        global nav_changes
+        print("Executing scheduled task...")  # Debugging log
+        with app.app_context():
+            print("Context acquired.")  # Debugging log
+            google_drive = get_google_drive_instance()
+            navigation = nav_changes
+            changes = google_drive.get_latest_changes()
+            new_nav = process_changes(changes, navigation, google_drive)
+            nav_changes = new_nav
+            print("Scheduled task completed successfully.")  # Debugging log
+
+    # Initialize the scheduler
+    scheduler = BackgroundScheduler()
+    print("Scheduler initialized.")  # Debugging log
+    scheduler.add_job(scheduled_task)  # Run once
+    scheduler.add_job(
+        scheduled_task, "interval", minutes=5
+    )  # Run every 5 minutes
+    scheduler.start()
+    print("Scheduler started.")  # Debugging log
+    return scheduler
+
+
+init_scheduler(app)
+
 
 if __name__ == "__main__":
-    with app.app_context():
-        gdrive_instance = get_google_drive_instance()
-        nav_changes = NavigationBuilder(gdrive_instance, ROOT)
-    scheduler = init_scheduler(app)
-    
     app.run()
