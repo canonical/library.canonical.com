@@ -333,5 +333,4 @@ def init_scheduler(app):
 init_scheduler(app)
 
 if __name__ == "__main__":
-   
     app.run()
