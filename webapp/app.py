@@ -294,7 +294,9 @@ def document(path=None):
 
 nav_changes = None
 url_updated = False 
-gdrive_instance = None
+with app.app_context():
+    print("CONTEXT")
+    gdrive_instance = get_google_drive_instance()
 
 def init_scheduler(app):
     print("Initializing the scheduler...")  # Debugging log
@@ -302,7 +304,6 @@ def init_scheduler(app):
     global gdrive_instance
     with app.app_context():
         print("CONTEXT")
-        gdrive_instance = get_google_drive_instance()
         nav_changes = NavigationBuilder(gdrive_instance, ROOT)
         print("NAV CHANGES")
     def scheduled_task():
@@ -329,13 +330,6 @@ def init_scheduler(app):
     print("Scheduler started.")  # Debugging log
     return scheduler
 
-
-
-
-
-with app.app_context():
-    print("CONTEXT")
-    gdrive_instance = get_google_drive_instance()
 init_scheduler(app)
 
 if __name__ == "__main__":
