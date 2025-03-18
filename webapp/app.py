@@ -83,9 +83,10 @@ def find_broken_url(url):
 
 def scheduled_get_changes():
     global nav_changes
-    google_drive = gdrive_changes
+    global gdrive_instance
+    google_drive = gdrive_instance
     changes = google_drive.get_latest_changes()
-    nav_changes = process_changes(changes, nav_changes, gdrive_changes)
+    nav_changes = process_changes(changes, nav_changes, gdrive_instance)
 
 
 def process_changes(changes, navigation_data, google_drive):
@@ -293,6 +294,7 @@ def document(path=None):
 
 nav_changes = None
 url_updated = False
+gdrive_instance = None
 with app.app_context():
     gdrive_instance = get_google_drive_instance()
     nav_changes = NavigationBuilder(gdrive_instance, ROOT)
