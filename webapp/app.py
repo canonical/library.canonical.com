@@ -95,6 +95,7 @@ def process_changes(changes, navigation_data, google_drive):
     Process the changes
     """
     new_nav = NavigationBuilder(google_drive, ROOT)
+    print(navigation_data)
     print("Processing Changes")
     for change in changes:
         if change["removed"]:
@@ -291,24 +292,25 @@ def document(path=None):
             document=target_document,
         )
 
-
 nav_changes = None
-url_updated = False
+url_updated = False 
 gdrive_instance = None
-with app.app_context():
-    gdrive_instance = get_google_drive_instance()
-    nav_changes = NavigationBuilder(gdrive_instance, ROOT)
-
 
 def init_scheduler(app):
     print("Initializing the scheduler...")  # Debugging log
-
+    global nav_changes
+    with app.app_context():
+        print("CONTEXT")
+        gdrive_instance = get_google_drive_instance()
+        nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+        print("NAV CHANGES")
     def scheduled_task():
         global nav_changes
         print("Executing scheduled task...")  # Debugging log
         with app.app_context():
             print("Context acquired.")  # Debugging log
             google_drive = get_google_drive_instance()
+            print(nav_changes)
             navigation = nav_changes
             changes = google_drive.get_latest_changes()
             new_nav = process_changes(changes, navigation, google_drive)
@@ -320,21 +322,20 @@ def init_scheduler(app):
     print("Scheduler initialized.")  # Debugging log
     scheduler.add_job(scheduled_task)  # Run once
     scheduler.add_job(
-        scheduled_task, "interval", minutes=5
+        scheduled_task, "interval", minutes=2
     )  # Run every 5 minutes
     scheduler.start()
     print("Scheduler started.")  # Debugging log
     return scheduler
 
 
+
+
+
+
 init_scheduler(app)
 
-
 if __name__ == "__main__":
-    nav_changes = None
-    url_updated = False 
-    gdrive_instance = None
-    with app.app_context():
-        gdrive_instance = get_google_drive_instance()
-        nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+    
+    
     app.run()
