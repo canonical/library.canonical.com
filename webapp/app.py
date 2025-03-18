@@ -292,8 +292,10 @@ def document(path=None):
             document=target_document,
         )
 
+
 def init_scheduler(app):
     print("Initializing the scheduler...")  # Debugging log
+
     def scheduled_task():
         global nav_changes
         global gdrive_instance
@@ -319,8 +321,9 @@ def init_scheduler(app):
     print("Scheduler started.")  # Debugging log
     return scheduler
 
+
 nav_changes = None
-url_updated = False 
+url_updated = False
 gdrive_instance = None
 
 if __name__ == "__main__":
