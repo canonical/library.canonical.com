@@ -326,10 +326,18 @@ nav_changes = None
 url_updated = False
 gdrive_instance = None
 
-if __name__ == "__main__":
+
+@app.before_first_request
+def initialized():
+    print("CONTEXTTTTTT\n\n\n\n HELP")
+    global nav_changes
+    global gdrive_instance
     with app.app_context():
-        print("CONTEXTTTTTT\n\n\n\n HELP")
+        print("CONTEXTTTTTT\n\n\n\n HELP 22222")
         gdrive_instance = get_google_drive_instance()
         nav_changes = NavigationBuilder(gdrive_instance, ROOT)
-    init_scheduler(app)
+        init_scheduler(app)
+
+
+if __name__ == "__main__":
     app.run()
