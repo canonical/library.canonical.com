@@ -287,16 +287,29 @@ def document(path=None):
         )
 
 
-gdrive_changes = GoogleDrive(cache)
-nav_changes = NavigationBuilder(gdrive_changes, ROOT)
+def init_scheduler(app):
+    def scheduled_task():
+        with app.app_context():
+            google_drive = get_google_drive_instance()
+            navigation = get_navigation_data()
+            changes = google_drive.get_latest_changes()
+            new_nav = process_changes(changes, navigation, google_drive)
+            global nav_changes
+            nav_changes = new_nav
+
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(scheduled_task)
+    scheduler.add_job(scheduled_task, "interval", minutes=5)
+    scheduler.start()
+    return scheduler
+
+nav_changes = None
 url_updated = False
 
-scheduler = BackgroundScheduler()
-scheduler.add_job(scheduled_get_changes)
-scheduler.add_job(
-    scheduled_get_changes, "interval", minutes=5
-)  # Discuss soft caching for 5 minutes
-scheduler.start()
-
 if __name__ == "__main__":
+    with app.app_context():
+        gdrive_instance = get_google_drive_instance()
+        nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+    scheduler = init_scheduler(app)
+    
     app.run()
