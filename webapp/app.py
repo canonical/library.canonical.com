@@ -330,10 +330,13 @@ def init_scheduler(app):
     print("Scheduler started.")  # Debugging log
     return scheduler
 
-init_global_vars(app)
-init_scheduler(app)
-
-if __name__ == "__main__":
+@app.before_first_request
+def init_scheduler_starter():
+    print("Starting the functions...")
     init_global_vars(app)
     init_scheduler(app)
+
+
+init_scheduler_starter()
+if __name__ == "__main__":
     app.run()
