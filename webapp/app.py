@@ -319,11 +319,12 @@ gdrive_instance = None
 
 initialized_executed = False
 
+
 @app.before_request
 def initialized():
     global initialized_executed, gdrive_instance, nav_changes
     if not initialized_executed:
-        initialized_executed = True    
+        initialized_executed = True
         with app.app_context():
             gdrive_instance = get_google_drive_instance()
             nav_changes = NavigationBuilder(gdrive_instance, ROOT)
