@@ -95,7 +95,6 @@ def process_changes(changes, navigation_data, google_drive):
     Process the changes
     """
     new_nav = NavigationBuilder(google_drive, ROOT)
-    print(navigation_data)
     print("Processing Changes")
     for change in changes:
         if change["removed"]:
@@ -109,7 +108,6 @@ def process_changes(changes, navigation_data, google_drive):
                     ]
                     new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
                     if nav_item["full_path"] != new_nav_item["full_path"]:
-                        print("NAME or LOCATION CHANGE")
                         # Location Change process
                         old_path = nav_item["full_path"][1:]
                         new_path = new_nav_item["full_path"][1:]
@@ -294,31 +292,24 @@ def document(path=None):
 
 
 def init_scheduler(app):
-    print("Initializing the scheduler...")  # Debugging log
 
     def scheduled_task():
         global nav_changes
         global gdrive_instance
-        print("Executing scheduled task...")  # Debugging log
         with app.app_context():
-            print("Context acquired.")  # Debugging log
             google_drive = gdrive_instance
-            print(nav_changes)
             navigation = nav_changes
             changes = google_drive.get_latest_changes()
             new_nav = process_changes(changes, navigation, google_drive)
             nav_changes = new_nav
-            print("Scheduled task completed successfully.")  # Debugging log
 
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
-    print("Scheduler initialized.")  # Debugging log
     scheduler.add_job(scheduled_task)  # Run once
     scheduler.add_job(
-        scheduled_task, "interval", minutes=2
+        scheduled_task, "interval", minutes=5
     )  # Run every 5 minutes
     scheduler.start()
-    print("Scheduler started.")  # Debugging log
     return scheduler
 
 
@@ -333,9 +324,7 @@ def initialized():
     global initialized_executed, gdrive_instance, nav_changes
     if not initialized_executed:
         initialized_executed = True    
-        print("CONTEXTTTTTT\n\n\n\n HELP")
         with app.app_context():
-            print("CONTEXTTTTTT\n\n\n\n HELP 22222")
             gdrive_instance = get_google_drive_instance()
             nav_changes = NavigationBuilder(gdrive_instance, ROOT)
             init_scheduler(app)
