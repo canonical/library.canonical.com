@@ -9,7 +9,7 @@ from google.oauth2 import service_account
 
 from webapp.settings import SERVICE_ACCOUNT_INFO
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
@@ -101,6 +101,98 @@ class GoogleDrive:
             docDic[item["id"]] = item
         self.cache.set("docDic", docDic)
         return items
+
+    def get_changes(self):
+        next_page_token = ""
+        try:
+            tokens = self.service.changes().getStartPageToken().execute()
+            next_page_token = tokens.get("startPageToken")
+        except Exception as error:
+            err = "Error Fetching Start Page Token."
+            print(f"{err}\n {error}")
+            abort(500, description=err)
+        items = []
+        try:
+            while (next_page_token is not None) or (next_page_token == ""):
+                results = (
+                    self.service.changes()
+                    .list(
+                        driveId=TARGET_DRIVE,
+                        supportsAllDrives=True,
+                        includeItemsFromAllDrives=True,
+                        includeCorpusRemovals=True,
+                        includeRemoved=True,
+                        pageSize=1000,
+                        pageToken=next_page_token,
+                        restrictToMyDrive=False,
+                        spaces="drive",
+                        includePermissionsForView="published",
+                        includeLabels=True,
+                    )
+                    .execute()
+                )
+                items.extend(results.get("changes", []))
+                next_page_token = results.get("nextPageToken", None)
+        except Exception as error:
+            err = "Error Fetching Changes."
+            print(f"{err}\n {error}")
+            abort(500, description=err)
+        return items
+
+    def get_latest_changes(self):
+        next_page_token = self.cache.get("startPageToken")
+        try:
+            if not next_page_token:
+                tokens = self.service.changes().getStartPageToken().execute()
+                next_page_token = tokens.get("startPageToken")
+        except Exception as error:
+            err = "Error Fetching Start Page Token."
+            print(f"{err}\n {error}")
+            abort(500, description=err)
+        items = []
+        last_usable_token = None
+        try:
+            while next_page_token:
+                results = (
+                    self.service.changes()
+                    .list(
+                        driveId=TARGET_DRIVE,
+                        supportsAllDrives=True,
+                        includeItemsFromAllDrives=True,
+                        includeCorpusRemovals=True,
+                        includeRemoved=True,
+                        pageSize=1000,
+                        pageToken=next_page_token,
+                        restrictToMyDrive=False,
+                        spaces="drive",
+                        includePermissionsForView="published",
+                        includeLabels=True,
+                    )
+                    .execute()
+                )
+                items.extend(results.get("changes", []))
+                if results.get("nextPageToken", None) is None:
+                    last_usable_token = next_page_token
+                next_page_token = results.get("nextPageToken", None)
+        except Exception as error:
+            err = "Error Fetching Changes."
+            print(f"{err}\n {error}")
+            abort(500, description=err)
+
+        # Store the latest startPageToken for future use
+        if next_page_token is None:
+            self.cache.set("startPageToken", last_usable_token)
+        # Filter changes from the last 5 minutes
+        five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
+        recent_changes = []
+        for item in items:
+            change_time = datetime.strptime(
+                item["time"], "%Y-%m-%dT%H:%M:%S.%fZ"
+            )
+            if change_time > five_minutes_ago:
+                recent_changes.append(item)
+
+        return recent_changes
 
     def get_document(self, document_id):
         if self.cache.get(document_id) is not None:

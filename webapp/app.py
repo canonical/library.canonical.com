@@ -1,6 +1,7 @@
 import os
 import flask
 import redis
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # import talisker
 from flask import request, g, session
@@ -10,12 +11,15 @@ from webapp.googledrive import GoogleDrive
 from webapp.parser import Parser
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
+from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
+
 
 # Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
+
 
 app = FlaskBase(
     __name__,
@@ -36,6 +40,7 @@ init_sso(app)
 cache = Cache(app, config={"CACHE_TYPE": "simple"})
 cache.init_app(app)
 
+
 # Initialize Redis
 redis = redis.Redis(host="localhost", port=6379, db=0)
 
@@ -55,15 +60,15 @@ def get_list_of_urls():
     Return a list of urls from Google Drive and cache in Flask's 'g'
     object.
     """
-    if "list_of_urls" not in g:
-        google_drive = get_google_drive_instance()
-        urls = []
-        list = google_drive.fetch_spreadsheet(URL_DOC)
-        lines = list.split("\n")[1:]
-        for line in lines:
-            url = line.split(",")
-            urls.append({"old": url[0], "new": url[1].replace("\r", "")})
-        g.list_of_urls = urls
+
+    google_drive = get_google_drive_instance()
+    urls = []
+    list = google_drive.fetch_spreadsheet(URL_DOC)
+    lines = list.split("\n")[1:]
+    for line in lines:
+        url = line.split(",")
+        urls.append({"old": url[0], "new": url[1].replace("\r", "")})
+    g.list_of_urls = urls
 
 
 def find_broken_url(url):
@@ -74,6 +79,41 @@ def find_broken_url(url):
         if u["old"] == url:
             return u["new"]
     return None
+
+
+def scheduled_get_changes():
+    global nav_changes
+    global gdrive_instance
+    google_drive = gdrive_instance
+    changes = google_drive.get_latest_changes()
+    nav_changes = process_changes(changes, nav_changes, gdrive_instance)
+
+
+def process_changes(changes, navigation_data, google_drive):
+    global url_updated
+    """
+    Process the changes
+    """
+    new_nav = NavigationBuilder(google_drive, ROOT)
+    print("Processing Changes")
+    for change in changes:
+        if change["removed"]:
+            print("REMOVED")
+        else:
+
+            if "fileId" in change:
+                if change["fileId"] in navigation_data.doc_reference_dict:
+                    nav_item = navigation_data.doc_reference_dict[
+                        change["fileId"]
+                    ]
+                    new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
+                    if nav_item["full_path"] != new_nav_item["full_path"]:
+                        # Location Change process
+                        old_path = nav_item["full_path"][1:]
+                        new_path = new_nav_item["full_path"][1:]
+                        GoggleSheet(old_path, new_path).update_urls()
+                        url_updated = True
+    return new_nav
 
 
 def get_navigation_data():
@@ -166,17 +206,53 @@ def search_drive():
     )
 
 
+@app.route("/update-urls")
+def update_urls(path=None):
+    """
+    Route to search the Google Drive. The search results are displayed in a
+    separate page.
+    """
+    scheduled_get_changes()
+    new_path = path.replace("update-urls", "")
+    return flask.redirect("/" + new_path)
+
+
+@app.route("/changes")
+def changes_drive():
+    """
+    Route to search the Google Drive. The search results are displayed in a
+    separate page.
+    """
+    google_drive = get_google_drive_instance()
+    changes_results = google_drive.get_changes()
+    navigation_data = get_navigation_data()
+
+    return flask.render_template(
+        "changes.html",
+        changes_results=changes_results,
+        TARGET_DRIVE=TARGET_DRIVE,
+        doc_reference_dict=navigation_data.doc_reference_dict,
+    )
+
+
 @app.route("/")
 @app.route("/<path:path>")
 @cache.cached(timeout=604800)  # 7 days cached = 604800 seconds 1 day = 86400
 def document(path=None):
+    global url_updated
+    global global_scheduler_starter
     """
     The entire site is rendered by this function (except /search). As all
     pages use the same template, the only difference between them is the
     content.
     """
     get_list_of_urls()
-    navigation_data = get_navigation_data()
+    if url_updated:
+        url_updated = False
+        navigation_data = construct_navigation_data()
+        g.navigation_data = navigation_data
+    else:
+        navigation_data = get_navigation_data()
 
     if path is not None and "clear-cache" in path:
         cache.clear()
@@ -213,6 +289,46 @@ def document(path=None):
             root_name=ROOT,
             document=target_document,
         )
+
+
+def init_scheduler(app):
+
+    def scheduled_task():
+        global nav_changes
+        global gdrive_instance
+        with app.app_context():
+            google_drive = gdrive_instance
+            navigation = nav_changes
+            changes = google_drive.get_latest_changes()
+            new_nav = process_changes(changes, navigation, google_drive)
+            nav_changes = new_nav
+
+    # Initialize the scheduler
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(scheduled_task)  # Run once
+    scheduler.add_job(
+        scheduled_task, "interval", minutes=5
+    )  # Run every 5 minutes
+    scheduler.start()
+    return scheduler
+
+
+nav_changes = None
+url_updated = False
+gdrive_instance = None
+
+initialized_executed = False
+
+
+@app.before_request
+def initialized():
+    global initialized_executed, gdrive_instance, nav_changes
+    if not initialized_executed:
+        initialized_executed = True
+        with app.app_context():
+            gdrive_instance = get_google_drive_instance()
+            nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+            init_scheduler(app)
 
 
 if __name__ == "__main__":
