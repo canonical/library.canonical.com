@@ -234,6 +234,24 @@ def changes_drive():
         doc_reference_dict=navigation_data.doc_reference_dict,
     )
 
+@app.route("/clear-cache/<path:path>")
+def clear_cache_doc(path):
+    """
+    Clear cache for a specific document
+    """
+    print("Clearing cache")
+    print("PATH\n", path)
+    new_path = path.replace("/clear-cache", "")
+    cache_key = "view//%s" % new_path
+
+    print("Cache Key", cache_key)
+    if cache.delete(cache_key):  # Delete the cache entry
+        print(f"Cache for '{new_path}' has been cleared.", 200)
+    else:
+        print(f"Cache for '{new_path}' not found.", 404)
+    print("Redirecting to", new_path)
+    return flask.redirect("/" + new_path)   
+
 
 @app.route("/")
 @app.route("/<path:path>")
@@ -254,45 +272,37 @@ def document(path=None):
     else:
         navigation_data = get_navigation_data()
 
-    if path is not None and "clear-cache" in path:
-        new_path = path.replace("/clear-cache", "")
-        cache_key = "view//%s" % new_path
-        if cache.delete(cache_key):  # Delete the cache entry
-            print(f"Cache for '{new_path}' has been cleared.", 200)
+    try:
+        target_document = get_target_document(
+            path, navigation_data.hierarchy
+        )
+    except KeyError:
+        new_path = find_broken_url(path)
+        if new_path:
+            path = new_path
+            return flask.redirect("/" + path)
         else:
-            print(f"Cache for '{new_path}' not found.", 404)
-        return flask.redirect("/" + new_path)
-    else:
-        try:
-            target_document = get_target_document(
-                path, navigation_data.hierarchy
-            )
-        except KeyError:
-            new_path = find_broken_url(path)
-            if new_path:
-                path = new_path
-                return flask.redirect("/" + path)
-            else:
-                err = "Error, document does not exist."
-                flask.abort(404, description=err)
+            err = "Error, document does not exist."
+            flask.abort(404, description=err)
 
-        soup = Parser(
-            get_google_drive_instance(),
-            target_document["id"],
-            navigation_data.doc_reference_dict,
-            target_document["name"],
-        )
+    soup = Parser(
+        get_google_drive_instance(),
+        target_document["id"],
+        navigation_data.doc_reference_dict,
+        target_document["name"],
+    )
 
-        target_document["metadata"] = soup.metadata
-        target_document["headings_map"] = soup.headings_map
+    target_document["metadata"] = soup.metadata
+    target_document["headings_map"] = soup.headings_map
 
-        return flask.render_template(
-            "index.html",
-            navigation=navigation_data.hierarchy,
-            html=soup.html,
-            root_name=ROOT,
-            document=target_document,
-        )
+    return flask.render_template(
+        "index.html",
+        navigation=navigation_data.hierarchy,
+        html=soup.html,
+        root_name=ROOT,
+        document=target_document,
+    )
+       
 
 
 def init_scheduler(app):
