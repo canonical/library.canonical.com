@@ -234,6 +234,7 @@ def changes_drive():
         doc_reference_dict=navigation_data.doc_reference_dict,
     )
 
+
 @app.route("/clear-cache/<path:path>")
 def clear_cache_doc(path):
     """
@@ -250,7 +251,7 @@ def clear_cache_doc(path):
     else:
         print(f"Cache for '{new_path}' not found.", 404)
     print("Redirecting to", new_path)
-    return flask.redirect("/" + new_path)   
+    return flask.redirect("/" + new_path)
 
 
 @app.route("/")
@@ -273,9 +274,7 @@ def document(path=None):
         navigation_data = get_navigation_data()
 
     try:
-        target_document = get_target_document(
-            path, navigation_data.hierarchy
-        )
+        target_document = get_target_document(path, navigation_data.hierarchy)
     except KeyError:
         new_path = find_broken_url(path)
         if new_path:
@@ -302,7 +301,6 @@ def document(path=None):
         root_name=ROOT,
         document=target_document,
     )
-       
 
 
 def init_scheduler(app):
