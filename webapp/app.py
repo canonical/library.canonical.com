@@ -256,7 +256,7 @@ def document(path=None):
 
     if path is not None and "clear-cache" in path:
         new_path = path.replace("/clear-cache", "")
-        cache_key = "view//%s" % new_path 
+        cache_key = "view//%s" % new_path
         if cache.delete(cache_key):  # Delete the cache entry
             print(f"Cache for '{new_path}' has been cleared.", 200)
         else:
