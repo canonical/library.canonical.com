@@ -37,6 +37,8 @@ export const MAX_NUMBER_LEVELS = 6;
 
 export const PADDING_CONSTANT = 2;
 
+export const MOBILE_VIEW_WIDTH = 1035;
+
 // Function to sort the children of a document
 export function sortChildren(a: Document, b: Document): number {
     if (a.position === null && b.position === null) {

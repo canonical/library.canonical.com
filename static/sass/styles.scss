@@ -50,7 +50,14 @@ body {
   border-right: $color-mid-light;
   border-style: solid;
   border-width: 0 1.5px 0 0;
-  width: 344px;
+  height: auto;
+  overflow: visible;
+}
+
+.p-side-navigation {
+  height: auto;
+  min-height: 30px;
+  overflow: visible;
 }
 
 // This makes it align to the breadcrumbs

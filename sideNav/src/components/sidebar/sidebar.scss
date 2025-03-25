@@ -17,11 +17,17 @@ $increase-font-size-on-larger-screens: false;
 	align-items: right;
 	width: 100%;
 	background-color: $background-color_1;
-	min-height: 100vh;
 	max-height: 100vh;
 	color: $color-x-dark;
 	overflow: auto;
 }
+@media (max-width: 1035px) {
+	.burger-menu {
+	  display: flex;
+	  padding: 0.5rem;
+	  margin-left: 42px;
+	}
+  }
 .navigation__about-container {
 	display: flex;
 	flex-direction: row;
