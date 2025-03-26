@@ -194,22 +194,6 @@ class GoogleDrive:
 
         return recent_changes
 
-    def get_document(self, document_id):
-        if self.cache.get(document_id) is not None:
-            docInfo = self.cache.get("docDic")[document_id]
-            cachedDoc = self.cache.get(document_id)
-            dateformat = "%Y-%m-%dT%H:%M:%S.%fZ"
-            date = cachedDoc["lastFetch"]
-            cachedDocDate = datetime.strptime(date, dateformat)
-            if docInfo["modifiedTime"] > cachedDoc["modifiedTime"]:
-                return self.fetch_document(document_id)
-            elif (datetime.today() - cachedDocDate).days >= MAX_CACHE_AGE:
-                return self.fetch_document(document_id)
-            else:
-                return cachedDoc["html"]
-        else:
-            return self.fetch_document(document_id)
-
     def fetch_document(self, document_id):
         try:
             request = self.service.files().export(
@@ -223,16 +207,6 @@ class GoogleDrive:
             html = file.getvalue().decode("utf-8")
 
             if html:
-                docs = self.cache.get("docDic")
-                info = {
-                    "id": document_id,
-                    "html": html,
-                    "modifiedTime": docs[document_id]["modifiedTime"],
-                    "lastFetch": datetime.today().strftime(
-                        "%Y-%m-%dT%H:%M:%S.%fZ"
-                    ),
-                }
-                self.cache.set(document_id, info)
                 return html
             else:
                 err = "Error, document not found."
