@@ -83,7 +83,6 @@ def find_broken_url(url):
 
 def scheduled_get_changes():
     global nav_changes
-    global gdrive_instance
     google_drive = gdrive_instance
     changes = google_drive.get_latest_changes()
     nav_changes = process_changes(changes, nav_changes, gdrive_instance)
@@ -259,7 +258,6 @@ def clear_cache_doc(path):
 @cache.cached(timeout=604800)  # 7 days cached = 604800 seconds 1 day = 86400
 def document(path=None):
     global url_updated
-    global global_scheduler_starter
     """
     The entire site is rendered by this function (except /search). As all
     pages use the same template, the only difference between them is the
@@ -307,7 +305,6 @@ def init_scheduler(app):
 
     def scheduled_task():
         global nav_changes
-        global gdrive_instance
         with app.app_context():
             google_drive = gdrive_instance
             navigation = nav_changes
