@@ -20,7 +20,7 @@ class Parser:
         self.process_html(doc_name)
 
     def get_html(self, google_drive: GoogleDrive):
-        raw_html = google_drive.get_document(self.doc_id)
+        raw_html = google_drive.fetch_document(self.doc_id)
         return BeautifulSoup(raw_html, features="lxml")
 
     def process_html(self, doc_name):
