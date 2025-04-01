@@ -17,9 +17,7 @@ body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {
   padding-top: 0.55rem;
 }
 
-body {
-  flex-flow: column;
-}
+
 
 .l-docs {
   background-color: #f3f3f3;
@@ -150,7 +148,7 @@ body {
   border-width: 0 0 0 1.5px;
   margin-top: 70px;
   padding-left: 1.5rem;
-  width: 448px;
+  max-width: 448px;
 
   .l-docs__sticky-container {
     @extend .u-fixed-width;
