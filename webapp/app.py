@@ -235,14 +235,18 @@ def changes_drive():
     )
 
 
+@app.route("/clear-cache/")
 @app.route("/clear-cache/<path:path>")
-def clear_cache_doc(path):
+def clear_cache_doc(path=None):
     """
     Clear cache for a specific document
     """
     print("Clearing cache")
     print("PATH\n", path)
-    new_path = path.replace("/clear-cache", "")
+    if path is None:
+        new_path = ""
+    else:
+        new_path = path.replace("/clear-cache", "")
     cache_key = "view//%s" % new_path
 
     print("Cache Key", cache_key)
@@ -252,6 +256,8 @@ def clear_cache_doc(path):
         print(f"Cache for '{new_path}' not found.", 404)
     print("Redirecting to", new_path)
     return flask.redirect("/" + new_path)
+
+
 
 
 @app.route("/")
