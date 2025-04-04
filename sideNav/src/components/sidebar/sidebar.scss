@@ -8,7 +8,6 @@ $increase-font-size-on-larger-screens: false;
 
 .l-docs {
 	background-color: #f3f3f3;
-	grid-template-columns: 344px minmax(0, 1fr) 456px;
 }
 
 .navigation {
@@ -17,11 +16,28 @@ $increase-font-size-on-larger-screens: false;
 	align-items: right;
 	width: 100%;
 	background-color: $background-color_1;
-	min-height: 100vh;
 	max-height: 100vh;
 	color: $color-x-dark;
 	overflow: auto;
 }
+@media (max-width: 1036px) {
+	.burger-menu {
+	  display: flex;
+	  padding: 0.5rem;
+	  margin-left: 42px;
+	}
+	.l-docs {
+        grid-template-columns: 344px minmax(0, 1fr);
+    }
+  }
+
+  @media (min-width: calc(1036px + 15rem)) {
+    .l-docs {
+        grid-template-columns: 344px minmax(0, 1fr) 25rem;
+		grid-template-rows: auto auto 100vh auto;
+    }
+}
+
 .navigation__about-container {
 	display: flex;
 	flex-direction: row;

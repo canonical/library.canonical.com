@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { testlist } from './Lists/testlist';
 import './sidebar.scss';
 import ParentFolder from '../folder-components/parentFolder';
-import { sortChildren, levelDocument, position, Document } from '../utils';
+import { sortChildren, levelDocument, position, Document, MOBILE_VIEW_WIDTH } from '../utils';
+import { Icon } from '@canonical/react-components';
 
 interface sidebarProps {
   documents?: any,
@@ -28,6 +29,12 @@ const Sidebar: React.FC<sidebarProps> = ({
 
     //Hover for about the library
     const [mouseHover,setMouseHover] = useState<boolean>(false);
+
+    // ----------------------------------------------
+    // ------------  MOBILE VIEW --------------------
+    // ----------------------------------------------
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [isMobileView, setIsMobileView] = useState<boolean>(window.innerWidth < MOBILE_VIEW_WIDTH);
 
     // TODO: Implement a backend call to get the list of documents
     const navItems = window.__NAV_ITEMS__||testlist;
@@ -74,6 +81,20 @@ const Sidebar: React.FC<sidebarProps> = ({
         setSoftRoot(null);
       }
     },[])
+
+    // MOBILE VIEW RESPONSIVENESS
+    useEffect(() => {
+      const handleResize = () => {
+        setIsMobileView(window.innerWidth <= MOBILE_VIEW_WIDTH);
+      };
+  
+      window.addEventListener('resize', handleResize);
+  
+      // Cleanup the event listener on component unmount
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }, []);
 
     // ----------------------------------------------
     // ---------------  RENDER FUNCTIONS ------------
@@ -145,8 +166,64 @@ const Sidebar: React.FC<sidebarProps> = ({
     // ----------------------------------------------
     const aboutSelected = window.location.pathname === "/";
     const backgroundColor = aboutSelected || mouseHover ?'#c4c4c4': '#EBEBEB';
+
+
+    if (isMobileView) {
+      return (
+        <>
+          <div className='burger-menu' onClick={() => {
+              setMenuOpen(!menuOpen);
+            }}>
+              <Icon name='menu'/>
+          </div>
+          { menuOpen &&
+            <div className='navigation'>
+              <div className='navigation__about-container'
+              onMouseEnter={() => setMouseHover(true)}
+              onMouseLeave={() => setMouseHover(false)}
+              style = {{
+                backgroundColor: backgroundColor,
+                borderLeftColor: "black",
+                borderLeftStyle:'solid',
+                borderLeftWidth: aboutSelected? '2px': "0px"
+              }} 
+              >
+                <p className='navigation__about-tittle' 
+                  onClick={() => handleAboutClick()}
+                >The Library</p>
+              </div>
+              <div>
+                {showHidden && renderHide()}
+                {testRoot.postChildren?.sort((a,b) => {
+                  return sortChildren(a,b);
+                }).map((doc) => {
+                  if(doc.name !== 'index'){
+                    const processChildren = Object.keys(doc.children).map((key) => doc.children[key]);
+                    doc.postChildren = processChildren;
+                    return <ParentFolder 
+                            document={doc}
+                            selected={selected}
+                            setSelected={setSelected}
+                            maxLevel={maxLevel}
+                            setMaxLevel={setMaxLevel} 
+                            softRoot={softRoot}
+                            setSoftRoot={setSoftRoot} 
+                            lastInteracted={lastInteracted}
+                            setLastInteracted={setLastInteracted}
+                          />;
+                    }
+                  })}
+              </div>
+              {openPopUpRoot && renderPopUp()}
+            </div>
+          }
+        </>
+      )
+    }
+
     return (
-        <div className="navigation">
+      <>
+        <div className='navigation'>
           <div className='navigation__about-container'
           onMouseEnter={() => setMouseHover(true)}
           onMouseLeave={() => setMouseHover(false)}
@@ -185,6 +262,7 @@ const Sidebar: React.FC<sidebarProps> = ({
           </div>
           {openPopUpRoot && renderPopUp()}
         </div>
+      </>
     )
 
 }
