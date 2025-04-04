@@ -37,6 +37,7 @@ class Parser:
         self.insert_h1_if_missing(doc_name)
         self.insert_chip_under_title()
         self.generate_headings_map()
+        self.parse_create_doc_button()
 
     def parse_nested_lists(self):
         ol_elements = self.html.find_all(
@@ -302,6 +303,13 @@ class Parser:
         print("Metadata parsed\n\n")
         print(self.metadata)
         return self.metadata
+    
+    def parse_create_doc_button(self):
+        create_doc_button = self.html.find(lambda tag: tag and "create-doc-button" in tag.get_text(strip=True))
+        if create_doc_button:
+            create_doc_button.decompose()
+        else:
+            print("No create doc button found")
 
     def parse_links(self):
         external_path = "https://www.google.com/url?q="
