@@ -39,6 +39,13 @@
     Requires review: {{ document["metadata"]["review_date"] }}, by {{ document["metadata"]["authors"] or "Unknown" }}
   </p>
 {% endif %}
+{% if document["metadata"]["reviewer(s)"] %}
+  {% for reviewer in document["metadata"]["reviewer(s)"] %}
+    <p>
+      Requires review: {{ reviewer["date"] }}, by {{ reviewer["name"] or "Unknown" }}
+    </p>
+  {% endfor %}
+{% endif %}
 <hr />
 <a href="{{ '/clear-cache'+ document['full_path'] }}"> 
   <button class="p-button is-paper">Fetch latest changes</button>

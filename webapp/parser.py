@@ -249,18 +249,58 @@ class Parser:
 
     def parse_metadata(self):
         table = self.html.select_one("table")
+        print("Parsing metadata from table")
         self.metadata = dict()
-
+        first_row = []
+        third_row = []
         if table:
             rows = table.find_all("tr")
-            for row in rows:
+            for ind in range(len(rows)):
+                row = rows[ind]
                 columns = row.find_all("td")
-                key = columns[0].get_text(strip=True).replace(" ", "_").lower()
-                value = columns[1].get_text(strip=True)
-                self.metadata[key] = value
+                if len(columns) > 2:
+                    if(ind == 0):
+                        for col in columns:
+                            key = col.get_text(strip=True).replace(" ", "_").lower()
+                            first_row.append(key)
+                    elif (ind == 1):
+                        for icol in range(len(columns)):
+                            col = columns[icol]
+                            value = col.get_text(strip=True)
+                            print(f"key: {first_row[icol]} value: {value}")
+                            if first_row[icol] == "author(s)":
+                                if "," in value:
+                                    value = value.split(",")
+                                else:
+                                    value = [value]
+                            self.metadata[first_row[icol]] = value
+                    elif (ind == 2):
+                        for col in columns:
+                            key = col.get_text(strip=True).replace(" ", "_").lower()
+                            third_row.append(key)
+                            if key == "reviewer(s)":
+                                self.metadata[key] = []
+                    elif (ind >= 3):
+                        current_row = []
+                        for icol in range(len(columns)):
+                            col = columns[icol]
+                            value = col.get_text(strip=True)
+                            current_row.append(value)
+                        reviewer_dict = {}
+                        for i in range(len(third_row)):
+                            if third_row[i] == "reviewer(s)":
+                                reviewer_dict["name"] = current_row[i]
+                            else:
+                                reviewer_dict[third_row[i]] = current_row[i]
+                        self.metadata["reviewer(s)"].append(reviewer_dict)
+                else:
+                    key = columns[0].get_text(strip=True).replace(" ", "_").lower()
+                    value = columns[1].get_text(strip=True)
+                    self.metadata[key] = value
 
             table.decompose()
-
+        print("Metadata parsed\n\n")
+        print(self.metadata)
         return self.metadata
 
     def parse_links(self):
