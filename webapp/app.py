@@ -234,6 +234,17 @@ def changes_drive():
         doc_reference_dict=navigation_data.doc_reference_dict,
     )
 
+@app.route("/create-copy-template")
+def create_copy_template():
+    """
+    Route to create a copy of the template document.
+    """
+    google_drive = get_google_drive_instance()
+    file_id = google_drive.create_copy_template()
+    if file_id:
+        return flask.redirect("https://docs.google.com/document/d/%s/edit" % file_id)
+    else:
+        return flask.redirect("https://drive.google.com/drive/folders/1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua")
 
 @app.route("/clear-cache/<path:path>")
 def clear_cache_doc(path):

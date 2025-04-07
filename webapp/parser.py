@@ -250,7 +250,6 @@ class Parser:
 
     def parse_metadata(self):
         table = self.html.select_one("table")
-        print("Parsing metadata from table")
         self.metadata = dict()
         first_row = []
         third_row = []
@@ -268,7 +267,6 @@ class Parser:
                         for icol in range(len(columns)):
                             col = columns[icol]
                             value = col.get_text(strip=True)
-                            print(f"key: {first_row[icol]} value: {value}")
                             if first_row[icol] == "author(s)":
                                 if "," in value:
                                     value = value.split(",")
@@ -303,15 +301,14 @@ class Parser:
 
     
     def parse_create_doc_button(self):
-        create_doc_button = self.html.find(lambda tag: tag and tag.string and "create-doc-button" in tag.string)
-        if create_doc_button:
-            parent_tag = create_doc_button.parent
-            link_tag = self.html.new_tag("a", href="/create-doc")
-            new_tag = self.html.new_tag("button", **{"class": "p-button--positive"})
-            new_tag.string = "Create Document"
-            link_tag.append(new_tag)
-            parent_tag.append(link_tag)
-            create_doc_button.decompose()
+        button_sets= self.html.findAll(lambda tag: tag and tag.string and "create-doc-button" in tag.string)
+        if len(button_sets) > 0:
+            for create_doc_button in button_sets:
+                link_tag = self.html.new_tag("a", href="/create-copy-template")
+                new_tag = self.html.new_tag("button", **{"class": "p-button--positive"})
+                new_tag.string = "Create Document"
+                link_tag.append(new_tag)
+                create_doc_button.replace_with(link_tag)
 
 
     def parse_links(self):
