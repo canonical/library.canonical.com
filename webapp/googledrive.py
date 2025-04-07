@@ -13,7 +13,9 @@ from datetime import datetime, timedelta
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
-DEFAULT_DOC = os.getenv("DEFAULT_DOC", "1YxnWy94YrNnraf1OAxXfIAbL677nNjvb-AWp1TaxU9s")
+DEFAULT_DOC = os.getenv(
+    "DEFAULT_DOC", "1YxnWy94YrNnraf1OAxXfIAbL677nNjvb-AWp1TaxU9s"
+)
 DRAFT_FOLDER = os.getenv("DRAFT_FOLDER", "1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua")
 MAX_CACHE_AGE = 14
 
@@ -245,7 +247,7 @@ class GoogleDrive:
             err = "Error retrieving HTML or caching document."
             print(f"{err}\n {error}")
             abort(500, description=err)
-    
+
     def create_copy_template(self):
         try:
             file_metadata = {
@@ -255,9 +257,16 @@ class GoogleDrive:
                 "parents": [DRAFT_FOLDER],
             }
 
-            file = self.service.files().copy(
-                fileId=DEFAULT_DOC, body=file_metadata, supportsAllDrives=True, ignoreDefaultVisibility=True
-            ).execute()
+            file = (
+                self.service.files()
+                .copy(
+                    fileId=DEFAULT_DOC,
+                    body=file_metadata,
+                    supportsAllDrives=True,
+                    ignoreDefaultVisibility=True,
+                )
+                .execute()
+            )
 
             print("Template copy created successfully.")
             print(f"File ID: {file.get('id')}")

@@ -259,11 +259,15 @@ class Parser:
                 row = rows[ind]
                 columns = row.find_all("td")
                 if len(columns) > 2:
-                    if(ind == 0):
+                    if ind == 0:
                         for col in columns:
-                            key = col.get_text(strip=True).replace(" ", "_").lower()
+                            key = (
+                                col.get_text(strip=True)
+                                .replace(" ", "_")
+                                .lower()
+                            )
                             first_row.append(key)
-                    elif (ind == 1):
+                    elif ind == 1:
                         for icol in range(len(columns)):
                             col = columns[icol]
                             value = col.get_text(strip=True)
@@ -273,13 +277,17 @@ class Parser:
                                 else:
                                     value = [value]
                             self.metadata[first_row[icol]] = value
-                    elif (ind == 2):
+                    elif ind == 2:
                         for col in columns:
-                            key = col.get_text(strip=True).replace(" ", "_").lower()
+                            key = (
+                                col.get_text(strip=True)
+                                .replace(" ", "_")
+                                .lower()
+                            )
                             third_row.append(key)
                             if key == "reviewer(s)":
                                 self.metadata[key] = []
-                    elif (ind >= 3):
+                    elif ind >= 3:
                         current_row = []
                         for icol in range(len(columns)):
                             col = columns[icol]
@@ -293,23 +301,32 @@ class Parser:
                                 reviewer_dict[third_row[i]] = current_row[i]
                         self.metadata["reviewer(s)"].append(reviewer_dict)
                 else:
-                    key = columns[0].get_text(strip=True).replace(" ", "_").lower()
+                    key = (
+                        columns[0]
+                        .get_text(strip=True)
+                        .replace(" ", "_")
+                        .lower()
+                    )
                     value = columns[1].get_text(strip=True)
                     self.metadata[key] = value
 
             table.decompose()
 
-    
     def parse_create_doc_button(self):
-        button_sets= self.html.findAll(lambda tag: tag and tag.string and "create-doc-button" in tag.string)
+        button_sets = self.html.findAll(
+            lambda tag: tag
+            and tag.string
+            and "create-doc-button" in tag.string
+        )
         if len(button_sets) > 0:
             for create_doc_button in button_sets:
                 link_tag = self.html.new_tag("a", href="/create-copy-template")
-                new_tag = self.html.new_tag("button", **{"class": "p-button--positive"})
+                new_tag = self.html.new_tag(
+                    "button", **{"class": "p-button--positive"}
+                )
                 new_tag.string = "Create Document"
                 link_tag.append(new_tag)
                 create_doc_button.replace_with(link_tag)
-
 
     def parse_links(self):
         external_path = "https://www.google.com/url?q="
