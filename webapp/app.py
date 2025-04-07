@@ -241,7 +241,8 @@ def create_copy_template():
     Route to create a copy of the template document.
     """
     google_drive = get_google_drive_instance()
-    file_id = google_drive.create_copy_template()
+    name = flask.session.get("openid").get("fullname")
+    file_id = google_drive.create_copy_template(name)
     if file_id:
         return flask.redirect(
             "https://docs.google.com/document/d/%s/edit" % file_id

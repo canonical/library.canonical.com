@@ -248,10 +248,11 @@ class GoogleDrive:
             print(f"{err}\n {error}")
             abort(500, description=err)
 
-    def create_copy_template(self):
+    def create_copy_template(self, name):
         try:
             file_metadata = {
-                "name": "Template Copy",
+                "name": "Template Copy-" + name,
+                "title": "Template Copy-" + name,
                 "description": "Copy of Template Document",
                 "mimeType": "application/vnd.google-apps.document",
                 "parents": [DRAFT_FOLDER],
