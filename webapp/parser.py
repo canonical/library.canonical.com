@@ -300,16 +300,19 @@ class Parser:
                     self.metadata[key] = value
 
             table.decompose()
-        print("Metadata parsed\n\n")
-        print(self.metadata)
-        return self.metadata
+
     
     def parse_create_doc_button(self):
-        create_doc_button = self.html.find(lambda tag: tag and "create-doc-button" in tag.get_text(strip=True))
+        create_doc_button = self.html.find(lambda tag: tag and tag.string and "create-doc-button" in tag.string)
         if create_doc_button:
+            parent_tag = create_doc_button.parent
+            link_tag = self.html.new_tag("a", href="/create-doc")
+            new_tag = self.html.new_tag("button", **{"class": "p-button--positive"})
+            new_tag.string = "Create Document"
+            link_tag.append(new_tag)
+            parent_tag.append(link_tag)
             create_doc_button.decompose()
-        else:
-            print("No create doc button found")
+
 
     def parse_links(self):
         external_path = "https://www.google.com/url?q="
