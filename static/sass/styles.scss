@@ -42,7 +42,7 @@ body {
 }
 
 .l-docs__main-search {
-  padding-top: 8px;
+  padding-top: 1.25rem;
 }
 
 .l-docs__sidebar {
@@ -151,6 +151,7 @@ body {
   margin-top: 70px;
   max-width: 448px;
   padding-left: 1.5rem;
+  padding-right: 1.5rem;
 
   .l-docs__sticky-container {
     @extend .u-fixed-width;
