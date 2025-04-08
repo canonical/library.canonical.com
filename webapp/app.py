@@ -19,6 +19,9 @@ from flask_caching import Cache
 ROOT = os.getenv("ROOT_FOLDER", "library")
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
+DRAFTS_URL = (
+    "https://drive.google.com/drive/folders/1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua"
+)
 
 
 app = FlaskBase(
@@ -247,9 +250,7 @@ def create_copy_template():
             "https://docs.google.com/document/d/%s/edit" % file_id
         )
     else:
-        return flask.redirect(
-            "https://drive.google.com/drive/folders/1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua"
-        )
+        return flask.redirect(DRAFTS_URL)
 
 
 @app.route("/clear-cache/")
