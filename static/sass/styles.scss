@@ -162,9 +162,13 @@ body {
     }
   }
 }
+.l-docs__footer {
+  background-color: rgb(243, 243, 243);
+}
+
 
 .l-docs__footer-message {
-  border-color: $color-caution;
+  color: $color-caution;
   border-left: 2px;
   border-left-style: solid;
   display: flex;
