@@ -23,7 +23,7 @@
     </div>
   </div>
 </footer>
-<footer class="p-strip is-dark u-no-padding" style="position: fixed; bottom: 0;">
+<footer class="p-strip is-dark u-no-padding" style="position: fixed; bottom: 0; width:100vw; border-left: 3px solid #cc7900;">
     <div class="l-docs__footer-message">
       <div class="p-notification--caution is-borderless u-no-margin" style="width: 70%;">
           <p class="u-no-margin" id="work_library">The library is still a work in progress.
@@ -51,11 +51,8 @@
           }
       }
 
-      // Run the function on page load
-      updateTrackerText();
       updateLibraryText();
       // Add an event listener to handle window resize
-      window.addEventListener('resize', updateTrackerText);
       window.addEventListener('resize', updateLibraryText);
   </script>
 </footer>

@@ -164,13 +164,12 @@ body {
 }
 .l-docs__footer {
   background-color: rgb(243, 243, 243);
+  border-top: 1px $color-mid-light;
+  border-top-style: solid;
 }
 
 
 .l-docs__footer-message {
-  color: $color-caution;
-  border-left: 2px;
-  border-left-style: solid;
   display: flex;
   flex-flow: row;
   padding-bottom: 0.7rem;
