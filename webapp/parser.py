@@ -254,11 +254,8 @@ class Parser:
         first_row = []
         third_row = []
         if table:
-            print("Found metadata table")
             rows = table.find_all("tr")
-            print(f"Found {len(rows)} rows")
             for ind in range(len(rows)):
-                print(f"Processing row {ind}")
                 row = rows[ind]
                 columns = row.find_all("td")
                 if len(columns) > 2:
@@ -311,10 +308,11 @@ class Parser:
                         .lower()
                     )
                     value = columns[1].get_text(strip=True)
-                    print(f"key: {key} value: {value}")
                     self.metadata[key] = value
 
             table.decompose()
+
+            return self.metadata
 
     def parse_create_doc_button(self):
         button_sets = self.html.findAll(
