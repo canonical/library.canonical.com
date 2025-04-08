@@ -198,6 +198,7 @@ class TestParser(unittest.TestCase):
         self.soup.body.append(table_tag)
 
         metadata = self.parser.parse_metadata()
+        print(metadata)
 
         expected_metadata = {"author": "John Doe"}
         self.assertEqual(
