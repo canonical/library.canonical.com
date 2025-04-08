@@ -1,17 +1,51 @@
 <footer class="p-strip is-dark u-no-padding" style="position: fixed; bottom: 0;">
     <div class="l-docs__footer-message">
       <div class="p-notification--caution is-borderless u-no-margin" style="width: 70%;">
-          <p class="u-no-margin">The library is still a work in progress.
-            <a href="/the-library">Learn how to contribute to the library</a>.
+          <p class="u-no-margin" id="work_library">The library is still a work in progress.
+            <a href="/the-library" >Learn how to contribute to the library</a>.
           </p>
       </div>
       <div class="p-footer__revoke">
-        <a href="" class="js-revoke-cookie-manager">Manage your tracker settings</a>
+        <a href="" class="js-revoke-cookie-manager" id="tracker-link">Manage your Tracker settings</a>
       </div>
       <a href="https://github.com/canonical/library.canonical.com/issues/new?template=Blank+issue">
-        <button class="p-button is-dark u-no-margin--bottom has-icon" style="position:fixed; right: 0; margin-right: 20px;"><i class="p-icon--submit-bug is-dark"></i><span>Report a bug</span></button>
+        <button class="p-button is-dark u-no-margin--bottom has-icon" style="position:fixed; right: 0; margin-right: 20px;"><i class="p-icon--submit-bug is-dark"></i><span id="button-Text">Report a bug</span></button>
       </a>
     </div>
     </div>
+    <script>
+      // Function to update the tracker text based on screen size
+      function updateTrackerText() {
+          const trackerLink = document.getElementById('tracker-link');
+          if (window.innerWidth <= 1289 && window.innerWidth > 1035) {
+              trackerLink.textContent = 'Tracker settings';
+          } else if (window.innerWidth <= 1035) {
+              trackerLink.textContent = 'Tracker';
+          } else {
+              trackerLink.textContent = 'Manage your Tracker settings';
+          }
+      }
+      function updateLibraryText() {
+          const library = document.getElementById('work_library');
+          const button = document.getElementById('button-Text');
+          if (window.innerWidth <= 528){
+            library.innerHTML = 'Work in progress.';
+            button.innerText = "Report"
+          } else if(window.innerWidth <= 821) {
+            library.innerHTML = 'Work in progress. <a href="/the-library">How to Contribute</a>.';
+            button.innerText = "Report"
+          } else {
+            library.innerHTML = 'The library is still a work in progress. <a href="/the-library">Learn how to contribute to the library</a>.';
+            button.innerText = "Report a bug"
+          }
+      }
+
+      // Run the function on page load
+      updateTrackerText();
+      updateLibraryText();
+      // Add an event listener to handle window resize
+      window.addEventListener('resize', updateTrackerText);
+      window.addEventListener('resize', updateLibraryText);
+  </script>
 </footer>
 <script src="/static/js/build/main.js"></script>

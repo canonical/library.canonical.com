@@ -8,7 +8,6 @@
 .sidenav {
   display: flex;
   flex-direction: column;
-  align-items: right;
   width: 100%;
-  min-height: 100vh;
+  height: inherit;
 }
