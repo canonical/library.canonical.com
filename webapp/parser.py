@@ -39,7 +39,6 @@ class Parser:
         self.clean_comments()
         self.generate_headings_map()
         self.parse_create_doc_button()
-        
 
     def parse_nested_lists(self):
 
