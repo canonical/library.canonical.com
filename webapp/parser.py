@@ -36,9 +36,12 @@ class Parser:
         self.remove_head()
         self.insert_h1_if_missing(doc_name)
         self.insert_chip_under_title()
+        self.clean_comments()
         self.generate_headings_map()
+        self.parse_create_doc_button()
 
     def parse_nested_lists(self):
+
         ol_elements = self.html.find_all(
             "ol", class_=lambda x: x and x.startswith("lst-kix")
         )
@@ -250,18 +253,84 @@ class Parser:
     def parse_metadata(self):
         table = self.html.select_one("table")
         self.metadata = dict()
-
+        first_row = []
+        third_row = []
         if table:
             rows = table.find_all("tr")
-            for row in rows:
+            for ind in range(len(rows)):
+                row = rows[ind]
                 columns = row.find_all("td")
-                key = columns[0].get_text(strip=True).replace(" ", "_").lower()
-                value = columns[1].get_text(strip=True)
-                self.metadata[key] = value
+                if len(columns) > 2:
+                    if ind == 0:
+                        for col in columns:
+                            key = (
+                                col.get_text(strip=True)
+                                .replace(" ", "_")
+                                .lower()
+                            )
+                            first_row.append(key)
+                    elif ind == 1:
+                        for icol in range(len(columns)):
+                            col = columns[icol]
+                            value = col.get_text(strip=True)
+                            if first_row[icol] == "author(s)":
+                                if "," in value:
+                                    value = value.split(",")
+                                else:
+                                    value = [value]
+                            self.metadata[first_row[icol]] = value
+                    elif ind == 2:
+                        for col in columns:
+                            key = (
+                                col.get_text(strip=True)
+                                .replace(" ", "_")
+                                .lower()
+                            )
+                            third_row.append(key)
+                            if key == "reviewer(s)":
+                                self.metadata[key] = []
+                    elif ind >= 3:
+                        current_row = []
+                        for icol in range(len(columns)):
+                            col = columns[icol]
+                            value = col.get_text(strip=True)
+                            current_row.append(value)
+                        reviewer_dict = {}
+                        for i in range(len(third_row)):
+                            if third_row[i] == "reviewer(s)":
+                                reviewer_dict["name"] = current_row[i]
+                            else:
+                                reviewer_dict[third_row[i]] = current_row[i]
+                        self.metadata["reviewer(s)"].append(reviewer_dict)
+                else:
+                    key = (
+                        columns[0]
+                        .get_text(strip=True)
+                        .replace(" ", "_")
+                        .lower()
+                    )
+                    value = columns[1].get_text(strip=True)
+                    self.metadata[key] = value
 
             table.decompose()
 
-        return self.metadata
+            return self.metadata
+
+    def parse_create_doc_button(self):
+        button_sets = self.html.findAll(
+            lambda tag: tag
+            and tag.string
+            and "create-doc-button" in tag.string
+        )
+        if len(button_sets) > 0:
+            for create_doc_button in button_sets:
+                link_tag = self.html.new_tag("a", href="/create-copy-template")
+                new_tag = self.html.new_tag(
+                    "button", **{"class": "p-button--positive"}
+                )
+                new_tag.string = "Create Document"
+                link_tag.append(new_tag)
+                create_doc_button.replace_with(link_tag)
 
     def parse_links(self):
         external_path = "https://www.google.com/url?q="
@@ -362,3 +431,16 @@ class Parser:
             id_suffix = id_suffix + 1
 
         return self.headings_map
+
+    def clean_comments(self):
+        print(self.html)
+        comments = self.html.find_all(
+            "a", href=lambda href: href and "#cmnt" in href
+        )
+        for comment in comments:
+            parent = comment.parent
+            if parent.name == "sup":
+                parent.decompose()
+            if parent.name == "p":
+                container = parent.parent
+                container.decompose()
