@@ -36,9 +36,10 @@ class Parser:
         self.remove_head()
         self.insert_h1_if_missing(doc_name)
         self.insert_chip_under_title()
+        self.clean_comments()
         self.generate_headings_map()
         self.parse_create_doc_button()
-        self.clean_comments()
+        
 
     def parse_nested_lists(self):
 
