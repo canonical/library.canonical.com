@@ -38,8 +38,10 @@ class Parser:
         self.insert_chip_under_title()
         self.generate_headings_map()
         self.parse_create_doc_button()
+        self.clean_comments()
 
     def parse_nested_lists(self):
+
         ol_elements = self.html.find_all(
             "ol", class_=lambda x: x and x.startswith("lst-kix")
         )
@@ -429,3 +431,16 @@ class Parser:
             id_suffix = id_suffix + 1
 
         return self.headings_map
+
+    def clean_comments(self):
+        print(self.html)
+        comments = self.html.find_all(
+            "a", href=lambda href: href and "#cmnt" in href
+        )
+        for comment in comments:
+            parent = comment.parent
+            if parent.name == "sup":
+                parent.decompose()
+            if parent.name == "p":
+                container = parent.parent
+                container.decompose()
