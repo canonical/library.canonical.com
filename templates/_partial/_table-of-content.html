@@ -4,7 +4,7 @@
       <h2 class="p-table-of-contents__header">On this page</h2>
       <nav class="p-table-of-contents__nav" aria-label="Table of contents">
         {% set ns = namespace(parent_active=False) %}
-        <ul class="p-table-of-contents__list" style="padding-bottom: 16px;">
+        <ul class="p-table-of-contents__list" style="padding-bottom: 1rem;">
           {% for heading in document["headings_map"] %}
             {% if heading.level == 2 %}
               {% if ns.parent_active %}
@@ -35,7 +35,7 @@
   <a href="https://docs.google.com/document/d/{{ document['id'] }}">Make/Suggest changes&nbsp;&rsaquo;</a>
 </p>
 {% if document["metadata"]["review_date"] %}
-  <p class="p-table-of-contents__item u-no-padding" style="margin-bottom: 16px;">
+  <p class="p-table-of-contents__item u-no-padding" style="margin-bottom: 1rem;">
     Requires review: {{ document["metadata"]["review_date"] }}, by {{ document["metadata"]["authors"] or "Unknown" }}
   </p>
 {% endif %}

@@ -42,7 +42,7 @@ body {
 }
 
 .l-docs__main-search {
-  padding-top: 1.25rem;
+  padding-top: 1.5rem;
 }
 
 .l-docs__sidebar {
@@ -142,6 +142,10 @@ body {
     margin: 1rem 0;
     width: calc(100% - 1.5rem);
   }
+}
+
+.l-docs__subgrid {
+  grid-template-columns: 21rem minmax(0,1fr) 21rem !important
 }
 
 .l-docs__meta {
