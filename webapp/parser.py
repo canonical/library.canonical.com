@@ -384,7 +384,7 @@ class Parser:
                     if type == "how-to":
                         tag = self.html.new_tag(
                             "div",
-                            attrs={"class": "p-chip--information u-no-margin"},
+                            attrs={"class": "p-chip--information"},
                         )
                         tag.string = type
                     elif type == "Explanation":
@@ -394,13 +394,13 @@ class Parser:
                         tag["style"] = "color:inherit"
                         inner_tag = self.html.new_tag(
                             "div",
-                            attrs={"class": "p-chip--caution u-no-margin"},
+                            attrs={"class": "p-chip--caution"},
                         )
                         inner_tag.string = type
                         tag.append(inner_tag)
                     else:
                         tag = self.html.new_tag(
-                            "div", attrs={"class": "p-chip u-no-margin"}
+                            "div", attrs={"class": "p-chip"}
                         )
                         tag.string = type
                     title.insert_after(tag)

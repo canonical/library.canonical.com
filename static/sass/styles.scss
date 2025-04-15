@@ -42,7 +42,7 @@ body {
 }
 
 .l-docs__main-search {
-  padding-top: 8px;
+  padding-top: 1.5rem;
 }
 
 .l-docs__sidebar {
@@ -144,6 +144,10 @@ body {
   }
 }
 
+.l-docs__subgrid {
+  grid-template-columns: 21rem minmax(0, 1fr) 21rem !important;
+}
+
 .l-docs__meta {
   border-left: $color-mid-light;
   border-style: solid;
@@ -151,6 +155,7 @@ body {
   margin-top: 70px;
   max-width: 448px;
   padding-left: 1.5rem;
+  padding-right: 1.5rem;
 
   .l-docs__sticky-container {
     @extend .u-fixed-width;
@@ -162,10 +167,13 @@ body {
   }
 }
 
+.l-docs__footer {
+  background-color: #f3f3f3;
+  border-top: 1px $color-mid-light;
+  border-top-style: solid;
+}
+
 .l-docs__footer-message {
-  border-color: $color-caution;
-  border-left: 2px;
-  border-left-style: solid;
   display: flex;
   flex-flow: row;
   padding-bottom: 0.7rem;
