@@ -13,7 +13,7 @@
             <a href="" class="js-revoke-cookie-manager">Manage your tracker settings</a>
           </li>
           <li class="p-inline-list__item">
-              <a class="p-footer__link" href="https://github.com/canonical/library.canonical.com/issues/new">Report a bug on this site</a>
+              <a class="p-footer__link" href="https://warthogs.atlassian.net/jira/software/c/projects/LIB/form/100">Report a bug or feature suggestion</a>
           </li>
           </ul>
           <span class="u-off-screen">
@@ -23,37 +23,5 @@
     </div>
   </div>
 </footer>
-<footer class="p-strip is-dark u-no-padding" style="position: fixed; bottom: 0; width:100vw; border-left: 3px solid #cc7900;">
-    <div class="l-docs__footer-message">
-      <div class="p-notification--caution is-borderless u-no-margin" style="width: 70%;">
-          <p class="u-no-margin" id="work_library">The library is still a work in progress.
-            <a href="/the-library" >Learn how to contribute to the library</a>.
-          </p>
-      </div>
-      <a href="https://github.com/canonical/library.canonical.com/issues/new?template=Blank+issue">
-        <button class="p-button is-dark u-no-margin--bottom has-icon" style="position:fixed; right: 0; margin-right: 20px;"><i class="p-icon--submit-bug is-dark"></i><span id="button-Text">Report a bug</span></button>
-      </a>
-    </div>
-    </div>
-    <script>
-      function updateLibraryText() {
-          const library = document.getElementById('work_library');
-          const button = document.getElementById('button-Text');
-          if (window.innerWidth <= 528){
-            library.innerHTML = 'Work in progress.';
-            button.innerText = "Report"
-          } else if(window.innerWidth <= 821) {
-            library.innerHTML = 'Work in progress. <a href="/the-library">How to Contribute</a>.';
-            button.innerText = "Report"
-          } else {
-            library.innerHTML = 'The library is still a work in progress. <a href="/the-library">Learn how to contribute to the library</a>.';
-            button.innerText = "Report a bug"
-          }
-      }
 
-      updateLibraryText();
-      // Add an event listener to handle window resize
-      window.addEventListener('resize', updateLibraryText);
-  </script>
-</footer>
 <script src="/static/js/build/main.js"></script>
