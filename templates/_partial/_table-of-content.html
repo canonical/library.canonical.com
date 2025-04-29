@@ -42,7 +42,7 @@
 {% if document["metadata"]["reviewer(s)"] %}
   {% for reviewer in document["metadata"]["reviewer(s)"] %}
     <p>
-      Requires review: {{ reviewer["date"] }}, by {{ reviewer["name"] or "Unknown" }}
+      Requires review: {{ document['metadata']['next_review_date'] }}, by {{ reviewer["name"] or "Unknown" }}
     </p>
   {% endfor %}
 {% endif %}
