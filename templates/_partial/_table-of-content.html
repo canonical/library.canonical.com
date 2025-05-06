@@ -40,11 +40,10 @@
   </p>
 {% endif %}
 {% if document["metadata"]["reviewer(s)"] %}
-  {% for reviewer in document["metadata"]["reviewer(s)"] %}
-    <p>
-      Requires review: {{ document['metadata']['next_review_date'] }}, by {{ reviewer["name"] or "Unknown" }}
-    </p>
-  {% endfor %}
+<p>
+  Requires review: {{ document['metadata']['next_review_date'] }}, by 
+  {{ document["metadata"]["reviewer(s)"] | map(attribute="name") | join(", ") or "Unknown" }}
+</p>
 {% endif %}
 <hr />
 <a href="{{ '/clear-cache'+ document['full_path'] }}"> 
