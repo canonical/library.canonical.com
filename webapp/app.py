@@ -188,6 +188,19 @@ def get_target_document(path, navigation):
     raise ValueError(f"Document for path '{path}' not found.")
 
 
+@app.route("/refresh-navigation")
+def refresh_navigation():
+    new_path = ""
+    cache_key = "view//%s" % new_path
+
+    print("Cache Key", cache_key)
+    if cache.delete(cache_key):  # Delete the cache entry
+        print(f"Cache for '{new_path}' has been cleared.", 200)
+    session.pop("navigation_data_cached", None)
+    cache.delete("navigation")
+    return flask.redirect("/")
+
+
 @app.route("/search")
 def search_drive():
     """
