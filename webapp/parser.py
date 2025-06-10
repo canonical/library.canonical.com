@@ -252,68 +252,137 @@ class Parser:
 
     def parse_metadata(self):
         table = self.html.select_one("table")
+
         self.metadata = dict()
         first_row = []
         third_row = []
         if table:
             rows = table.find_all("tr")
-            for ind in range(len(rows)):
-                row = rows[ind]
-                columns = row.find_all("td")
-                if len(columns) > 2:
-                    if ind == 0:
+            columns_row0 = len(rows[0].find_all("td"))
+            if columns_row0 == 1:
+                # this works for metadata version 3
+                page = []
+                documentation = []
+                reviewers = []
+                for ind in range(len(rows)):
+                    row = rows[ind]
+                    columns = row.find_all("td")
+                    if ind == 1:
                         for col in columns:
                             key = (
                                 col.get_text(strip=True)
                                 .replace(" ", "_")
                                 .lower()
                             )
-                            first_row.append(key)
-                    elif ind == 1:
+                            page.append(key)
+                    elif ind == 2:
                         for icol in range(len(columns)):
                             col = columns[icol]
                             value = col.get_text(strip=True)
-                            if first_row[icol] == "author(s)":
+                            if page[icol] == "owner(s)":
                                 if "," in value:
                                     value = value.split(",")
                                 else:
                                     value = [value]
-                            self.metadata[first_row[icol]] = value
-                    elif ind == 2:
+                            self.metadata[page[icol]] = value
+                    elif ind == 4:
                         for col in columns:
                             key = (
                                 col.get_text(strip=True)
                                 .replace(" ", "_")
                                 .lower()
                             )
-                            third_row.append(key)
+                            documentation.append(key)
+                    elif ind == 5:
+                        for icol in range(len(columns)):
+                            col = columns[icol]
+                            value = col.get_text(strip=True)
+                            self.metadata[documentation[icol]] = value
+                    elif ind == 7:
+                        for col in columns:
+                            key = (
+                                col.get_text(strip=True)
+                                .replace(" ", "_")
+                                .lower()
+                            )
+                            reviewers.append(key)
                             if key == "reviewer(s)":
                                 self.metadata[key] = []
-                    elif ind >= 3:
+                    elif ind >= 8:
                         current_row = []
                         for icol in range(len(columns)):
                             col = columns[icol]
                             value = col.get_text(strip=True)
                             current_row.append(value)
                         reviewer_dict = {}
-                        for i in range(len(third_row)):
-                            if third_row[i] == "reviewer(s)":
+                        for i in range(len(reviewers)):
+                            if reviewers[i] == "reviewer(s)":
                                 reviewer_dict["name"] = current_row[i]
                             else:
-                                reviewer_dict[third_row[i]] = current_row[i]
+                                reviewer_dict[reviewers[i]] = current_row[i]
                         self.metadata["reviewer(s)"].append(reviewer_dict)
-                else:
-                    key = (
-                        columns[0]
-                        .get_text(strip=True)
-                        .replace(" ", "_")
-                        .lower()
-                    )
-                    value = columns[1].get_text(strip=True)
-                    self.metadata[key] = value
+            else:
+                # This works for metadata version 1 and 2
+                for ind in range(len(rows)):
+                    row = rows[ind]
+                    columns = row.find_all("td")
+                    if len(columns) > 2:
+                        if ind == 0:
+                            for col in columns:
+                                key = (
+                                    col.get_text(strip=True)
+                                    .replace(" ", "_")
+                                    .lower()
+                                )
+                                first_row.append(key)
+                        elif ind == 1:
+                            for icol in range(len(columns)):
+                                col = columns[icol]
+                                value = col.get_text(strip=True)
+                                if first_row[icol] == "author(s)":
+                                    if "," in value:
+                                        value = value.split(",")
+                                    else:
+                                        value = [value]
+                                self.metadata[first_row[icol]] = value
+                        elif ind == 2:
+                            for col in columns:
+                                key = (
+                                    col.get_text(strip=True)
+                                    .replace(" ", "_")
+                                    .lower()
+                                )
+                                third_row.append(key)
+                                if key == "reviewer(s)":
+                                    self.metadata[key] = []
+                        elif ind >= 3:
+                            current_row = []
+                            for icol in range(len(columns)):
+                                col = columns[icol]
+                                value = col.get_text(strip=True)
+                                current_row.append(value)
+                            reviewer_dict = {}
+                            for i in range(len(third_row)):
+                                if third_row[i] == "reviewer(s)":
+                                    reviewer_dict["name"] = current_row[i]
+                                else:
+                                    reviewer_dict[third_row[i]] = current_row[
+                                        i
+                                    ]
+                            self.metadata["reviewer(s)"].append(reviewer_dict)
+                    else:
+                        key = (
+                            columns[0]
+                            .get_text(strip=True)
+                            .replace(" ", "_")
+                            .lower()
+                        )
+                        value = columns[1].get_text(strip=True)
+                        self.metadata[key] = value
 
             table.decompose()
-
+            print("Metadata parsed successfully")
+            print(self.metadata)
             return self.metadata
 
     def parse_create_doc_button(self):
@@ -433,7 +502,6 @@ class Parser:
         return self.headings_map
 
     def clean_comments(self):
-        print(self.html)
         comments = self.html.find_all(
             "a", href=lambda href: href and "#cmnt" in href
         )

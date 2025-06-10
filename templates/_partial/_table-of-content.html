@@ -36,13 +36,19 @@
 </p>
 {% if document["metadata"]["review_date"] %}
   <p class="p-table-of-contents__item u-no-padding" style="margin-bottom: 1rem;">
-    Requires review: {{ document["metadata"]["review_date"] }}, by {{ document["metadata"]["authors"] or "Unknown" }}
+    Latest review: {{ document["metadata"]["review_date"] }}, by {{ document["metadata"]["authors"] or "Unknown" }}
   </p>
 {% endif %}
-{% if document["metadata"]["reviewer(s)"] %}
+{% if document["metadata"]["page_status"] %}
+<p>
+  Requires review: {{ document['metadata']['next_planned_review'] }}, by 
+  {{ document["metadata"]["owner(s)"]| join(", ") or "Unknown" }}
+</p>
+{% endif %}
+{% if document["metadata"]["author(s)"] %}
 <p>
   Requires review: {{ document['metadata']['next_review_date'] }}, by 
-  {{ document["metadata"]["reviewer(s)"] | map(attribute="name") | join(", ") or "Unknown" }}
+  {{ document["metadata"]["author(s)"]| join(", ") or "Unknown" }}
 </p>
 {% endif %}
 <hr />
