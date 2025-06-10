@@ -381,8 +381,6 @@ class Parser:
                         self.metadata[key] = value
 
             table.decompose()
-            print("Metadata parsed successfully")
-            print(self.metadata)
             return self.metadata
 
     def parse_create_doc_button(self):
