@@ -2,6 +2,7 @@ import os
 import flask
 import redis
 from apscheduler.schedulers.background import BackgroundScheduler
+import dotenv
 
 # import talisker
 from flask import request, g, session
@@ -14,6 +15,9 @@ from webapp.sso import init_sso
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 
+
+dotenv.load_dotenv(".env")
+dotenv.load_dotenv(".env.local", override=True)
 
 # Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")

@@ -36,7 +36,8 @@ class TestRoutes(unittest.TestCase):
         When given the index URL,
         we should return a 200 status code
         """
-        response = self.app.get("https://library.canonical.com/")
+        response = self.app.get("/")
+        print(response)
         self.assertEqual(response.status_code, 200)
 
     def test_not_found(self):
