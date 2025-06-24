@@ -306,8 +306,8 @@ class Parser:
                                 .lower()
                             )
                             reviewers.append(key)
-                            if key == "reviewer(s)":
-                                self.metadata[key] = []
+                            if key == "reviewer(s)" or key == "reviewer":
+                                self.metadata["reviewer(s)"] = []
                     elif ind >= 8:
                         current_row = []
                         for icol in range(len(columns)):
@@ -316,10 +316,14 @@ class Parser:
                             current_row.append(value)
                         reviewer_dict = {}
                         for i in range(len(reviewers)):
-                            if reviewers[i] == "reviewer(s)":
+                            if (
+                                reviewers[i] == "reviewer(s)"
+                                or reviewers[i] == "reviewer"
+                            ):
                                 reviewer_dict["name"] = current_row[i]
                             else:
                                 reviewer_dict[reviewers[i]] = current_row[i]
+
                         self.metadata["reviewer(s)"].append(reviewer_dict)
             else:
                 # This works for metadata version 1 and 2
