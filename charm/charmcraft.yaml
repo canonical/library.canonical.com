@@ -23,7 +23,7 @@ extensions:
 # Uncomment the integrations used by your application
 # Integrations set to "optional: false" will block the charm
 # until the applications are integrated.
-# requires:
+requires:
 #   mysql:
 #     interface: mysql_client
 #     optional: false
@@ -36,10 +36,10 @@ extensions:
 #     interface: mongodb_client
 #     optional: false
 #     limit: 1
-#   redis:
-#     interface: redis
-#     optional: false
-#     limit: 1
+  redis:
+    interface: redis
+    optional: false
+    limit: 1
 #   s3:
 #     interface: s3
 #     optional: false

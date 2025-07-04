@@ -44,7 +44,16 @@ app = FlaskBase(
 init_sso(app)
 
 # Initialize caching
-cache = Cache(app, config={"CACHE_TYPE": "simple"})
+if "CACHE_REDIS_HOST" in os.environ:
+    cache = Cache(app, config={
+    "CACHE_TYPE": "RedisCache",
+    "CACHE_REDIS_HOST": os.getenv("REDIS_DB_HOST", "localhost"),  # or your Redis server address
+    "CACHE_REDIS_PORT": os.getenv("REDIS_DB_PORT", 6379),  # default Redis port
+    "CACHE_REDIS_DB": os.getenv("REDIS_DB_NAME", 0),  # default Redis DB # optional, overrides host/port/db
+    })
+else:
+    cache = Cache(app, config={"CACHE_TYPE": "simple"})
+
 cache.init_app(app)
 
 
