@@ -16,3 +16,5 @@ Flask-Caching==2.3.0
 redis==5.2.1
 APScheduler==3.9.1.post1
 python-dotenv
+psycopg2-binary==2.9.9
+flask_sqlalchemy==3.1.1

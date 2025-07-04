@@ -14,7 +14,8 @@ from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
-
+from flask_sqlalchemy import SQLAlchemy
+from webapp.models import Document # PENDING CHECK if NEEDED
 
 dotenv.load_dotenv(".env")
 dotenv.load_dotenv(".env.local", override=True)
@@ -42,6 +43,19 @@ app = FlaskBase(
 # It is used to manage error logging
 # session = talisker.requests.get_session()
 init_sso(app)
+
+if "POSTGRES_DB_HOST" in os.environ:
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        "postgresql://%s:%s@%s:%s/%s"
+        % (
+            os.getenv("POSTGRES_DB_USER", "postgres"),
+            os.getenv("POSTGRES_DB_PASSWORD", "password"),
+            os.getenv("POSTGRES_DB_HOST", "localhost"),
+            os.getenv("POSTGRES_DB_PORT", 5432),
+            os.getenv("POSTGRES_DB_NAME", "library"),
+        )
+    )
+    db = SQLAlchemy(app)
 
 # Initialize caching
 if "CACHE_REDIS_HOST" in os.environ:
