@@ -53,7 +53,7 @@ if "POSTGRES_DB_HOST" in os.environ:
         os.getenv("POSTGRES_DB_NAME", "library"),
     )
     db.init_app(app)
-    from webapp.models import Document # noqa: F401  # needed for db.create_all()
+    from webapp.models import Document  # noqa: F401 needed for db.create_all()
 
     with app.app_context():
         db.create_all()
