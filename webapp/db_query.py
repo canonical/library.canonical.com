@@ -1,5 +1,3 @@
-from sqlalchemy.exc import OperationalError
-from webapp.models import Document
 import os
 
 USE_DB = "POSTGRES_DB_HOST" in os.environ
