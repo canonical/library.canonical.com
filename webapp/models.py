@@ -1,6 +1,7 @@
 from webapp.app import db
 from sqlalchemy.dialects.postgresql import JSON
 
+
 class Document(db.Model):
     __tablename__ = "documents"
 
@@ -8,6 +9,7 @@ class Document(db.Model):
     doc_id = db.Column(db.String, unique=True, nullable=False)
     metadata = db.Column(JSON, nullable=False)
     parsed_html = db.Column(db.Text, nullable=False)
+    headings_map = db.Column(JSON, nullable=True)  # <-- Add this line
 
     def __repr__(self):
         return f"<Document doc_id={self.doc_id}>"

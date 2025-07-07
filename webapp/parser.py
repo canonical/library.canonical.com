@@ -12,12 +12,26 @@ ROOT = os.getenv("ROOT_FOLDER", "library")
 
 class Parser:
     def __init__(
-        self, google_drive: GoogleDrive, doc_id: str, doc_dict, doc_name: str
+        self,
+        google_drive: GoogleDrive,
+        doc_id: str,
+        doc_dict,
+        doc_name: str,
+        html_string: str = None,
+        metadata=None,
+        headings_map=None,
     ):
         self.doc_id = doc_id
         self.doc_dict = doc_dict
-        self.html = self.get_html(google_drive)
-        self.process_html(doc_name)
+        if html_string is not None:
+            # Use provided HTML (from DB)
+            self.html = BeautifulSoup(html_string, features="lxml")
+            self.metadata = metadata or {}
+            self.headings_map = headings_map or []
+        else:
+            # Fetch from Google Drive
+            self.html = self.get_html(google_drive)
+            self.process_html(doc_name)
 
     def get_html(self, google_drive: GoogleDrive):
         raw_html = google_drive.fetch_document(self.doc_id)
