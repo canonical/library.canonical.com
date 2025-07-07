@@ -15,7 +15,6 @@ from webapp.sso import init_sso
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 from flask_sqlalchemy import SQLAlchemy
-from webapp.models import Document # PENDING CHECK if NEEDED
 
 dotenv.load_dotenv(".env")
 dotenv.load_dotenv(".env.local", override=True)
@@ -45,6 +44,7 @@ app = FlaskBase(
 init_sso(app)
 
 if "POSTGRES_DB_HOST" in os.environ:
+    print("\n\nUsing PostgreSQL database\n\n")
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         "postgresql://%s:%s@%s:%s/%s"
         % (
@@ -56,9 +56,14 @@ if "POSTGRES_DB_HOST" in os.environ:
         )
     )
     db = SQLAlchemy(app)
+    from webapp.models import Document
+
+    with app.app_context():
+        db.create_all()
 
 # Initialize caching
 if "CACHE_REDIS_HOST" in os.environ:
+    print("\n\nUsing Redis cache\n\n")
     cache = Cache(app, config={
     "CACHE_TYPE": "RedisCache",
     "CACHE_REDIS_HOST": os.getenv("REDIS_DB_HOST", "localhost"),  # or your Redis server address
