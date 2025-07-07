@@ -14,7 +14,7 @@ from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
-from flask_sqlalchemy import SQLAlchemy
+from webapp.db import db
 
 dotenv.load_dotenv(".env")
 dotenv.load_dotenv(".env.local", override=True)
@@ -52,7 +52,7 @@ if "POSTGRES_DB_HOST" in os.environ:
         os.getenv("POSTGRES_DB_PORT", 5432),
         os.getenv("POSTGRES_DB_NAME", "library"),
     )
-    db = SQLAlchemy(app)
+    db.init_app(app)
     from webapp.models import Document
 
     with app.app_context():

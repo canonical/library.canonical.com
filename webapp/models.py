@@ -1,4 +1,4 @@
-from webapp.app import db
+from webapp.db import db
 from sqlalchemy.dialects.postgresql import JSON
 
 
@@ -7,7 +7,7 @@ class Document(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     doc_id = db.Column(db.String, unique=True, nullable=False)
-    metadata = db.Column(JSON, nullable=False)
+    doc_metadata = db.Column(JSON, nullable=False)
     parsed_html = db.Column(db.Text, nullable=False)
     headings_map = db.Column(JSON, nullable=True)  # <-- Add this line
 
