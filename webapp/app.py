@@ -8,13 +8,13 @@ import dotenv
 from flask import request, g, session
 from canonicalwebteam.flask_base.app import FlaskBase
 
+from webapp.db_query import get_or_parse_document
 from webapp.googledrive import GoogleDrive
-from webapp.parser import Parser
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
-
+from webapp.db import db
 
 dotenv.load_dotenv(".env")
 dotenv.load_dotenv(".env.local", override=True)
@@ -43,8 +43,42 @@ app = FlaskBase(
 # session = talisker.requests.get_session()
 init_sso(app)
 
+if "POSTGRES_DB_HOST" in os.environ:
+    print("\n\nUsing PostgreSQL database\n\n")
+    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://%s:%s@%s:%s/%s" % (
+        os.getenv("POSTGRES_DB_USER", "postgres"),
+        os.getenv("POSTGRES_DB_PASSWORD", "password"),
+        os.getenv("POSTGRES_DB_HOST", "localhost"),
+        os.getenv("POSTGRES_DB_PORT", 5432),
+        os.getenv("POSTGRES_DB_NAME", "library"),
+    )
+    db.init_app(app)
+    from webapp.models import Document  # noqa: F401 needed for db.create_all()
+
+    with app.app_context():
+        db.create_all()
+
 # Initialize caching
-cache = Cache(app, config={"CACHE_TYPE": "simple"})
+if "CACHE_REDIS_HOST" in os.environ:
+    print("\n\nUsing Redis cache\n\n")
+    cache = Cache(
+        app,
+        config={
+            "CACHE_TYPE": "RedisCache",
+            "CACHE_REDIS_HOST": os.getenv(
+                "REDIS_DB_HOST", "localhost"
+            ),  # or your Redis server address
+            "CACHE_REDIS_PORT": os.getenv(
+                "REDIS_DB_PORT", 6379
+            ),  # default Redis port
+            "CACHE_REDIS_DB": os.getenv(
+                "REDIS_DB_NAME", 0
+            ),  # default Redis DB # optional, overrides host/port/db
+        },
+    )
+else:
+    cache = Cache(app, config={"CACHE_TYPE": "simple"})
+
 cache.init_app(app)
 
 
@@ -322,7 +356,7 @@ def document(path=None):
             err = "Error, document does not exist."
             flask.abort(404, description=err)
 
-    soup = Parser(
+    soup = get_or_parse_document(
         get_google_drive_instance(),
         target_document["id"],
         navigation_data.doc_reference_dict,
