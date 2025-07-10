@@ -24,31 +24,50 @@ extensions:
 # Integrations set to "optional: false" will block the charm
 # until the applications are integrated.
 requires:
-#   mysql:
-#     interface: mysql_client
-#     optional: false
-#     limit: 1
   postgresql:
     interface: postgresql_client
     optional: false
     limit: 1
-#   mongodb:
-#     interface: mongodb_client
-#     optional: false
-#     limit: 1
   redis:
     interface: redis
     optional: false
     limit: 1
-#   s3:
-#     interface: s3
-#     optional: false
-#     limit: 1
-#   saml:
-#     interface: saml
-#     optional: false
-#     limit: 1
-#   rabbitmq:
-#     interface: rabbitmq
-#     optional: false
-#     limit: 1
+# Define the environment variables that your charm will use.
+config:
+  options:
+    OPENID_LAUNCHPAD_TEAM:
+      type: string
+      default: "canonical-content-people"
+    ROOT_FOLDER:
+      type: string
+      default: "library"
+    TARGET_DRIVE:
+      type: string
+      default: "0ABG0Z5eOlOvhUk9PVA"
+    URL_DOC:
+      type: string
+      default: "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg"
+    DEFAULT_DOC:
+      type: string
+      default: "1YxnWy94YrNnraf1OAxXfIAbL677nNjvb-AWp1TaxU9s"
+    DRAFTS_FOLDER:
+      type: string
+      default: "1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua"
+    PRIVATE_KEY_ID:
+      type: string
+      default: ""
+    PRIVATE_KEY:
+      type: string
+      default: ""
+    PROJECT_ID:
+      type: string
+      default: ""
+    CLIENT_EMAIL:
+      type: string
+      default: ""
+    CLIENT_ID:
+      type: string
+      default: ""
+    CLIENT_X509_CERT_URL:
+      type: string
+      default: ""
