@@ -54,14 +54,20 @@ config:
       type: string
       default: "1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua"
     PRIVATE_KEY_ID:
-      type: secret
+      type: string
+      default: ""
     PRIVATE_KEY:
-      type: secret
+      type: string
+      default: ""
     PROJECT_ID:
-      type: secret
+      type: string
+      default: ""
     CLIENT_EMAIL:
-      type: secret
+      type: string
+      default: ""
     CLIENT_ID:
-      type: secret
+      type: string
+      default: ""
     CLIENT_X509_CERT_URL:
-      type: secret
+      type: string
+      default: ""
