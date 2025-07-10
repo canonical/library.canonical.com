@@ -68,6 +68,6 @@ config:
     CLIENT_ID:
       type: string
       default: ""
-    CLIENT_X509_CERT_URL:
+    CLIENT__X509_CERT_URL:
       type: string
       default: ""
