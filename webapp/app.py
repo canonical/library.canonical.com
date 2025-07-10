@@ -16,6 +16,10 @@ from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 from webapp.db import db
 
+for key, value in os.environ.items():
+    if key.startswith("FLASK_"):
+        os.environ[key[6:]] = value
+
 dotenv.load_dotenv(".env")
 dotenv.load_dotenv(".env.local", override=True)
 
