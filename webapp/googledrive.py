@@ -10,6 +10,9 @@ from google.oauth2 import service_account
 from webapp.settings import SERVICE_ACCOUNT_INFO
 
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
@@ -219,8 +222,9 @@ class GoogleDrive:
 
         except Exception as error:
             err = "Error retrieving HTML or caching document."
+            logger.error(f"{err} | Exception: {error}", exc_info=True)
             print(f"{err}\n {error}")
-            abort(500, description=err)
+            abort(500, description=error)
 
     def fetch_spreadsheet(self, document_id):
         try:
