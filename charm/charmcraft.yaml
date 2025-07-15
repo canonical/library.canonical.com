@@ -32,6 +32,7 @@ requires:
     interface: redis
     optional: false
     limit: 1
+
 # Define the environment variables that your charm will use.
 config:
   options:
