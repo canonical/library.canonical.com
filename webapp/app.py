@@ -17,7 +17,6 @@ from flask_caching import Cache
 from webapp.db import db
 
 
-
 dotenv.load_dotenv(".env")
 dotenv.load_dotenv(".env.local", override=True)
 
