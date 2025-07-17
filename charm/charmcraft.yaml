@@ -36,6 +36,18 @@ requires:
 # Define the environment variables that your charm will use.
 config:
   options:
+    PORT:
+      type: int
+      default: 80
+      description: "Port on which the Flask application will run."
+    DEVEL:
+      type: boolean
+      default: true
+      description: "Enable development mode with debug features."
+    FLASK_DEBUG:
+      type: boolean
+      default: true
+      description: "Enable Flask debug mode."
     OPENID_LAUNCHPAD_TEAM:
       type: string
       default: "canonical-content-people"
