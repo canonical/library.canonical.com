@@ -222,7 +222,7 @@ class GoogleDrive:
 
         except Exception as error:
             err = "Error retrieving HTML or caching document."
-            logger.error(f"{err} | Exception: {error}", exc_info=True)
+            print(f"{err} | Exception: {error}", flush=True)
             print(f"{err}\n {error}")
             abort(500, description=error)
 
