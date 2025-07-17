@@ -110,6 +110,8 @@ def get_list_of_urls():
 
     google_drive = get_google_drive_instance()
     urls = []
+    print("FETCHING SPREADSHEET", flush=True)
+    print("URL_DOC", URL_DOC, flush=True)
     list = google_drive.fetch_spreadsheet(URL_DOC)
     lines = list.split("\n")[1:]
     for line in lines:
