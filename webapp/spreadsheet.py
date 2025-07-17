@@ -45,6 +45,6 @@ class GoggleSheet:
             append_request.execute()
         except Exception as error:
             err = "Error fetching spreadsheet."
-            print(f"{err}\n {error}")
+            print(f"{err}\n {error}", flush=True)
             abort(500, description=err)
         return self.old_url, self.new_url

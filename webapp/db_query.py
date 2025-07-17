@@ -31,7 +31,7 @@ def get_or_parse_document(
                 )
                 return parser
         except OperationalError:
-            print("Database not available, falling back to Google Drive.")
+            print("Database not available, falling back to Google Drive.", flush=True)
 
     # Not in DB or DB unavailable: fetch, parse, and (if possible) store
     from webapp.parser import Parser

@@ -9,7 +9,6 @@ SSO_TEAM = os.getenv("OPENID_LAUNCHPAD_TEAM", "canonical")
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
-        print(f"Setting environment variable {key} to {key[6:]}", flush=True)
         # Set environment variable without the 'FLASK_' prefix
         os.environ[key[6:]] = value
 
