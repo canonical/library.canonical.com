@@ -64,3 +64,4 @@ env[23]/
 !index-*.css
 # Project-specific ignores
 static/js/build
+nginx-ingress-service.yaml

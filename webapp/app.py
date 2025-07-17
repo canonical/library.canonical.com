@@ -15,15 +15,11 @@ from webapp.sso import init_sso
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 from webapp.db import db
-import logging
 
-logger = logging.getLogger(__name__)
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
         # Set environment variable without the 'FLASK_' prefix
-        logger.info(f"Found environment variable: {key} : {value}")
-        logger.info(f"Setting environment variable: {key} to {key[6:]}")
         os.environ[key[6:]] = value
 
 dotenv.load_dotenv(".env")

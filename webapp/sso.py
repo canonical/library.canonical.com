@@ -7,6 +7,11 @@ from flask_openid import OpenID
 SSO_LOGIN_URL = "https://login.ubuntu.com"
 SSO_TEAM = os.getenv("OPENID_LAUNCHPAD_TEAM", "canonical")
 
+for key, value in os.environ.items():
+    if key.startswith("FLASK_"):
+        # Set environment variable without the 'FLASK_' prefix
+        os.environ[key[6:]] = value
+
 
 def init_sso(app):
     open_id = OpenID(
