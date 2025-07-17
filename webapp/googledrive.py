@@ -227,6 +227,7 @@ class GoogleDrive:
             abort(500, description=error)
 
     def fetch_spreadsheet(self, document_id):
+        print("Fetching spreadsheet", document_id, flush=True)
         try:
 
             request = self.service.files().export(
@@ -237,9 +238,11 @@ class GoogleDrive:
             downloader = MediaIoBaseDownload(file, request)
             done = False
             while done is False:
+                print("Downloading chunk...", flush=True)
                 _, done = downloader.next_chunk()
             csv = file.getvalue().decode("utf-8")
-
+            print("Download complete", flush=True)
+            print("CSV content:", csv[:100], flush=True)  # Log first 100 chars
             if csv:
                 return csv
             else:
