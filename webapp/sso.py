@@ -12,6 +12,7 @@ for key, value in os.environ.items():
         # Set environment variable without the 'FLASK_' prefix
         os.environ[key[6:]] = value
 
+
 def init_sso(app):
     open_id = OpenID(
         store_factory=lambda: None,
