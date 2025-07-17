@@ -36,6 +36,10 @@ requires:
 # Define the environment variables that your charm will use.
 config:
   options:
+    PORT:
+      type: int
+      default: 80
+      description: "Port on which the Flask application will run."
     DEVEL:
       type: boolean
       default: true
