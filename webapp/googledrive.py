@@ -60,7 +60,7 @@ class GoogleDrive:
 
         except Exception as error:
             err = "Error searching for documents."
-            print(f"{err}\n {error}")
+            print(f"{err}\n {error}", flush=True)
             abort(500, description=err)
 
         items = results.get("files", [])
@@ -97,7 +97,7 @@ class GoogleDrive:
                 next_page_token = results.get("nextPageToken", None)
         except Exception as error:
             err = "Error fetching document list."
-            print(f"{err}\n {error}")
+            print(f"{err}\n {error}", flush=True)
             abort(500, description=err)
         for item in items:
             if item["id"] == URL_DOC:
@@ -116,7 +116,7 @@ class GoogleDrive:
             next_page_token = tokens.get("startPageToken")
         except Exception as error:
             err = "Error Fetching Start Page Token."
-            print(f"{err}\n {error}")
+            print(f"{err}\n {error}", flush=True)
             abort(500, description=err)
         items = []
         try:
@@ -142,7 +142,7 @@ class GoogleDrive:
                 next_page_token = results.get("nextPageToken", None)
         except Exception as error:
             err = "Error Fetching Changes."
-            print(f"{err}\n {error}")
+            print(f"{err}\n {error}", flush=True)
             abort(500, description=err)
         return items
 
@@ -154,7 +154,7 @@ class GoogleDrive:
                 next_page_token = tokens.get("startPageToken")
         except Exception as error:
             err = "Error Fetching Start Page Token."
-            print(f"{err}\n {error}")
+            print(f"{err}\n {error}", flush=True)
             abort(500, description=err)
         items = []
         last_usable_token = None
@@ -183,7 +183,7 @@ class GoogleDrive:
                 next_page_token = results.get("nextPageToken", None)
         except Exception as error:
             err = "Error Fetching Changes."
-            print(f"{err}\n {error}")
+            print(f"{err}\n {error}, flush=True")
             abort(500, description=err)
 
         # Store the latest startPageToken for future use
@@ -217,13 +217,13 @@ class GoogleDrive:
                 return html
             else:
                 err = "Error, document not found."
-                print(f"{err}\n")
+                print(f"{err}\n", flush=True)
                 abort(404, description=err)
 
         except Exception as error:
             err = "Error retrieving HTML or caching document."
             print(f"{err} | Exception: {error}", flush=True)
-            print(f"{err}\n {error}")
+            print(f"{err}\n {error}", flush=True)
             abort(500, description=error)
 
     def fetch_spreadsheet(self, document_id):
@@ -244,12 +244,12 @@ class GoogleDrive:
                 return csv
             else:
                 err = "Error, document not found."
-                print(f"{err}\n")
+                print(f"{err}\n", flush=True)
                 abort(404, description=err)
 
         except Exception as error:
-            err = "Error retrieving HTML or caching document."
-            print(f"{err}\n {error}")
+            err = "Error retrieving SPREADSHEET "
+            print(f"{err}\n {error}", flush=True)
             abort(500, description=err)
 
     def create_copy_template(self, name):
@@ -278,6 +278,6 @@ class GoogleDrive:
             return file.get("id")
         except Exception as error:
             err = "Error creating copy of Template."
-            print(f"{err}\n {error}")
+            print(f"{err}\n {error}", flush=True)
             # abort(500, description=err)
             return None

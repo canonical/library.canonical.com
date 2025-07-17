@@ -20,7 +20,6 @@ from webapp.db import db
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
         # Set environment variable without the 'FLASK_' prefix
-        print(f"Setting environment variable {key} to {key[6:]}", flush=True)
         os.environ[key[6:]] = value
 
 dotenv.load_dotenv(".env")
@@ -51,7 +50,7 @@ app = FlaskBase(
 init_sso(app)
 
 if "POSTGRES_DB_HOST" in os.environ:
-    print("\n\nUsing PostgreSQL database\n\n")
+    print("\n\nUsing PostgreSQL database\n\n", flush=True)
     app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://%s:%s@%s:%s/%s" % (
         os.getenv("POSTGRES_DB_USER", "postgres"),
         os.getenv("POSTGRES_DB_PASSWORD", "password"),
@@ -67,7 +66,7 @@ if "POSTGRES_DB_HOST" in os.environ:
 
 # Initialize caching
 if "CACHE_REDIS_HOST" in os.environ:
-    print("\n\nUsing Redis cache\n\n")
+    print("\n\nUsing Redis cache\n\n", flush=True)
     cache = Cache(
         app,
         config={
@@ -111,6 +110,8 @@ def get_list_of_urls():
 
     google_drive = get_google_drive_instance()
     urls = []
+    print("FETCHING SPREADSHEET", flush=True)
+    print("URL_DOC", URL_DOC, flush=True)
     list = google_drive.fetch_spreadsheet(URL_DOC)
     lines = list.split("\n")[1:]
     for line in lines:
