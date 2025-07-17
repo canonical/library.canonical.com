@@ -69,9 +69,8 @@ if "REDIS_DB_CONNECT_STRING" in os.environ:
         config={
             "CACHE_TYPE": "RedisCache",
             "CACHE_REDIS_URL": os.getenv(
-                "REDIS_DB_CONNECT_STRING",
-                "redis://localhost:6379"
-            ), # default Redis DB # optional, overrides host/port/db
+                "REDIS_DB_CONNECT_STRING", "redis://localhost:6379"
+            ),  # default Redis DB # optional, overrides host/port/db
         },
     )
 else:
@@ -82,7 +81,6 @@ cache.init_app(app)
 
 
 # Initialize Redis
-
 
 
 def get_google_drive_instance():
