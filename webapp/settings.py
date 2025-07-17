@@ -3,9 +3,10 @@ import os
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
         # Set environment variable without the 'FLASK_' prefix
-        print(f"Found environment variable: {key} : {value}",flush=True)
-        print(f"Setting environment variable: {key} to {key[6:]}",flush=True)
+        print(f"Found environment variable: {key} : {value}", flush=True)
+        print(f"Setting environment variable: {key} to {key[6:]}", flush=True)
         os.environ[key[6:]] = value
+
 
 def sanitize_env(env_var):
     """Remove escape slashes and string environment variables"""
