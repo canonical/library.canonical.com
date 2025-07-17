@@ -33,6 +33,7 @@ DRAFTS_URL = (
     "https://drive.google.com/drive/folders/1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua"
 )
 
+print("URL_DOC", URL_DOC, flush=True)
 
 app = FlaskBase(
     __name__,
