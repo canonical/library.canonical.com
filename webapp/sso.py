@@ -9,6 +9,7 @@ SSO_TEAM = os.getenv("OPENID_LAUNCHPAD_TEAM", "canonical")
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
+        print(f"Setting environment variable {key} to {key[6:]}", flush=True)
         # Set environment variable without the 'FLASK_' prefix
         os.environ[key[6:]] = value
 
@@ -23,6 +24,7 @@ def init_sso(app):
     @app.route("/login", methods=["GET", "POST"])
     @open_id.loginhandler
     def login():
+        print("Login handler called", flush=True)
         if "openid" in flask.session:
             return flask.redirect(open_id.get_next_url())
 
@@ -43,7 +45,7 @@ def init_sso(app):
             "email": resp.email,
             "fullname": resp.fullname,
         }
-
+        print("User logged in:", resp.email, flush=True)
         return flask.redirect(open_id.get_next_url())
 
     @app.route("/logout")

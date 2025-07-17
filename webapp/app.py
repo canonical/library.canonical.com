@@ -20,6 +20,7 @@ from webapp.db import db
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
         # Set environment variable without the 'FLASK_' prefix
+        print(f"Setting environment variable {key} to {key[6:]}", flush=True)
         os.environ[key[6:]] = value
 
 dotenv.load_dotenv(".env")
