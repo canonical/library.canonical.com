@@ -50,14 +50,10 @@ app = FlaskBase(
 # session = talisker.requests.get_session()
 init_sso(app)
 
-if "POSTGRES_DB_HOST" in os.environ:
+if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     print("\n\nUsing PostgreSQL database\n\n", flush=True)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://%s:%s@%s:%s/%s" % (
-        os.getenv("POSTGRES_DB_USER", "postgres"),
-        os.getenv("POSTGRES_DB_PASSWORD", "password"),
-        os.getenv("POSTGRES_DB_HOST", "localhost"),
-        os.getenv("POSTGRES_DB_PORT", 5432),
-        os.getenv("POSTGRES_DB_NAME", "library"),
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+        "POSTGRESQL_DB_CONNECT_STRING"
     )
     db.init_app(app)
     from webapp.models import Document  # noqa: F401 needed for db.create_all()
@@ -66,21 +62,16 @@ if "POSTGRES_DB_HOST" in os.environ:
         db.create_all()
 
 # Initialize caching
-if "CACHE_REDIS_HOST" in os.environ:
+if "REDIS_DB_CONNECT_STRING" in os.environ:
     print("\n\nUsing Redis cache\n\n", flush=True)
     cache = Cache(
         app,
         config={
             "CACHE_TYPE": "RedisCache",
-            "CACHE_REDIS_HOST": os.getenv(
-                "REDIS_DB_HOST", "localhost"
-            ),  # or your Redis server address
-            "CACHE_REDIS_PORT": os.getenv(
-                "REDIS_DB_PORT", 6379
-            ),  # default Redis port
-            "CACHE_REDIS_DB": os.getenv(
-                "REDIS_DB_NAME", 0
-            ),  # default Redis DB # optional, overrides host/port/db
+            "CACHE_REDIS_URL": os.getenv(
+                "REDIS_DB_CONNECT_STRING",
+                "redis://localhost:6379"
+            ), # default Redis DB # optional, overrides host/port/db
         },
     )
 else:
