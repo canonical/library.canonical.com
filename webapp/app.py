@@ -76,12 +76,13 @@ if "REDIS_DB_CONNECT_STRING" in os.environ:
     )
 else:
     cache = Cache(app, config={"CACHE_TYPE": "simple"})
+    redis = redis.Redis(host="localhost", port=6379, db=0)
 
 cache.init_app(app)
 
 
 # Initialize Redis
-redis = redis.Redis(host="localhost", port=6379, db=0)
+
 
 
 def get_google_drive_instance():
