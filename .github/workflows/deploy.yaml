@@ -221,5 +221,5 @@ jobs:
           ls -la
           # run the deploy command
           # in a fresh environment first
-          # juju deploy ./library-charm_amd64.charm --resource flask-app-image=./image_metadata.json library-charm
-          juju refresh library-charm --path=./library-charm_amd64.charm --resource flask-app-image=./image_metadata.json
+          juju deploy ./library-charm_amd64.charm --resource flask-app-image=./image_metadata.json library-charm
+          # juju refresh library-charm --path=./library-charm_amd64.charm --resource flask-app-image=./image_metadata.json
