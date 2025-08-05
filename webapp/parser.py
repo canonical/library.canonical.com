@@ -244,6 +244,10 @@ class Parser:
                 self.wrap_inline_text(tag)
             elif "\uec02" in tag.text:
                 tag.string = tag.text.replace("\uec02", "")
+        for tag in self.html.findAll('div', class_="p-code-snippet"):
+            next= tag.next_sibling
+            if "\uec02" in next.text:
+                next.string = next.text.replace("\uec02", "")
 
     def remove_ids_from_tags(self, tag):
         if tag.has_attr("id"):
