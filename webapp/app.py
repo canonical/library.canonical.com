@@ -7,6 +7,8 @@ import dotenv
 # import talisker
 from flask import request, g, session
 from canonicalwebteam.flask_base.app import FlaskBase
+from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
 
 from webapp.db_query import get_or_parse_document
 from webapp.googledrive import GoogleDrive
@@ -115,6 +117,8 @@ def find_broken_url(url):
     """
     Find the new url for a given old url
     """
+    if "list_of_urls" not in g:
+        get_list_of_urls()
     for u in g.list_of_urls:
         if u["old"] == url:
             return u["new"]
@@ -160,6 +164,7 @@ def get_navigation_data():
     Return the navigation data that was cached
     in case it is available, otherwise construct it.
     """
+
     if "navigation_data" not in g:
 
         if "navigation_data_cached" not in session:
@@ -258,15 +263,23 @@ def search_drive():
     )
 
 
-@app.route("/update-urls")
+@app.route("/update-urls-doc")
 def update_urls(path=None):
     """
-    Route to search the Google Drive. The search results are displayed in a
-    separate page.
+    Route to trigger a manual update of the URLs redirects file.
     """
     scheduled_get_changes()
     new_path = path.replace("update-urls", "")
     return flask.redirect("/" + new_path)
+
+@app.route("/update-url-list")
+def update_url_list():
+    """
+    Manually refresh the list of URLs from Google Drive.
+    """
+    get_list_of_urls()
+    print("\n\n URL list updated via /update-url-list \n\n")
+    return flask.redirect("/")
 
 
 @app.route("/changes")
@@ -331,16 +344,25 @@ def clear_cache_doc(path=None):
 @cache.cached(timeout=604800)  # 7 days cached = 604800 seconds 1 day = 86400
 def document(path=None):
     global url_updated
+    global cache_warming_in_progress
+    global cache_navigation_data
+    global cache_updated
     """
     The entire site is rendered by this function (except /search). As all
     pages use the same template, the only difference between them is the
     content.
     """
-    get_list_of_urls()
-    if url_updated:
+    if cache_updated:
+        cache_updated = False
+        navigation_data = construct_navigation_data()
+        g.navigation_data = navigation_data
+    elif url_updated and not cache_warming_in_progress:
         url_updated = False
         navigation_data = construct_navigation_data()
         g.navigation_data = navigation_data
+    elif cache_warming_in_progress:
+        print("\n\n Cache warming in progress, skipping navigation data construction. \n\n")
+        navigation_data = cache_navigation_data
     else:
         navigation_data = get_navigation_data()
 
@@ -373,6 +395,49 @@ def document(path=None):
         document=target_document,
     )
 
+def warm_single_url(url):
+    try:
+        path = url.lstrip("/")
+        with app.test_request_context(f"/{path}"):
+            document(path)
+    except Exception as e:
+        print(f"Error warming cache for {url}: {e}")
+
+def warm_cache_for_urls(urls):
+    with app.app_context():
+        with ThreadPoolExecutor(max_workers=8) as executor:  # Adjust workers as needed
+            executor.map(warm_single_url, urls)
+        print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
+
+@app.route("/restore-cleared-cached")
+def restore_cleared_cached():
+    global cache_warming_in_progress
+    global cache_navigation_data
+    global url_updated
+    url_file_path = os.path.join(app.static_folder, "assets", "url_list.txt")
+    if not os.path.exists(url_file_path):
+        print("\n\n URL list file not found. \n\n")
+        return flask.redirect("/")
+
+    with open(url_file_path, "r") as f:
+        urls = [line.strip() for line in f if line.strip()]
+
+    cache_navigation_data = construct_navigation_data()  # Set flag before starting
+    cache_warming_in_progress = True
+    def cache_warm_and_unset(urls):
+        warm_cache_for_urls(urls)
+        global cache_warming_in_progress
+        global cache_navigation_data
+        global cache_updated
+        cache_updated = True
+        cache_warming_in_progress = False
+        cache_navigation_data = None
+
+    thread = Thread(target=cache_warm_and_unset, args=(urls,))
+    thread.start()
+
+    print(f"\n\n Started cache warming for {len(urls)} URLs in the background. \n\n")
+    return flask.redirect("/")
 
 def init_scheduler(app):
 
@@ -400,7 +465,9 @@ url_updated = False
 gdrive_instance = None
 
 initialized_executed = False
-
+cache_warming_in_progress = False
+cache_navigation_data = None
+cache_updated = False
 
 @app.before_request
 def initialized():
@@ -410,6 +477,7 @@ def initialized():
         with app.app_context():
             gdrive_instance = get_google_drive_instance()
             nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+            get_list_of_urls() 
             init_scheduler(app)
 
 
