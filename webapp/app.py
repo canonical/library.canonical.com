@@ -1,10 +1,12 @@
+# =========================
+# Imports and Environment
+# =========================
 import os
 import copy
 import flask
 import redis
 from apscheduler.schedulers.background import BackgroundScheduler
 import dotenv
-
 
 # import talisker
 from flask import request, g, session, has_request_context
@@ -29,7 +31,6 @@ for key, value in os.environ.items():
 dotenv.load_dotenv(".env")
 dotenv.load_dotenv(".env.local", override=True)
 
-# Initialize Flask app
 ROOT = os.getenv("ROOT_FOLDER", "library")
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
 URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
@@ -37,8 +38,9 @@ DRAFTS_URL = (
     "https://drive.google.com/drive/folders/1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua"
 )
 
-print("URL_DOC", URL_DOC, flush=True)
-
+# =========================
+# App and Extension Initialization
+# =========================
 app = FlaskBase(
     __name__,
     "library.canonical.com",
@@ -47,13 +49,10 @@ app = FlaskBase(
     template_500="500.html",
     static_folder="../static",
 )
-
-# Initialize session and single Drive instance
-# TODO: Implement Talisker
-# It is used to manage error logging
-# session = talisker.requests.get_session()
+# Initialize the App SSO
 init_sso(app)
 
+# Initialize the connection to DB
 if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     print("\n\nUsing PostgreSQL database\n\n", flush=True)
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
@@ -65,7 +64,7 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     with app.app_context():
         db.create_all()
 
-# Initialize caching
+# Initialize the connection to Redis or SimpleCache
 if "REDIS_DB_CONNECT_STRING" in os.environ:
     print("\n\nUsing Redis cache\n\n", flush=True)
     cache = Cache(
@@ -83,10 +82,21 @@ else:
 
 cache.init_app(app)
 
+# =========================
+# Global State Variables
+# =========================
+nav_changes = None
+url_updated = False
+gdrive_instance = None
+initialized_executed = False
+cache_warming_in_progress = False
+cache_navigation_data = None
+cache_updated = False
 
-# Initialize Redis
 
-
+# =========================
+# Utility Functions
+# =========================
 def get_google_drive_instance():
     """
     Return a singleton instance of GoogleDrive and cache in Flask's 'g'
@@ -127,40 +137,52 @@ def find_broken_url(url):
     return None
 
 
-def scheduled_get_changes():
-    global nav_changes
-    google_drive = gdrive_instance
-    changes = google_drive.get_latest_changes()
-    nav_changes = process_changes(changes, nav_changes, gdrive_instance)
-
-
-def process_changes(changes, navigation_data, google_drive):
-    global url_updated
+def reset_navigation_flags(navigation):
     """
-    Process the changes
+    Reset the navigation flags for the given navigation structure.
+    Mostly used to reset the 'active' and 'expanded' flags when all documents have
+    been cached in the background to ensure the navigation is in a clean state.
     """
-    new_nav = NavigationBuilder(google_drive, ROOT)
-    print("Processing Changes")
-    for change in changes:
-        if change["removed"]:
-            print("REMOVED")
-        else:
-
-            if "fileId" in change:
-                if change["fileId"] in navigation_data.doc_reference_dict:
-                    nav_item = navigation_data.doc_reference_dict[
-                        change["fileId"]
-                    ]
-                    new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
-                    if nav_item["full_path"] != new_nav_item["full_path"]:
-                        # Location Change process
-                        old_path = nav_item["full_path"][1:]
-                        new_path = new_nav_item["full_path"][1:]
-                        GoggleSheet(old_path, new_path).update_urls()
-                        url_updated = True
-    return new_nav
+    for key, item in navigation.items():
+        item["active"] = False
+        item["expanded"] = False
+        if "children" in item and isinstance(item["children"], dict):
+            reset_navigation_flags(item["children"])
 
 
+def warm_single_url(url, navigation_data):
+    """
+    Warm up the cache for a single URL by simulating a request context.
+    """
+    try:
+        path = url.lstrip("/")
+        nav_copy = copy.deepcopy(navigation_data)
+        with app.test_request_context(f"/{path}"):
+            g.navigation_data = nav_copy
+            document(path)
+    except Exception as e:
+        print(f"Error warming cache for {url}: {e}")
+
+
+def warm_cache_for_urls(urls):
+    """
+    Warm up the cache for a list of URLs by using a thread pool to handle multiple
+    URLs concurrently.
+    """
+    with app.app_context():
+        navigation_data = construct_navigation_data()
+        with ThreadPoolExecutor(
+            max_workers=8
+        ) as executor:  # Adjust workers as needed
+            executor.map(
+                lambda url: warm_single_url(url, navigation_data), urls
+            )
+        print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
+
+
+# =========================
+# Navigation and Document Functions
+# =========================
 def get_navigation_data():
     """
     Return the navigation data that was cached
@@ -192,7 +214,7 @@ def get_navigation_data():
 
 def construct_navigation_data():
     """
-    Construct the navigation data and cache it.
+    Construct the navigation data  using the NavigationBuilder and cache it.
     """
     google_drive = get_google_drive_instance()
     data = NavigationBuilder(google_drive, ROOT)
@@ -233,8 +255,82 @@ def get_target_document(path, navigation):
     raise ValueError(f"Document for path '{path}' not found.")
 
 
+# =========================
+# Scheduled Tasks / Cron Jobs
+# =========================
+def scheduled_get_changes():
+    """
+    Scheduled task to get changes in document name or location from Google Drive.
+    Then process those changes to update the navigation data and the urls for redirects.
+    """
+    global nav_changes
+    google_drive = gdrive_instance
+    changes = google_drive.get_latest_changes()
+    nav_changes = process_changes(changes, nav_changes, gdrive_instance)
+
+
+def process_changes(changes, navigation_data, google_drive):
+    global url_updated
+    """
+    Process the list of changes for docs and locations from Google Drive.
+    If a document's location has changed, update the URLs in the redirects file.
+    """
+    new_nav = NavigationBuilder(google_drive, ROOT)
+    for change in changes:
+        if change["removed"]:
+            print("REMOVED")
+        else:
+            if "fileId" in change:
+                if change["fileId"] in navigation_data.doc_reference_dict:
+                    nav_item = navigation_data.doc_reference_dict[
+                        change["fileId"]
+                    ]
+                    new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
+                    if nav_item["full_path"] != new_nav_item["full_path"]:
+                        # Location Change process
+                        old_path = nav_item["full_path"][1:]
+                        new_path = new_nav_item["full_path"][1:]
+                        GoggleSheet(old_path, new_path).update_urls()
+                        url_updated = True
+    return new_nav
+
+
+def init_scheduler(app):
+    """
+    Initialize the background scheduler for periodic tasks.
+    """
+
+    def scheduled_task():
+        """
+        The task of checking for changes in Google Drive should be run periodically
+        on a schedule, every 5 minutes.
+        """
+        global nav_changes
+        with app.app_context():
+            google_drive = gdrive_instance
+            navigation = nav_changes
+            changes = google_drive.get_latest_changes()
+            new_nav = process_changes(changes, navigation, google_drive)
+            nav_changes = new_nav
+
+    # Initialize the scheduler
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(scheduled_task)  # Run once
+    scheduler.add_job(
+        scheduled_task, "interval", minutes=5
+    )  # Run every 5 minutes
+    scheduler.start()
+    return scheduler
+
+
+# =========================
+# Route Definitions
+# =========================
 @app.route("/refresh-navigation")
 def refresh_navigation():
+    """
+    Route to manually refresh the navigation data.
+    """
     new_path = ""
     cache_key = "view//%s" % new_path
 
@@ -275,6 +371,7 @@ def update_urls(path=None):
     new_path = path.replace("update-urls", "")
     return flask.redirect("/" + new_path)
 
+
 @app.route("/update-url-list")
 def update_url_list():
     """
@@ -306,7 +403,7 @@ def changes_drive():
 @app.route("/create-copy-template")
 def create_copy_template():
     """
-    Route to create a copy of the template document.
+    Route to create a copy of the template document for the library.
     """
     google_drive = get_google_drive_instance()
     name = flask.session.get("openid").get("fullname")
@@ -355,25 +452,35 @@ def document(path=None):
     pages use the same template, the only difference between them is the
     content.
     """
-    
+
+    # Handle navigation data refresh after cache warming or URL update
     if cache_updated:
         cache_updated = False
         navigation_data = construct_navigation_data()
         g.navigation_data = navigation_data
+    # Handle navigation data refresh after URL update (but not during cache warming)
     elif url_updated and not cache_warming_in_progress:
         url_updated = False
         navigation_data = construct_navigation_data()
         g.navigation_data = navigation_data
+    # If cache warming is in progress, use a copy of the navigation data being warmed
     elif cache_warming_in_progress:
-        print("\n\n Cache warming in progress, skipping navigation data construction. \n\n")
+        print(
+            "\n\n Cache warming in progress, skipping navigation data construction. \n\n"
+        )
         navigation_data = copy.deepcopy(cache_navigation_data)
+    # Otherwise, get navigation data from cache or build if needed
     else:
         navigation_data = get_navigation_data()
 
+    # Reset all navigation flags (active/expanded) before marking the current document
     reset_navigation_flags(navigation_data.hierarchy)
+
+    # Try to find and mark the target document as active/expanded
     try:
         target_document = get_target_document(path, navigation_data.hierarchy)
     except KeyError:
+        # If not found, check for a redirect (broken URL mapping)
         new_path = find_broken_url(path)
         if new_path:
             path = new_path
@@ -382,16 +489,18 @@ def document(path=None):
             err = "Error, document does not exist."
             flask.abort(404, description=err)
 
+    # Parse the document content from Google Drive
     soup = get_or_parse_document(
         get_google_drive_instance(),
         target_document["id"],
         navigation_data.doc_reference_dict,
         target_document["name"],
     )
-
+    # Attach metadata and headings map to the target document for rendering
     target_document["metadata"] = soup.metadata
     target_document["headings_map"] = soup.headings_map
 
+    # Render the main template with navigation and document content
     return flask.render_template(
         "index.html",
         navigation=navigation_data.hierarchy,
@@ -400,46 +509,37 @@ def document(path=None):
         document=target_document,
     )
 
-def reset_navigation_flags(navigation):
-    for key, item in navigation.items():
-        item["active"] = False
-        item["expanded"] = False
-        if "children" in item and isinstance(item["children"], dict):
-            reset_navigation_flags(item["children"])
-def warm_single_url(url,navigation_data):
-    try:
-        path = url.lstrip("/")
-        nav_copy = copy.deepcopy(navigation_data)
-        with app.test_request_context(f"/{path}"):
-            g.navigation_data = nav_copy
-            document(path)
-    except Exception as e:
-        print(f"Error warming cache for {url}: {e}")
-
-def warm_cache_for_urls(urls):
-    with app.app_context():
-        navigation_data = construct_navigation_data()
-        with ThreadPoolExecutor(max_workers=8) as executor:  # Adjust workers as needed
-            executor.map(lambda url: warm_single_url(url, navigation_data), urls)
-        print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
 
 @app.route("/restore-cleared-cached")
 def restore_cleared_cached():
+    """
+    Route to restore the cleared cache by warming up the cache for all URLs.
+    This triggers cache warming in the background for every URL in url_list.txt.
+    """
     global cache_warming_in_progress
     global cache_navigation_data
     global url_updated
+
+    # Path to the file containing all URLs to warm the cache for
     url_file_path = os.path.join(app.static_folder, "assets", "url_list.txt")
+
+    # Check if the URL list file exists
     if not os.path.exists(url_file_path):
         print("\n\n URL list file not found. \n\n")
         return flask.redirect("/")
 
+    # Read all URLs from the file, stripping whitespace and skipping empty lines
     with open(url_file_path, "r") as f:
         urls = [line.strip() for line in f if line.strip()]
-
-    cache_navigation_data = construct_navigation_data()  # Set flag before starting
+    # Build navigation data once and set the cache warming flag
+    cache_navigation_data = construct_navigation_data()
     cache_warming_in_progress = True
+
+    # Define a background function to warm the cache and reset flags when done
     def cache_warm_and_unset(urls):
+        # Warm the cache for all URLs (runs in a background thread)
         warm_cache_for_urls(urls)
+        # After warming, reset global flags and navigation data
         global cache_warming_in_progress
         global cache_navigation_data
         global cache_updated
@@ -447,53 +547,39 @@ def restore_cleared_cached():
         cache_warming_in_progress = False
         cache_navigation_data = None
 
+    # Start cache warming in a background thread so the request returns immediately
     thread = Thread(target=cache_warm_and_unset, args=(urls,))
     thread.start()
+    # Print a notification to the console
+    print(
+        f"\n\n Started cache warming for {len(urls)} URLs in the background. \n\n"
+    )
 
-    print(f"\n\n Started cache warming for {len(urls)} URLs in the background. \n\n")
+    # Redirect the user to the home page while cache warming continues in the background
     return flask.redirect("/")
 
-def init_scheduler(app):
 
-    def scheduled_task():
-        global nav_changes
-        with app.app_context():
-            google_drive = gdrive_instance
-            navigation = nav_changes
-            changes = google_drive.get_latest_changes()
-            new_nav = process_changes(changes, navigation, google_drive)
-            nav_changes = new_nav
-
-    # Initialize the scheduler
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_task)  # Run once
-    scheduler.add_job(
-        scheduled_task, "interval", minutes=5
-    )  # Run every 5 minutes
-    scheduler.start()
-    return scheduler
-
-
-nav_changes = None
-url_updated = False
-gdrive_instance = None
-
-initialized_executed = False
-cache_warming_in_progress = False
-cache_navigation_data = None
-cache_updated = False
-
+# =========================
+# App Lifecycle Hooks
+# =========================
 @app.before_request
 def initialized():
+    """
+    Before request hook to initialize the Google Drive instance and the navigation builder.
+    This is executed only once per application context.
+    """
     global initialized_executed, gdrive_instance, nav_changes
     if not initialized_executed:
         initialized_executed = True
         with app.app_context():
             gdrive_instance = get_google_drive_instance()
             nav_changes = NavigationBuilder(gdrive_instance, ROOT)
-            get_list_of_urls() 
+            get_list_of_urls()
             init_scheduler(app)
 
 
+# =========================
+# Main Entrypoint
+# =========================
 if __name__ == "__main__":
     app.run()
