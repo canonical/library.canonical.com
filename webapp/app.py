@@ -1,11 +1,13 @@
 import os
+import copy
 import flask
 import redis
 from apscheduler.schedulers.background import BackgroundScheduler
 import dotenv
 
+
 # import talisker
-from flask import request, g, session
+from flask import request, g, session, has_request_context
 from canonicalwebteam.flask_base.app import FlaskBase
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
@@ -201,7 +203,8 @@ def construct_navigation_data():
         "hierarchy": data.hierarchy,
     }
     cache.set("navigation", nav_data)
-    session["navigation_data_cached"] = True
+    if has_request_context():
+        session["navigation_data_cached"] = True
     return data
 
 
@@ -352,6 +355,7 @@ def document(path=None):
     pages use the same template, the only difference between them is the
     content.
     """
+    
     if cache_updated:
         cache_updated = False
         navigation_data = construct_navigation_data()
@@ -362,10 +366,11 @@ def document(path=None):
         g.navigation_data = navigation_data
     elif cache_warming_in_progress:
         print("\n\n Cache warming in progress, skipping navigation data construction. \n\n")
-        navigation_data = cache_navigation_data
+        navigation_data = copy.deepcopy(cache_navigation_data)
     else:
         navigation_data = get_navigation_data()
 
+    reset_navigation_flags(navigation_data.hierarchy)
     try:
         target_document = get_target_document(path, navigation_data.hierarchy)
     except KeyError:
@@ -395,18 +400,27 @@ def document(path=None):
         document=target_document,
     )
 
-def warm_single_url(url):
+def reset_navigation_flags(navigation):
+    for key, item in navigation.items():
+        item["active"] = False
+        item["expanded"] = False
+        if "children" in item and isinstance(item["children"], dict):
+            reset_navigation_flags(item["children"])
+def warm_single_url(url,navigation_data):
     try:
         path = url.lstrip("/")
+        nav_copy = copy.deepcopy(navigation_data)
         with app.test_request_context(f"/{path}"):
+            g.navigation_data = nav_copy
             document(path)
     except Exception as e:
         print(f"Error warming cache for {url}: {e}")
 
 def warm_cache_for_urls(urls):
     with app.app_context():
+        navigation_data = construct_navigation_data()
         with ThreadPoolExecutor(max_workers=8) as executor:  # Adjust workers as needed
-            executor.map(warm_single_url, urls)
+            executor.map(lambda url: warm_single_url(url, navigation_data), urls)
         print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
 
 @app.route("/restore-cleared-cached")
