@@ -23,6 +23,8 @@ from flask_caching import Cache
 from webapp.db import db
 
 
+
+
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
         # Set environment variable without the 'FLASK_' prefix
@@ -30,6 +32,8 @@ for key, value in os.environ.items():
 
 dotenv.load_dotenv(".env")
 dotenv.load_dotenv(".env.local", override=True)
+
+print("REDIS_DB_CONNECT_STRING:", os.getenv("REDIS_DB_CONNECT_STRING"))
 
 ROOT = os.getenv("ROOT_FOLDER", "library")
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
@@ -66,7 +70,7 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
 
 # Initialize the connection to Redis or SimpleCache
 if "REDIS_DB_CONNECT_STRING" in os.environ:
-    print("\n\nUsing Redis cache\n\n", flush=True)
+    
     cache = Cache(
         app,
         config={
@@ -76,9 +80,9 @@ if "REDIS_DB_CONNECT_STRING" in os.environ:
             ),  # default Redis DB # optional, overrides host/port/db
         },
     )
+    print("\n\nUsing Redis cache\n\n", flush=True)
 else:
     cache = Cache(app, config={"CACHE_TYPE": "simple"})
-    redis = redis.Redis(host="localhost", port=6379, db=0)
 
 cache.init_app(app)
 
@@ -157,6 +161,7 @@ def warm_single_url(url, navigation_data):
     try:
         path = url.lstrip("/")
         nav_copy = copy.deepcopy(navigation_data)
+        print(f"Warming cache for {url} with path {path}")
         with app.test_request_context(f"/{path}"):
             g.navigation_data = nav_copy
             document(path)
@@ -180,6 +185,52 @@ def warm_cache_for_urls(urls):
         print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
 
 
+def get_cache_ttl(key):
+    """
+    Returns the TTL (seconds until expiry) for a cache key if Redis is used.
+    If SimpleCache is used, returns None.
+    """
+    # Check if Redis is being used as the cache backend
+    if isinstance(cache.cache, redis.client.Redis):
+        # Flask-Caching stores keys with a prefix, so use the actual Redis key
+        # For Flask-Caching, the key is usually prefixed with 'flask_cache_' or similar.
+        # You may need to adjust this prefix based on your configuration.
+        redis_key = key
+        ttl = cache.cache.ttl(redis_key)
+        return ttl
+    else:
+        print("TTL is not supported for SimpleCache.")
+        return None
+
+
+def get_urls_expiring_soon():
+    """
+    Returns a list of URLs from url_list.txt whose cache will expire in the next hour.
+    Only works if Redis is used as the cache backend.
+    """
+    expiring_urls = []
+    url_file_path = os.path.join(app.static_folder, "assets", "url_list.txt")
+    if not os.path.exists(url_file_path):
+        print("URL list file not found.")
+        return expiring_urls
+
+    # Read all URLs from the file
+    with open(url_file_path, "r") as f:
+        urls = [line.strip() for line in f if line.strip()]
+
+    # Check each cache key's TTL
+    if "REDIS_DB_CONNECT_STRING" in os.environ:
+        redis_client = cache.cache._read_client
+        for url in urls:
+            # The cache key must match your Flask-Caching key pattern
+            cache_key = f"view//{url.lstrip('/')}"
+            ttl = redis_client.ttl(cache_key)
+            if ttl < 3600:  # Less than 1 hour
+                expiring_urls.append({"url": url, "ttl": ttl})
+    else:
+        print("TTL checking is only supported with Redis cache.")
+
+    return expiring_urls
 # =========================
 # Navigation and Document Functions
 # =========================
@@ -312,13 +363,43 @@ def init_scheduler(app):
             changes = google_drive.get_latest_changes()
             new_nav = process_changes(changes, navigation, google_drive)
             nav_changes = new_nav
+    
+    def check_status_cache():
+        """
+        Check the status of the cache and warm it if needed.
+        """
+        global cache_warming_in_progress
+        global cache_updated
+        global cache_navigation_data
+        if not cache_warming_in_progress:
+            print("\n\nChecking cache status...\n\n")
+            expiring_urls = get_urls_expiring_soon()
+            if expiring_urls:
+                print(f"\n\nFound {len(expiring_urls)} URLs expiring soon, warming cache...\n\n")
+                cache_warming_in_progress = True
+                urls_to_warm = [u["url"] for u in expiring_urls]
+                warm_cache_for_urls(urls_to_warm)
+                cache_warming_in_progress = False
+                cache_updated = True
+            else:
+                print("No URLs expiring soon, no action taken.")
+        
 
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)  # Run once
+    scheduler.add_job(check_status_cache) # Run on load
     scheduler.add_job(
         scheduled_task, "interval", minutes=5
     )  # Run every 5 minutes
+    scheduler.add_job(
+        check_status_cache,
+        "cron",
+        day_of_week="sun",
+        hour=7,
+        minute=0,
+        id="weekly_cache_check"
+    ) # Run every Sunday at 7:00 AM
     scheduler.start()
     return scheduler
 
@@ -441,7 +522,7 @@ def clear_cache_doc(path=None):
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout=604800)  # 7 days cached = 604800 seconds 1 day = 86400
+@cache.cached(timeout= 604800)  # 7 days cached = 604800 seconds 1 day = 86400
 def document(path=None):
     global url_updated
     global cache_warming_in_progress
