@@ -234,8 +234,12 @@ class Parser:
                         pre_tag.append(tag)
         # Clean up any unicode items that are left in the code blocks
         for tag in self.html.select("code:contains(\uec03)"):
-            tag.contents[0].replace_with(tag.contents[0].replace("\uec03", ""))
-            tag.contents[2].replace_with("")
+            if tag.contents and len(tag.contents) > 0:
+                tag.contents[0].replace_with(
+                    tag.contents[0].replace("\uec03", "")
+                )
+            if len(tag.contents) > 2:
+                tag.contents[2].replace_with("")
         # Clean up empty p tags and clean unicode items in p tags
         for tag in self.html.findAll("p"):
             if not tag.contents:
@@ -244,6 +248,15 @@ class Parser:
                 self.wrap_inline_text(tag)
             elif "\uec02" in tag.text:
                 tag.string = tag.text.replace("\uec02", "")
+        for tag in self.html.findAll("div", class_="p-code-snippet"):
+            next_sibling = tag.next_sibling
+            # Add null check before accessing text attribute
+            if (
+                next_sibling
+                and hasattr(next_sibling, "text")
+                and "\uec02" in next_sibling.text
+            ):
+                next_sibling.string = next_sibling.text.replace("\uec02", "")
 
     def remove_ids_from_tags(self, tag):
         if tag.has_attr("id"):

@@ -10,6 +10,7 @@ def get_or_parse_document(
     doc_name,
 ):
     if USE_DB:
+        print("Using database to fetch or parse document", flush=True)
         from webapp.models import (
             Document,
         )  # Import here to avoid import errors if DB is not used
@@ -18,6 +19,7 @@ def get_or_parse_document(
         try:
             document = Document.query.filter_by(doc_id=doc_id).first()
             if document:
+                print("Found document in DB", flush=True)
                 from webapp.parser import Parser
 
                 parser = Parser(
@@ -41,11 +43,14 @@ def get_or_parse_document(
     from webapp.parser import Parser
 
     parser = Parser(google_drive, doc_id, doc_dict, doc_name)
+    print("Parsing document from Google Drive", flush=True)
+
     if USE_DB:
         try:
             from webapp.models import Document
             from webapp.db import db
 
+            print("Saving document to DB", flush=True)
             new_doc = Document(
                 doc_id=doc_id,
                 doc_metadata=parser.metadata,
@@ -54,6 +59,7 @@ def get_or_parse_document(
             )
             db.session.add(new_doc)
             db.session.commit()
+            print("Document saved to DB successfully", flush=True)
         except Exception as e:
-            print(f"Could not save to DB: {e}")
+            print(f"Could not save to DB: {e}", flush=True)
     return parser

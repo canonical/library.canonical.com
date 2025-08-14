@@ -7,10 +7,20 @@ $background-color_1: #EBEBEB;
 	justify-content: left;
 	align-items: center;
 	cursor: pointer;
-	padding-top: 4px;
-	padding-bottom: 4px;
 	background-color: $background-color_1;
 	min-height: 32px;
+}
+
+.navigation__chevron {
+	align-items: center;
+	background-color: transparent;
+	cursor: pointer;
+	display: flex;
+	height: 32px;
+	justify-content: center;
+	margin-right: 0rem;
+	transition: background-color 0.2s ease;
+	width: 32px;
 }
 
 .navigation__folder-tittle {
@@ -20,6 +30,11 @@ $background-color_1: #EBEBEB;
 	margin: 0;
 	cursor: pointer;
 	padding-top: 0;
+	display: block;
+	text-align: left;
+    word-wrap: break-word;
+    white-space: normal;
+    text-indent: 0;
 }
 .navigation__hidden-options {
 	padding-left: 3.2rem;
@@ -58,6 +73,3 @@ $background-color_1: #EBEBEB;
 	cursor: pointer;
 }
 
-.navigation__chevron {
-	margin-right: 0.5rem;
-}
