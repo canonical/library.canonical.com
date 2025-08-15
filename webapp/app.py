@@ -23,8 +23,6 @@ from flask_caching import Cache
 from webapp.db import db
 
 
-
-
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
         # Set environment variable without the 'FLASK_' prefix
@@ -70,7 +68,7 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
 
 # Initialize the connection to Redis or SimpleCache
 if "REDIS_DB_CONNECT_STRING" in os.environ:
-    
+
     cache = Cache(
         app,
         config={
@@ -231,6 +229,8 @@ def get_urls_expiring_soon():
         print("TTL checking is only supported with Redis cache.")
 
     return expiring_urls
+
+
 # =========================
 # Navigation and Document Functions
 # =========================
@@ -363,7 +363,7 @@ def init_scheduler(app):
             changes = google_drive.get_latest_changes()
             new_nav = process_changes(changes, navigation, google_drive)
             nav_changes = new_nav
-    
+
     def check_status_cache():
         """
         Check the status of the cache and warm it if needed.
@@ -375,7 +375,9 @@ def init_scheduler(app):
             print("\n\nChecking cache status...\n\n")
             expiring_urls = get_urls_expiring_soon()
             if expiring_urls:
-                print(f"\n\nFound {len(expiring_urls)} URLs expiring soon, warming cache...\n\n")
+                print(
+                    f"\n\nFound {len(expiring_urls)} URLs expiring soon, warming cache...\n\n"
+                )
                 cache_warming_in_progress = True
                 urls_to_warm = [u["url"] for u in expiring_urls]
                 warm_cache_for_urls(urls_to_warm)
@@ -383,12 +385,11 @@ def init_scheduler(app):
                 cache_updated = True
             else:
                 print("No URLs expiring soon, no action taken.")
-        
 
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)  # Run once
-    scheduler.add_job(check_status_cache) # Run on load
+    scheduler.add_job(check_status_cache)  # Run on load
     scheduler.add_job(
         scheduled_task, "interval", minutes=5
     )  # Run every 5 minutes
@@ -398,8 +399,8 @@ def init_scheduler(app):
         day_of_week="sun",
         hour=7,
         minute=0,
-        id="weekly_cache_check"
-    ) # Run every Sunday at 7:00 AM
+        id="weekly_cache_check",
+    )  # Run every Sunday at 7:00 AM
     scheduler.start()
     return scheduler
 
@@ -522,7 +523,7 @@ def clear_cache_doc(path=None):
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout= 604800)  # 7 days cached = 604800 seconds 1 day = 86400
+@cache.cached(timeout=604800)  # 7 days cached = 604800 seconds 1 day = 86400
 def document(path=None):
     global url_updated
     global cache_warming_in_progress
