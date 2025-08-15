@@ -374,7 +374,6 @@ def init_scheduler(app):
         """
         global cache_warming_in_progress
         global cache_updated
-        global cache_navigation_data
         if not cache_warming_in_progress:
             print("\n\nChecking cache status...\n\n")
             expiring_urls = get_urls_expiring_soon()
