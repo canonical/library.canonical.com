@@ -529,8 +529,6 @@ def clear_cache_doc(path=None):
 @cache.cached(timeout=604800)  # 7 days cached = 604800 seconds 1 day = 86400
 def document(path=None):
     global url_updated
-    global cache_warming_in_progress
-    global cache_navigation_data
     global cache_updated
     """
     The entire site is rendered by this function (except /search). As all
