@@ -142,8 +142,8 @@ def find_broken_url(url):
 def reset_navigation_flags(navigation):
     """
     Reset the navigation flags for the given navigation structure.
-    Mostly used to reset the 'active' and 'expanded' flags when 
-    all documents have been cached in the background to ensure 
+    Mostly used to reset the 'active' and 'expanded' flags when
+    all documents have been cached in the background to ensure
     the navigation is in a clean state.
     """
     for key, item in navigation.items():
@@ -170,7 +170,7 @@ def warm_single_url(url, navigation_data):
 
 def warm_cache_for_urls(urls):
     """
-    Warm up the cache for a list of URLs by using a thread pool to 
+    Warm up the cache for a list of URLs by using a thread pool to
     handle multiple URLs concurrently.
     """
     with app.app_context():
@@ -201,7 +201,7 @@ def get_cache_ttl(key):
 
 def get_urls_expiring_soon():
     """
-    Returns a list of URLs from url_list.txt whose cache 
+    Returns a list of URLs from url_list.txt whose cache
     will expire in the next hour.
     Only works if Redis is used as the cache backend.
     """
@@ -312,7 +312,7 @@ def scheduled_get_changes():
     """
     Scheduled task to get changes in document
     name or location from Google Drive.
-    Then process those changes to update 
+    Then process those changes to update
     the navigation data and the urls for redirects.
     """
     global nav_changes
@@ -325,7 +325,7 @@ def process_changes(changes, navigation_data, google_drive):
     global url_updated
     """
     Process the list of changes for docs and
-    locations from Google Drive. If a document's location 
+    locations from Google Drive. If a document's location
     has changed, update the URLs in the redirects file.
     """
     new_nav = NavigationBuilder(google_drive, ROOT)
@@ -350,13 +350,13 @@ def process_changes(changes, navigation_data, google_drive):
 
 def init_scheduler(app):
     """
-    Initialize the background scheduler 
+    Initialize the background scheduler
     for periodic tasks.
     """
 
     def scheduled_task():
         """
-        The task of checking for changes in 
+        The task of checking for changes in
         Google Drive should be run periodically
         on a schedule, every 5 minutes.
         """
@@ -380,7 +380,7 @@ def init_scheduler(app):
             expiring_urls = get_urls_expiring_soon()
             if expiring_urls:
                 print(
-                    f"\n\nFound {len(expiring_urls)} URLs expiring soon, warming cache...\n\n"
+                    f"Found {len(expiring_urls)} URLs expiring, warming cache"
                 )
                 cache_warming_in_progress = True
                 urls_to_warm = [u["url"] for u in expiring_urls]
