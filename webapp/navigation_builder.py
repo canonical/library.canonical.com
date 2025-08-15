@@ -18,7 +18,7 @@ class NavigationBuilder:
         temp_hierarchy=None,
         file_list=None,
         hierarchy=None,
-    ): 
+    ):
         if not cache:
             self.root_folder = root_folder.lower()
             self.doc_reference_dict = {}
@@ -181,7 +181,7 @@ class NavigationBuilder:
                 )
                 new_dict.update(children)
         return new_dict
-    
+
     def extract_all_urls(self, hierarchy_obj=None, urls=None):
         """
         Recursively extracts all unique URLs from the hierarchy tree.
@@ -205,11 +205,14 @@ class NavigationBuilder:
         """
         file_path = "static/assets/url_list.txt"
         if os.path.exists(file_path):
-            print(f"URLs file already exists at {file_path}, skipping save.", flush=True)
+            print(
+                f"URLs file already exists at {file_path}, skipping save.",
+                flush=True,
+            )
             return
         urls = self.extract_all_urls()
         file_path = "static/assets/url_list.txt"
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             for url in urls:
                 f.write(f"{url}\n")
         print(f"URLs saved to {file_path}", flush=True)
