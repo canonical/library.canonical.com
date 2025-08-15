@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote_plus
 import flask
 import socket
 from django_openid_auth.teams import TeamsRequest, TeamsResponse
@@ -62,7 +63,9 @@ def init_sso(app):
         ) or flask.request.path.startswith("/static"):
             return
         if "openid" not in flask.session:
-            return flask.redirect("/login?next=" + flask.request.path)
+            return flask.redirect(
+                "/login?next=" + quote_plus(flask.request.path)
+            )
 
     @app.after_request
     def add_headers(response):

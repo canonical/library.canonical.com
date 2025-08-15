@@ -33,6 +33,7 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     // ----------------------------------------------
     const [open, setOpen] = useState(document.expanded);
     const [mouseHover, setMouseHover] = useState(false);
+    const [chevronHover, setChevronHover] = useState(false);
     let level = 1;
     const parentId = document.id;
     // Manage and stores the hidden folders based on maximum level shown
@@ -242,33 +243,61 @@ const ParentFolder: React.FC<ParentFolderProps> = ({
     const hideLevel = levelcondition ||(softRoot !== null && document.id !== softRoot.id);
     const hiddenChild =  selected &&selected.level > localMaxLevel && selected.parentId === parentId && selected.id !== lastInteracted?.id; 
     const backgroundColor = document.active || mouseHover ?'#c4c4c4': '#EBEBEB';
-    const documentPadding = document.mimeType === 'folder' && Object.keys(document.children).length > 1 ? "0.5rem" : "1.5rem" 
+    const chevronColor = chevronHover ? '#c4c4c4' : '#EBEBEB';
+    const documentPadding = "0.5rem";
     return (
         <>
         { hideLevel  ?
         renderHide()
         :
         <div 
-            className="navigation__folder" 
-            onMouseEnter={() =>setMouseHover(true)} 
-            onMouseLeave={() => setMouseHover(false)}
+            className="navigation__folder"
             style={{
-                backgroundColor: backgroundColor, 
-                paddingLeft:"1.69rem",
-                borderLeftColor: "black",
-                borderLeftStyle:'solid',
-                borderLeftWidth: document.active? '2px': "0px"
+                paddingLeft:Object.keys(document.children).length > 1 ? "1.69rem" : "calc(1.69rem + 32px)",
             }}
             >
+            
             {( Object.keys(document.children).length > 1) ? 
-            <div onClick={() => handleChevronClick()}>{open ?
+            <div
+            style={{backgroundColor: chevronColor}}
+            onClick={(e) => {
+                e.preventDefault(); // Prevent the Div on click from being triggered
+                e.stopPropagation(); // Stop event bubbling
+                handleChevronClick();
+            }}
+            className='navigation__chevron'
+            onMouseEnter={() => {
+                setChevronHover(true)
+                setMouseHover(false)
+            }}
+            onMouseLeave={() => {
+                setChevronHover(false)
+            }}>{open ?
             <Icon name='chevron-down'/>
             : <Icon name='chevron-right'/>}
             </div> 
             : null}
+            <div
+            onMouseEnter={() =>setMouseHover(true)} 
+            onMouseLeave={() => setMouseHover(false)}
+            style={{
+                backgroundColor: backgroundColor,
+                borderLeftColor: "black",
+                borderLeftStyle:'solid',
+                borderLeftWidth: document.active? '2px': "0px",
+                flex: 1, // This makes it fill the remaining space
+                cursor: 'pointer',
+                minHeight: '32px', // Ensure minimum height for good UX
+                display: 'flex',
+                alignItems: 'center'
+            }}
+            onClick={() => handleFolderClick(document)}
+            >
             <a href={document.full_path} className='navigation__link' style={{textDecoration: 'none'}}>
-                <span className='navigation__folder-tittle'  style={{paddingLeft: documentPadding}} onClick={() => handleFolderClick(document)}>{document.name}</span>
+                <span className='navigation__folder-tittle'  style={{paddingLeft: documentPadding}}>{document.name}</span>
             </a>
+
+            </div>
         </div>
         }
         <div>
