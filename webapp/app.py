@@ -544,7 +544,7 @@ def document(path=None):
         cache_updated = False
         navigation_data = construct_navigation_data()
         g.navigation_data = navigation_data
-    # Handle navigation data refresh after URL update (but not during cache warming)
+    # Handle navigation data refresh after URL update
     elif url_updated and not cache_warming_in_progress:
         url_updated = False
         navigation_data = construct_navigation_data()
@@ -552,14 +552,14 @@ def document(path=None):
     # If cache warming is in progress, use a copy of the navigation data being warmed
     elif cache_warming_in_progress:
         print(
-            "\n\n Cache warming in progress, skipping navigation data construction. \n\n"
+            "Cache warming in progress, skipping navigation construction."
         )
         navigation_data = copy.deepcopy(cache_navigation_data)
     # Otherwise, get navigation data from cache or build if needed
     else:
         navigation_data = get_navigation_data()
 
-    # Reset all navigation flags (active/expanded) before marking the current document
+    # Reset all navigation flags before marking the current document
     reset_navigation_flags(navigation_data.hierarchy)
 
     # Try to find and mark the target document as active/expanded
@@ -600,11 +600,10 @@ def document(path=None):
 def restore_cleared_cached():
     """
     Route to restore the cleared cache by warming up the cache for all URLs.
-    This triggers cache warming in the background for every URL in url_list.txt.
+    This triggers cache warming in the background for each URL in url_list.txt.
     """
     global cache_warming_in_progress
     global cache_navigation_data
-    global url_updated
 
     # Path to the file containing all URLs to warm the cache for
     url_file_path = os.path.join(app.static_folder, "assets", "url_list.txt")
@@ -633,15 +632,15 @@ def restore_cleared_cached():
         cache_warming_in_progress = False
         cache_navigation_data = None
 
-    # Start cache warming in a background thread so the request returns immediately
+    # Start cache warming in a background thread
     thread = Thread(target=cache_warm_and_unset, args=(urls,))
     thread.start()
     # Print a notification to the console
     print(
-        f"\n\n Started cache warming for {len(urls)} URLs in the background. \n\n"
+        f"\n\n Started caching for {len(urls)} URLs in the background. \n\n"
     )
 
-    # Redirect the user to the home page while cache warming continues in the background
+    # Redirect the user to the home page 
     return flask.redirect("/")
 
 
@@ -651,7 +650,8 @@ def restore_cleared_cached():
 @app.before_request
 def initialized():
     """
-    Before request hook to initialize the Google Drive instance and the navigation builder.
+    Before request hook to initialize the Google Drive instance
+    and the navigation builder.
     This is executed only once per application context.
     """
     global initialized_executed, gdrive_instance, nav_changes
