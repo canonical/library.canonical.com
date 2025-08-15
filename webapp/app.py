@@ -548,9 +548,7 @@ def document(path=None):
         g.navigation_data = navigation_data
     # If cache warming is in progress, use a copy of the navigation data
     elif cache_warming_in_progress:
-        print(
-            "Cache warming in progress, skipping navigation construction."
-        )
+        print("Cache warming in progress, skipping navigation construction.")
         navigation_data = copy.deepcopy(cache_navigation_data)
     # Otherwise, get navigation data from cache or build if needed
     else:
@@ -633,9 +631,7 @@ def restore_cleared_cached():
     thread = Thread(target=cache_warm_and_unset, args=(urls,))
     thread.start()
     # Print a notification to the console
-    print(
-        f"\n\n Started caching for {len(urls)} URLs in the background. \n\n"
-    )
+    print(f"\n\n Started caching for {len(urls)} URLs in the background. \n\n")
 
     # Redirect the user to the home page
     return flask.redirect("/")
