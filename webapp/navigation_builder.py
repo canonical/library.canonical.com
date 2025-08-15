@@ -1,6 +1,5 @@
 import copy
 import os
-import traceback
 from webapp.googledrive import GoogleDrive
 from webapp.utils.process_leading_number import (
     extract_leading_number,

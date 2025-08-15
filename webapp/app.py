@@ -549,7 +549,7 @@ def document(path=None):
         url_updated = False
         navigation_data = construct_navigation_data()
         g.navigation_data = navigation_data
-    # If cache warming is in progress, use a copy of the navigation data being warmed
+    # If cache warming is in progress, use a copy of the navigation data
     elif cache_warming_in_progress:
         print(
             "Cache warming in progress, skipping navigation construction."
@@ -613,7 +613,7 @@ def restore_cleared_cached():
         print("\n\n URL list file not found. \n\n")
         return flask.redirect("/")
 
-    # Read all URLs from the file, stripping whitespace and skipping empty lines
+    # Read all URLs from the file
     with open(url_file_path, "r") as f:
         urls = [line.strip() for line in f if line.strip()]
     # Build navigation data once and set the cache warming flag
@@ -640,7 +640,7 @@ def restore_cleared_cached():
         f"\n\n Started caching for {len(urls)} URLs in the background. \n\n"
     )
 
-    # Redirect the user to the home page 
+    # Redirect the user to the home page
     return flask.redirect("/")
 
 
