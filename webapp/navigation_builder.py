@@ -1,5 +1,5 @@
 import copy
-
+import os
 from webapp.googledrive import GoogleDrive
 from webapp.utils.process_leading_number import (
     extract_leading_number,
@@ -28,12 +28,14 @@ class NavigationBuilder:
             self.doc_reference_dict = self.update_references_dict(
                 self.hierarchy
             )
+            self.save_urls_to_file()
         else:
             self.root_folder = root_folder.lower()
             self.doc_reference_dict = doc_reference_dict
             self.temp_hierarchy = temp_hierarchy
             self.file_list = file_list
             self.hierarchy = hierarchy
+            self.save_urls_to_file()
 
     def get_file_list_copy(self, google_drive: GoogleDrive):
         """
@@ -178,3 +180,39 @@ class NavigationBuilder:
                 )
                 new_dict.update(children)
         return new_dict
+
+    def extract_all_urls(self, hierarchy_obj=None, urls=None):
+        """
+        Recursively extracts all unique URLs from the hierarchy tree.
+        Returns a set of unique URLs.
+        """
+        if hierarchy_obj is None:
+            hierarchy_obj = self.hierarchy
+        if urls is None:
+            urls = set()
+        for key in hierarchy_obj.keys():
+            doc = hierarchy_obj[key]
+            if "full_path" in doc and doc["full_path"]:
+                urls.add(doc["full_path"])
+            if doc["mimeType"] == "folder" and "children" in doc:
+                self.extract_all_urls(doc["children"], urls)
+        return urls
+
+    def save_urls_to_file(self):
+        """
+        Extracts all URLs and saves them to static/assets/url_list.txt.
+        """
+        file_path = "static/assets/url_list.txt"
+        if os.path.exists(file_path):
+            print(
+                f"URLs file already exists at {file_path}, skipping save.",
+                flush=True,
+            )
+            return
+        urls = self.extract_all_urls()
+        file_path = "static/assets/url_list.txt"
+        with open(file_path, "w") as f:
+            for url in urls:
+                f.write(f"{url}\n")
+        print(f"URLs saved to {file_path}", flush=True)
+        return urls
