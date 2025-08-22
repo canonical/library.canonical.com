@@ -40,6 +40,12 @@ parts:  # you need to uncomment this line to add or update any part.
        - flask/app/templates
        - flask/app/static
 
+  flask-scheduler:
+    override: replace
+    startup: enabled
+    working-dir: app
+    command: python3 -m webapp.webapp.worker_url_cache_warming
+
 # you may need Ubuntu packages to build a python dependency. Add them here if necessary.
 #   flask-framework/dependencies:
 #     build-packages:
