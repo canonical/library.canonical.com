@@ -44,7 +44,7 @@ parts:  # you need to uncomment this line to add or update any part.
     override: replace
     startup: enabled
     working-dir: app
-    command: python3 -m webapp.webapp.worker_url_cache_warming
+    command: python3 -m webapp.webapp.worker_cache
 
 # you may need Ubuntu packages to build a python dependency. Add them here if necessary.
 #   flask-framework/dependencies:

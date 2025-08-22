@@ -182,17 +182,6 @@ def warm_cache_for_urls(urls):
                 lambda url: warm_single_url(url, navigation_data), urls
             )
         print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
-async def worker_url_cache_warming():
-    global cache_warming_in_progress
-    global cache_updated
-    if not cache_warming_in_progress:
-        print("\n\nChecking cache status...\n\n")
-        expiring_urls = get_urls_expiring_soon()
-        cache_warming_in_progress = True
-        urls_to_warm = [u["url"] for u in expiring_urls]
-        warm_cache_for_urls(urls_to_warm)
-        cache_warming_in_progress = False
-        cache_updated = True
 
 
 def get_cache_ttl(key):
