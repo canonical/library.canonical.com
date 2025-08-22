@@ -4,6 +4,7 @@ from webapp.app import app, get_urls_expiring_soon, warm_cache_for_urls
 cache_warming_in_progress = False
 cache_updated = False
 
+
 def worker_url_cache_warming():
     """
     Background worker to check for expiring cache entries and warm them.
@@ -19,6 +20,7 @@ def worker_url_cache_warming():
         warm_cache_for_urls(urls_to_warm)
         cache_warming_in_progress = False
         cache_updated = True
+
 
 if __name__ == "__main__":
     with app.app_context():
