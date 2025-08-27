@@ -28,25 +28,31 @@ class LibraryCharmCharm(paas_charm.flask.Charm):
         """
         super().__init__(*args)
         self.redis = RedisRequires(self, relation_name="redis")
-        self.framework.observe(self.redis.on.redis_relation_updated, self._on_redis_relation_updated)
+        self.framework.observe(self.on.redis_relation_changed, self._on_redis_relation_updated)
+        if not hasattr(self._stored, "redis_connected"):
+            self._stored.redis_connected = False
     
     def _on_redis_relation_updated(self, event):
         """Handle Redis connection changes."""
         redis_url = self.redis.url
         if redis_url:
-            self.unit.status = ActiveStatus("Redis connection restored")
-            self._trigger_flask_scheduler()
+            if self._stored.redis_connected:
+                # Only trigger if we were previously disconnected
+                print("Redis reconnecting...", flush=True)
+                # self._trigger_flask_scheduler()
+            self.unit.status = ActiveStatus("Redis reconnected")
+            self._stored.redis_connected = True
         else:
             self.unit.status = MaintenanceStatus("Redis connection lost")
 
-    def _trigger_flask_scheduler(self):
-        """Trigger the Flask scheduler to perform cache warming."""
-        container = self.unit.get_container("flask-app")
-        if container.can_connect():
-            container.restart("flask-scheduler")
-            self.unit.status = ActiveStatus("Flask scheduler triggered")
-        else:
-            self.unit.status = MaintenanceStatus("Cannot connect to Flask container")
+    # def _trigger_flask_scheduler(self):
+    #     """Trigger the Flask scheduler to perform cache warming."""
+    #     container = self.unit.get_container("flask-app")
+    #     if container.can_connect():
+    #         container.restart("flask-scheduler")
+    #         self.unit.status = ActiveStatus("Flask scheduler triggered")
+    #     else:
+    #         self.unit.status = MaintenanceStatus("Cannot connect to Flask container")
 
 if __name__ == "__main__":
     ops.main(LibraryCharmCharm)
