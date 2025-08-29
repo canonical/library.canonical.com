@@ -39,7 +39,6 @@ parts:  # you need to uncomment this line to add or update any part.
       - flask/app/webapp
       - flask/app/templates
       - flask/app/static
-      - flask/app/
     stage-packages:
       - python3
       - python3-pip
