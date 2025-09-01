@@ -25,7 +25,8 @@ class LibraryCharmCharm(paas_charm.flask.Charm):
         super().__init__(*args)
         self.redis = RedisRequires(self, relation_name="redis")
         self.framework.observe(self.on.redis_relation_changed, self._on_redis_relation_updated)
-
+        # Initialize the stored state attributes
+        self._stored.set_default(redis_connected=False)
 
     def _on_redis_relation_updated(self, event):
         """Handle Redis connection changes."""
