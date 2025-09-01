@@ -28,7 +28,6 @@ class LibraryCharmCharm(paas_charm.flask.Charm):
         self.redis = RedisRequires(self, relation_name="redis")
         self.framework.observe(self.on.redis_relation_changed, self._on_redis_relation_updated)
         self.framework.observe(self.on.flask_app_pebble_ready, self._on_flask_app_ready)
-        self.framework.observe(self.on.worker_pebble_ready, self._on_worker_ready)
 
     def _on_flask_app_ready(self, event):
         """Handle Flask app readiness."""
