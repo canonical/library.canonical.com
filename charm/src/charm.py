@@ -21,9 +21,7 @@ class LibraryCharmCharm(paas_charm.flask.Charm):
     _stored = StoredState()
 
     def __init__(self, *args: typing.Any) -> None:
-        """Initialize the instance.
-        Args:args: passthrough to CharmBase.
-        """
+        """Initialize the instance."""
         super().__init__(*args)
         self.redis = RedisRequires(self, relation_name="redis")
         self.framework.observe(self.on.redis_relation_changed, self._on_redis_relation_updated)
@@ -33,47 +31,24 @@ class LibraryCharmCharm(paas_charm.flask.Charm):
         """Handle Flask app readiness."""
         container = self.unit.get_container("flask-app")
         if container.can_connect():
-            self._configure_flask_app_and_worker(container)
+            # Ensure the services are started
+            container.start("flask-scheduler")
             self.unit.status = ActiveStatus("Flask app and worker are running")
 
-    def _configure_flask_app_and_worker(self, container):
-        """Configure the Flask app and worker services in the same container."""
-        container.add_layer(
-            "flask-app-and-worker",
-            {
-                "services": {
-                    "flask-app": {
-                        "override": "replace",
-                        "startup": "enabled",
-                        "command": "python3 -m webapp.app",
-                        "environment": {
-                            "FLASK_ENV": "production",
-                        },
-                    },
-                    "flask-scheduler": {
-                        "override": "replace",
-                        "startup": "enabled",  # Start the worker alongside the Flask app
-                        "command": "python3 -m webapp.worker_cache",
-                    },
-                }
-            },
-            combine=True,
-        )
-        container.replan()
-    
     def _on_redis_relation_updated(self, event):
         """Handle Redis connection changes."""
         redis_url = self.redis.url
         if redis_url:
             if self._stored.redis_connected:
-                print("Redis reconnected. Restarting worker...", flush=True)
-                container = self.unit.get_container("flask-scheduler")
+                logger.info("Redis reconnected. Restarting worker...")
+                container = self.unit.get_container("flask-app")
                 if container.can_connect():
                     container.restart("flask-scheduler")
             self.unit.status = ActiveStatus("Redis reconnected")
             self._stored.redis_connected = True
         else:
             self.unit.status = MaintenanceStatus("Redis connection lost")
+
 
 if __name__ == "__main__":
     ops.main(LibraryCharmCharm)
