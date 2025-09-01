@@ -49,7 +49,7 @@ parts:  # you need to uncomment this line to add or update any part.
     override-build: |
       python3 -m venv /srv/venv
       . /srv/venv/bin/activate
-      pip install -r flask/app/requirements.txt
+      pip install -r $CRAFT_PART_SRC/requirements.txt
 
 
 services:
