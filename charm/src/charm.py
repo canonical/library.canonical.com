@@ -34,21 +34,13 @@ class LibraryCharmCharm(paas_charm.flask.Charm):
         """Handle Flask app readiness."""
         container = self.unit.get_container("flask-app")
         if container.can_connect():
-            self._configure_flask_app(container)
-            self.unit.status = ActiveStatus("Flask app is running")
-            self._start_worker_if_ready()
+            self._configure_flask_app_and_worker(container)
+            self.unit.status = ActiveStatus("Flask app and worker are running")
 
-    def _on_worker_ready(self, event):
-        """Handle worker readiness."""
-        container = self.unit.get_container("flask-scheduler")
-        if container.can_connect():
-            self._configure_worker(container)
-            self._start_worker_if_ready()
-
-    def _configure_flask_app(self, container):
-        """Configure the Flask app service."""
+    def _configure_flask_app_and_worker(self, container):
+        """Configure the Flask app and worker services in the same container."""
         container.add_layer(
-            "flask-app",
+            "flask-app-and-worker",
             {
                 "services": {
                     "flask-app": {
@@ -58,42 +50,17 @@ class LibraryCharmCharm(paas_charm.flask.Charm):
                         "environment": {
                             "FLASK_ENV": "production",
                         },
-                    }
-                }
-            },
-            combine=True,
-        )
-        container.replan()
-
-    def _configure_worker(self, container):
-        """Configure the worker service."""
-        container.add_layer(
-            "flask-scheduler",
-            {
-                "services": {
+                    },
                     "flask-scheduler": {
                         "override": "replace",
-                        "startup": "disabled",  # Disabled until Flask app is running
+                        "startup": "enabled",  # Start the worker alongside the Flask app
                         "command": "python3 -m webapp.worker_cache",
-                    }
+                    },
                 }
             },
             combine=True,
         )
         container.replan()
-
-    def _start_worker_if_ready(self):
-        """Start the worker only if the Flask app is running."""
-        flask_container = self.unit.get_container("flask-app")
-        worker_container = self.unit.get_container("flask-scheduler")
-
-        if flask_container.can_connect() and worker_container.can_connect():
-            flask_services = flask_container.get_plan().to_dict().get("services", {})
-            if "flask-app" in flask_services and flask_services["flask-app"]["status"] == "active":
-                worker_container.start("flask-scheduler")
-                self.unit.status = ActiveStatus("Worker started")
-            else:
-                self.unit.status = MaintenanceStatus("Waiting for Flask app to start")
     
     def _on_redis_relation_updated(self, event):
         """Handle Redis connection changes."""
