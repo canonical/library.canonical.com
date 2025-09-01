@@ -46,10 +46,7 @@ parts:  # you need to uncomment this line to add or update any part.
       - python3-venv
     build-snaps:
       - core20
-    override-build: |
-      python3 -m venv /srv/venv
-      . /srv/venv/bin/activate
-      pip install -r $CRAFT_PART_SRC/requirements.txt
+
 
 
 services:
