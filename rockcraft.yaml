@@ -50,11 +50,11 @@ parts:  # you need to uncomment this line to add or update any part.
 
 
 services:
-  flask-scheduler:
+  go-scheduler:
     override: replace
     startup: disabled
     working-dir: app
-    command: /srv/venv/bin/python3 -m webapp.worker_cache
+    command: python3 -m webapp.worker_cache
 
 # you may need Ubuntu packages to build a python dependency. Add them here if necessary.
 #   flask-framework/dependencies:
