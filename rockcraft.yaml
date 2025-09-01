@@ -46,6 +46,9 @@ parts:  # you need to uncomment this line to add or update any part.
       - python3-venv
     build-snaps:
       - core20
+    override-build: |
+      snapcraftctl build
+      pip3 install -r $CRAFT_PART_SRC/requirements.txt
 
 
 
