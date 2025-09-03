@@ -49,7 +49,7 @@ parts:  # you need to uncomment this line to add or update any part.
 
 
 services:
-  go-scheduler:
+  flask-scheduler:
     override: replace
     startup: disabled
     working-dir: app
