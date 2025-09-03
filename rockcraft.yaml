@@ -28,18 +28,18 @@ extensions:
 parts:  # you need to uncomment this line to add or update any part.
 
   flask-framework/install-app:
-    prime:
-#       # by default, only the files in app/, templates/, static/, migrate, migrate.sh,
-#       # migrate.py and app.py are copied into the image. You can modify the list
-#       # below to override the default list and include or exclude specific
-#       # files/directories in your project.
-#       # note: prefix each entry with "flask/app/" followed by the local path.
-      - flask/app/.env
-      - flask/app/app.py
-      - flask/app/webapp
-      - flask/app/templates
-      - flask/app/static
-      - flask/app/requirements.txt
+#     prime:
+# #       # by default, only the files in app/, templates/, static/, migrate, migrate.sh,
+# #       # migrate.py and app.py are copied into the image. You can modify the list
+# #       # below to override the default list and include or exclude specific
+# #       # files/directories in your project.
+# #       # note: prefix each entry with "flask/app/" followed by the local path.
+#       - flask/app/.env
+#       - flask/app/app.py
+#       - flask/app/webapp
+#       - flask/app/templates
+#       - flask/app/static
+#       - flask/app/requirements.txt
     stage-packages:
       - python3
       - python3-pip
