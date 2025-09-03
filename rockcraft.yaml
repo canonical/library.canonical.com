@@ -44,8 +44,6 @@ parts:  # you need to uncomment this line to add or update any part.
       - python3
       - python3-pip
       - python3-venv
-    python-requirements:
-      - flask/app/requirements.txt
 
 
 services:
