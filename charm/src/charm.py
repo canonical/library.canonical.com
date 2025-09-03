@@ -36,7 +36,7 @@ class LibraryCharmCharm(paas_charm.flask.Charm):
                 logger.info("Redis reconnected. Restarting worker...")
                 container = self.unit.get_container("flask-app")
                 if container.can_connect():
-                    container.restart("flask-scheduler")
+                    container.restart("go-scheduler")
             self.unit.status = ActiveStatus("Redis reconnected")
             self._stored.redis_connected = True
         else:
