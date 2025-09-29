@@ -357,6 +357,14 @@ def init_scheduler(app):
         """
         global cache_warming_in_progress
         global cache_updated
+         # Delete the old url_list.txt if it exists
+        url_list_path = os.path.join(app.static_folder, "assets", "url_list.txt")
+        if os.path.exists(url_list_path):
+            os.remove(url_list_path)
+            print(f"Deleted old {url_list_path}")
+
+        with app.app_context():
+            construct_navigation_data()
         if not cache_warming_in_progress:
             print("\n\nChecking cache status...\n\n")
             expiring_urls = get_urls_expiring_soon()
