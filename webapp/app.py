@@ -169,12 +169,14 @@ def warm_single_url(url, navigation_data):
 
 
 def warm_cache_for_urls(urls):
+    global cache_navigation_data
     """
     Warm up the cache for a list of URLs by using a thread pool to
     handle multiple URLs concurrently.
     """
     with app.app_context():
         navigation_data = construct_navigation_data()
+        cache_navigation_data = navigation_data
         with ThreadPoolExecutor(
             max_workers=8
         ) as executor:  # Adjust workers as needed
@@ -183,20 +185,6 @@ def warm_cache_for_urls(urls):
             )
         print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
 
-
-def get_cache_ttl(key):
-    """
-    Returns the TTL (seconds until expiry) for a cache key if Redis is used.
-    If SimpleCache is used, returns None.
-    """
-    # Check if Redis is being used as the cache backend
-    if isinstance(cache.cache, redis.client.Redis):
-        redis_key = key
-        ttl = cache.cache.ttl(redis_key)
-        return ttl
-    else:
-        print("TTL is not supported for SimpleCache.")
-        return None
 
 
 def get_urls_expiring_soon():
@@ -217,13 +205,8 @@ def get_urls_expiring_soon():
 
     # Check each cache key's TTL
     if "REDIS_DB_CONNECT_STRING" in os.environ:
-        redis_client = cache.cache._read_client
         for url in urls:
-            # The cache key must match your Flask-Caching key pattern
-            cache_key = f"view//{url.lstrip('/')}"
-            ttl = redis_client.ttl(cache_key)
-            if ttl < 3600:  # Less than 1 hour
-                expiring_urls.append({"url": url, "ttl": ttl})
+            expiring_urls.append({"url": url})
     else:
         print("TTL checking is only supported with Redis cache.")
 
