@@ -4,7 +4,6 @@
 import os
 import copy
 import flask
-import redis
 from apscheduler.schedulers.background import BackgroundScheduler
 import dotenv
 
@@ -186,7 +185,6 @@ def warm_cache_for_urls(urls):
         print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
 
 
-
 def get_urls_expiring_soon():
     """
     Returns a list of URLs from url_list.txt whose cache
@@ -357,8 +355,10 @@ def init_scheduler(app):
         """
         global cache_warming_in_progress
         global cache_updated
-         # Delete the old url_list.txt if it exists
-        url_list_path = os.path.join(app.static_folder, "assets", "url_list.txt")
+        # Delete the old url_list.txt if it exists
+        url_list_path = os.path.join(
+            app.static_folder, "assets", "url_list.txt"
+        )
         if os.path.exists(url_list_path):
             os.remove(url_list_path)
             print(f"Deleted old {url_list_path}")
