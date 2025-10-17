@@ -435,6 +435,8 @@ def search_drive():
         doc_reference_dict=navigation_data.doc_reference_dict,
         query=query,
         TARGET_DRIVE=TARGET_DRIVE,
+        navigation=navigation_data.hierarchy,
+        previous_slug=request.path.strip("/")
     )
 
 
