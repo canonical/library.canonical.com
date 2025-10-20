@@ -383,18 +383,18 @@ def init_scheduler(app):
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)  # Run once
-    scheduler.add_job(check_status_cache)  # Run on load
+    # scheduler.add_job(check_status_cache)  # Run on load
     scheduler.add_job(
         scheduled_task, "interval", minutes=5
     )  # Run every 5 minutes
-    scheduler.add_job(
-        check_status_cache,
-        "cron",
-        day_of_week="sun",
-        hour=7,
-        minute=0,
-        id="weekly_cache_check",
-    )  # Run every Sunday at 7:00 AM
+    # scheduler.add_job(
+    #     check_status_cache,
+    #     "cron",
+    #     day_of_week="sun",
+    #     hour=7,
+    #     minute=0,
+    #     id="weekly_cache_check",
+    # )  # Run every Sunday at 7:00 AM
     scheduler.start()
     return scheduler
 
@@ -498,21 +498,56 @@ def create_copy_template():
 @app.route("/clear-cache/<path:path>")
 def clear_cache_doc(path=None):
     """
-    Clear cache for a specific document
+    Clear cache for a specific document and remove its DB row (so it will be refetched).
     """
     print("Clearing cache")
     print("PATH\n", path)
     if path is None:
         new_path = ""
     else:
+        # path is already relative; replace is harmless
         new_path = path.replace("/clear-cache", "")
-    cache_key = "view//%s" % new_path
 
+    # Delete the DB row for this document (if DB is enabled)
+    if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
+        try:
+            from webapp.models import Document
+            from webapp.db import db as _db
+
+            # Try to resolve the Google Drive ID from navigation
+            gid = None
+            try:
+                navigation_data = get_navigation_data()
+                target = (
+                    get_target_document(new_path, navigation_data.hierarchy)
+                    if new_path
+                    else navigation_data.hierarchy["index"]
+                )
+                gid = target.get("id")
+            except Exception as e:
+                print(f"Could not resolve target doc from navigation: {e}", flush=True)
+
+            deleted = 0
+            if gid:
+                deleted = Document.query.filter_by(google_drive_id=gid).delete()
+            if not deleted:
+                # Fallback: delete by path (paths are saved with a leading slash)
+                full_path = f"/{new_path}" if new_path else "/"
+                deleted = Document.query.filter_by(path=full_path).delete()
+
+            _db.session.commit()
+            print(f"DB: deleted rows={deleted} for path '{new_path}'", flush=True)
+        except Exception as e:
+            print(f"DB delete failed for '{new_path}': {e}", flush=True)
+
+    # Clear the view cache entry
+    cache_key = "view//%s" % new_path
     print("Cache Key", cache_key)
-    if cache.delete(cache_key):  # Delete the cache entry
+    if cache.delete(cache_key):
         print(f"Cache for '{new_path}' has been cleared.", 200)
     else:
         print(f"Cache for '{new_path}' not found.", 404)
+
     print("Redirecting to", new_path)
     return flask.redirect("/" + new_path)
 
@@ -571,7 +606,7 @@ def document(path=None):
         target_document["name"],
     )
     # Attach metadata and headings map to the target document for rendering
-    target_document["metadata"] = soup.metadata
+    target_document["metadata"] = soup.metadata 
     target_document["headings_map"] = soup.headings_map
 
     # Render the main template with navigation and document content
