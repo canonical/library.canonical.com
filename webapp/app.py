@@ -6,9 +6,15 @@ import copy
 import flask
 from apscheduler.schedulers.background import BackgroundScheduler
 import dotenv
+import json
+import ssl
+import base64
+import binascii
+import textwrap
+import requests
+from flask import request, g, session, has_request_context, jsonify
 
 # import talisker
-from flask import request, g, session, has_request_context
 from canonicalwebteam.flask_base.app import FlaskBase
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
@@ -383,7 +389,7 @@ def init_scheduler(app):
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)  # Run once
-    # scheduler.add_job(check_status_cache)  # Run on load
+    scheduler.add_job(check_status_cache)  # Run on load
     scheduler.add_job(
         scheduled_task, "interval", minutes=5
     )  # Run every 5 minutes
@@ -690,3 +696,139 @@ def initialized():
 # =========================
 if __name__ == "__main__":
     app.run()
+
+def _requests_session_with_env_ca(raw):
+    """
+    Accepts OPENSEARCH_TLS_CA as:
+      - Inline PEM chain in one line with literal '\n'
+      - Regular PEM (multi-line)
+      - Base64 of PEM/DER
+    Returns a requests.Session with SSLContext using this CA.
+    """
+    if not raw:
+        return None
+
+    val = str(raw).strip().strip('"').strip("'")
+    if "\\n" in val:
+        val = val.replace("\\n", "\n")
+    val = val.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [ln.lstrip() for ln in val.splitlines()]
+    val = "\n".join(lines).strip()
+
+    cadata = None  # str or bytes
+    if "BEGIN CERTIFICATE" in val:
+        # Ensure proper formatting and trailing newline
+        pem = textwrap.dedent(val).strip()
+        if not pem.endswith("\n"):
+            pem += "\n"
+        cadata = pem
+    else:
+        # Try base64 decode (PEM text or DER)
+        try:
+            raw_bytes = base64.b64decode(val, validate=True)
+        except binascii.Error:
+            raise ValueError("OPENSEARCH_TLS_CA is neither PEM nor base64")
+        try:
+            txt = raw_bytes.decode("utf-8")
+            cadata = txt if "BEGIN CERTIFICATE" in txt else raw_bytes
+        except UnicodeDecodeError:
+            cadata = raw_bytes
+
+    ctx = ssl.create_default_context()
+    ctx.load_verify_locations(cadata=cadata)
+
+    from requests.adapters import HTTPAdapter
+
+    class SSLContextAdapter(HTTPAdapter):
+        def __init__(self, ssl_context=None, **kwargs):
+            self.ssl_context = ssl_context
+            super().__init__(**kwargs)
+        def init_poolmanager(self, *args, **kwargs):
+            kwargs["ssl_context"] = self.ssl_context
+            return super().init_poolmanager(*args, **kwargs)
+        def proxy_manager_for(self, *args, **kwargs):
+            kwargs["ssl_context"] = self.ssl_context
+            return super().proxy_manager_for(*args, **kwargs)
+
+    s = requests.Session()
+    s.mount("https://", SSLContextAdapter(ctx))
+    return s
+
+@app.route("/opensearch/bulk/run", methods=["GET", "POST"])
+def opensearch_bulk_run():
+    # Require DB
+    if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+        return ("DB not configured", 503)
+
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")  # single line with \n is OK
+    index_name = request.args.get("index") or os.getenv("OPENSEARCH_INDEX", "library-docs")
+
+    if not base_url or not username or not password:
+        return ("Missing OPENSEARCH_URL/USERNAME/PASSWORD", 400)
+
+    def fmt_date(d):
+        return d.strftime("%d-%m-%Y") if d else None
+
+    # Build NDJSON generator from DB
+    from webapp.models import Document
+    def ndjson_iter():
+        for doc in db.session.query(Document).yield_per(1000):
+            action = {"index": {"_index": index_name, "_id": doc.google_drive_id}}
+            yield json.dumps(action, ensure_ascii=False) + "\n"
+            source = {
+                "google_drive_ID": doc.google_drive_id,
+                "date_planned_review": fmt_date(doc.date_planned_review),
+                "type": doc.doc_type,
+                "owner": doc.owner,
+                "full_html": doc.full_html,
+                "path": doc.path,
+            }
+            if hasattr(doc, "doc_metadata") and doc.doc_metadata is not None:
+                source["doc_metadata"] = doc.doc_metadata
+            if hasattr(doc, "headings_map") and doc.headings_map is not None:
+                source["headings_map"] = doc.headings_map
+            yield json.dumps(source, ensure_ascii=False) + "\n"
+
+    # HTTPS client with CA from env
+    try:
+        http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+    except Exception as e:
+        return jsonify({"error": f"Invalid OPENSEARCH_TLS_CA: {e}"}), 400
+
+    # Send to OpenSearch bulk endpoint
+    try:
+        resp = http.post(
+            f"{base_url.rstrip('/')}/_bulk",
+            data=ndjson_iter(),
+            headers={"Content-Type": "application/x-ndjson"},
+            auth=(username, password),
+            timeout=300,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+    # Parse response and return a compact summary
+    summary = {"status": resp.status_code}
+    try:
+        body = resp.json()
+        summary.update(
+            {
+                "errors": body.get("errors"),
+                "took": body.get("took"),
+                "items_count": len(body.get("items", [])) if isinstance(body.get("items"), list) else None,
+            }
+        )
+        if body.get("errors") is True:
+            # include first error item for quick debug
+            for it in body.get("items", []):
+                op = next(iter(it))
+                if it[op].get("error"):
+                    summary["first_error"] = it[op]["error"]
+                    break
+    except ValueError:
+        summary["text"] = resp.text[:1000]
+
+    return jsonify(summary), resp.status_code
