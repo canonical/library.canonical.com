@@ -12,7 +12,9 @@ import base64
 import binascii
 import textwrap
 import requests
-from flask import request, g, session, has_request_context, jsonify
+from flask import jsonify, request
+from flask import request, g, session, has_request_context
+from sqlalchemy.exc import IntegrityError
 
 # import talisker
 from canonicalwebteam.flask_base.app import FlaskBase
@@ -217,6 +219,7 @@ def get_urls_expiring_soon():
     return expiring_urls
 
 
+
 # =========================
 # Navigation and Document Functions
 # =========================
@@ -385,22 +388,91 @@ def init_scheduler(app):
                 cache_updated = True
             else:
                 print("No URLs expiring soon, no action taken.")
+    
+    def ingest_all_documents_job():
+        """
+        Ensure all documents exist in the DB by fetching from Drive if missing.
+        Runs in parallel with a configurable number of threads.
+        """
+        if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+            print("DB not configured; skipping ingest job", flush=True)
+            return
+
+        workers = int(os.getenv("INGEST_WORKERS", "10"))  # tune as needed
+
+        with app.app_context():
+            try:
+                try:
+                    nav = construct_navigation_data()
+                except Exception:
+                    nav = get_navigation_data()
+
+                doc_dict = getattr(nav, "doc_reference_dict", {}) or {}
+                items = list(doc_dict.items())
+                total = len(items)
+                if total == 0:
+                    print("[ingest] nothing to ingest", flush=True)
+                    return
+
+                created = 0
+                skipped = 0
+                errors = 0
+
+                def _ingest_one(args):
+                    doc_id, meta = args
+                    # New app context per thread
+                    with app.app_context():
+                        try:
+                            # Build a fresh Drive client for this thread
+                            drive = GoogleDrive(cache)
+                            from webapp.models import Document
+
+                            # Fast skip if exists
+                            if db.session.query(Document.id).filter_by(google_drive_id=doc_id).first():
+                                return "skipped", doc_id, None
+
+                            # Parse and persist
+                            get_or_parse_document(
+                                drive,
+                                doc_id,
+                                doc_dict,
+                                meta.get("name", ""),
+                            )
+                            return "created", doc_id, None
+                        except IntegrityError as e:
+                            # Race between threads inserting the same doc
+                            db.session.rollback()
+                            return "skipped", doc_id, None
+                        except Exception as e:
+                            db.session.rollback()
+                            return "error", doc_id, str(e)
+                        finally:
+                            # Ensure thread-local session is released
+                            db.session.remove()
+
+                print(f"[ingest] starting {total} docs with {workers} workers", flush=True)
+                with ThreadPoolExecutor(max_workers=workers) as ex:
+                    for status, doc_id, err in ex.map(_ingest_one, items):
+                        if status == "created":
+                            created += 1
+                        elif status == "skipped":
+                            skipped += 1
+                        else:
+                            errors += 1
+                            print(f"[ingest] error id={doc_id}: {err}", flush=True)
+
+                print(f"[ingest] done created={created} skipped={skipped} errors={errors} total={total}", flush=True)
+            except Exception as e:
+                print(f"[ingest] fatal error: {e}", flush=True)
 
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_task)  # Run once
-    scheduler.add_job(check_status_cache)  # Run on load
-    scheduler.add_job(
-        scheduled_task, "interval", minutes=5
-    )  # Run every 5 minutes
-    # scheduler.add_job(
-    #     check_status_cache,
-    #     "cron",
-    #     day_of_week="sun",
-    #     hour=7,
-    #     minute=0,
-    #     id="weekly_cache_check",
-    # )  # Run every Sunday at 7:00 AM
+    scheduler.add_job(scheduled_task)                 # Run once
+    scheduler.add_job(check_status_cache)             # Run on load
+    scheduler.add_job(ingest_all_documents_job)       # Run on load
+    scheduler.add_job(scheduled_task, "interval", minutes=5)
+    # Optionally re-run ingest every N hours (uncomment if desired)
+    # scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
     scheduler.start()
     return scheduler
 
@@ -427,22 +499,109 @@ def refresh_navigation():
 @app.route("/search")
 def search_drive():
     """
-    Route to search the Google Drive. The search results are displayed in a
-    separate page.
+    Search: use OpenSearch when configured; fallback to Drive only if OS is not configured or errors.
+    Query params:
+      - q: query string (optional)
+      - size: number of results (default 50)
+      - index: override index (default OPENSEARCH_INDEX or 'library-docs')
+      - operator: 'or' (default) or 'and' for q queries
     """
-    query = request.args.get("q", "")
-    google_drive = get_google_drive_instance()
-    search_results = google_drive.search_drive(query)
+    q = request.args.get("q", "") or ""
+    size = int(request.args.get("size", "50"))
+    index_name = request.args.get("index") or os.getenv("OPENSEARCH_INDEX", "library-docs")
+    operator = (request.args.get("operator") or os.getenv("OPENSEARCH_DEFAULT_OPERATOR", "or")).lower()
+    operator = operator if operator in ("and", "or") else "or"
+
     navigation_data = get_navigation_data()
+
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+
+    search_results = None
+    used_opensearch = False
+
+    if base_url and username and password:
+        try:
+            http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            print(f"[search] querying OpenSearch index='{index_name}' q='{q}' size={size} operator={operator}", flush=True)
+            if q:
+                # Simple URI search (like the docs): GET /{index}/_search?q=...
+                resp = http.get(
+                    f"{base_url.rstrip('/')}/{index_name}/_search",
+                    auth=(username, password),
+                    params={
+                        "q": q,
+                        "size": size,
+                        "default_operator": operator,
+                        "_source_includes": "path,owner,type,doc_metadata",
+                    },
+                    timeout=30,
+                )
+            else:
+                # No query: show recent docs (match_all)
+                resp = http.post(
+                    f"{base_url.rstrip('/')}/{index_name}/_search",
+                    auth=(username, password),
+                    headers={"Content-Type": "application/json"},
+                    json={
+                        "query": {"match_all": {}},
+                        "size": size,
+                        "sort": [{"_id": "desc"}],
+                        "_source": {"includes": ["path", "owner", "type", "doc_metadata"]},
+                    },
+                    timeout=30,
+                )
+
+            if resp.ok:
+                print(f"[search] OpenSearch succeeded", flush=True)
+                data = resp.json()
+                print(f"[search] OpenSearch returned {data.get('hits', {}).get('total', {})}", flush=True)
+                hits = data.get("hits", {}).get("hits", [])
+                print(f"[search] OpenSearch found {len(hits)} hits", flush=True)
+                print(f"[search] OpenSearch hits: {hits}", flush=True)
+                results = []
+                for h in hits:
+                    gid = h.get("_id")
+                    src = h.get("_source") or {}
+                    meta = src.get("doc_metadata") or {}
+                    # Enrich from navigation if available; otherwise use OS source
+                    ref = navigation_data.doc_reference_dict.get(gid)
+                    if ref:
+                        results.append(ref)
+                    else:
+                        results.append(
+                            {
+                                "id": gid,
+                                "full_path": src.get("path") or "",
+                                "name": meta.get("title") or (src.get("path") or gid),
+                                "owner": src.get("owner"),
+                                "type": src.get("type"),
+                            }
+                        )
+                search_results = results
+                used_opensearch = True
+            else:
+                print(f"[search] OpenSearch failed {resp.status_code}: {resp.text[:300]}", flush=True)
+        except Exception as e:
+            print(f"[search] OpenSearch error: {e}", flush=True)
+
+    # Fallback only if OpenSearch not configured or errored out
+    if search_results is None:
+        print("[search] Falling back to Google Drive search", flush=True)
+        google_drive = get_google_drive_instance()
+        search_results = google_drive.search_drive(q)
 
     return flask.render_template(
         "search.html",
         search_results=search_results,
         doc_reference_dict=navigation_data.doc_reference_dict,
-        query=query,
+        query=q,
         TARGET_DRIVE=TARGET_DRIVE,
         navigation=navigation_data.hierarchy,
-        previous_slug=request.path.strip("/")
+        previous_slug=request.path.strip("/"),
+        used_opensearch=used_opensearch,
     )
 
 
@@ -832,3 +991,119 @@ def opensearch_bulk_run():
         summary["text"] = resp.text[:1000]
 
     return jsonify(summary), resp.status_code
+
+@app.route("/opensearch/indices", methods=["GET"])
+def opensearch_list_indices():
+    """
+    List OpenSearch indices via _cat/indices.
+    """
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+
+    if not (base_url and username and password):
+        return jsonify({"error": "OpenSearch not configured"}), 503
+
+    try:
+        try:
+            http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+        except NameError:
+            http = requests
+
+        resp = http.get(
+            f"{base_url.rstrip('/')}/_cat/indices",
+            auth=(username, password),
+            params={"format": "json", "expand_wildcards": "all"},
+            timeout=20,
+        )
+        # Pass through JSON body and status
+        return (resp.text, resp.status_code, {"Content-Type": resp.headers.get("Content-Type", "application/json")})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
+@app.route("/opensearch/docs", methods=["GET"])
+def opensearch_list_docs():
+    """
+    List documents from an OpenSearch index.
+    Query params:
+      - index: index name (default OPENSEARCH_INDEX or 'library-docs')
+      - q: optional simple query (uses GET q=... form if provided)
+      - size: page size (default 50)
+      - from: offset for pagination (default 0)
+      - raw=1: return raw OpenSearch response
+    """
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+
+    if not (base_url and username and password):
+        return jsonify({"error": "OpenSearch not configured"}), 503
+
+    index_name = request.args.get("index") or os.getenv("OPENSEARCH_INDEX", "library-docs")
+    size = int(request.args.get("size", "50"))
+    from_ = int(request.args.get("from", "0"))
+    q = request.args.get("q")
+    raw = request.args.get("raw") == "1"
+
+    try:
+        try:
+            http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+        except NameError:
+            http = requests
+
+        if q:
+            # Simple URI search like docs: GET /{index}/_search?q=...
+            resp = http.get(
+                f"{base_url.rstrip('/')}/{index_name}/_search",
+                auth=(username, password),
+                params={
+                    "q": q,
+                    "size": size,
+                    "from": from_,
+                    "default_operator": "and",
+                    "_source_includes": "path,owner,type,doc_metadata",
+                },
+                timeout=30,
+            )
+        else:
+            # JSON body search with match_all (lets us control _source/includes)
+            resp = http.post(
+                f"{base_url.rstrip('/')}/{index_name}/_search",
+                auth=(username, password),
+                headers={"Content-Type": "application/json"},
+                json={
+                    "query": {"match_all": {}},
+                    "_source": {"includes": ["path", "owner", "type", "doc_metadata"]},
+                    "size": size,
+                    "from": from_,
+                },
+                timeout=30,
+            )
+
+        data = resp.json()
+        if raw:
+            return jsonify(data), resp.status_code
+
+        hits = data.get("hits", {})
+        total = hits.get("total", {}).get("value") if isinstance(hits.get("total"), dict) else hits.get("total")
+        items = []
+        for h in hits.get("hits", []):
+            src = h.get("_source") or {}
+            meta = src.get("doc_metadata") or {}
+            items.append(
+                {
+                    "id": h.get("_id"),
+                    "score": h.get("_score"),
+                    "path": src.get("path"),
+                    "owner": src.get("owner"),
+                    "type": src.get("type"),
+                    "title": meta.get("title"),
+                }
+            )
+
+        return jsonify({"index": index_name, "from": from_, "size": size, "total": total, "hits": items}), resp.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
