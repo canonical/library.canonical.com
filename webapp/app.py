@@ -12,9 +12,9 @@ import base64
 import binascii
 import textwrap
 import requests
-from flask import jsonify, request
-from flask import request, g, session, has_request_context
+from flask import jsonify, request, request, g, session, has_request_context
 from sqlalchemy.exc import IntegrityError
+from requests.adapters import HTTPAdapter
 
 # import talisker
 from canonicalwebteam.flask_base.app import FlaskBase
@@ -28,7 +28,7 @@ from webapp.sso import init_sso
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 from webapp.db import db
-
+from webapp.utils.make_snippet import make_snippet, render_snippet
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
@@ -526,33 +526,40 @@ def search_drive():
         try:
             http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
             print(f"[search] querying OpenSearch index='{index_name}' q='{q}' size={size} operator={operator}", flush=True)
-            if q:
-                # Simple URI search (like the docs): GET /{index}/_search?q=...
-                resp = http.get(
-                    f"{base_url.rstrip('/')}/{index_name}/_search",
-                    auth=(username, password),
-                    params={
-                        "q": q,
-                        "size": size,
+
+            # Use POST with query_string so we can both include full_html and get highlights
+            body = {
+                "query": {
+                    "query_string": {
+                        "query": q if q else "*",
                         "default_operator": operator,
-                        "_source_includes": "path,owner,type,doc_metadata",
-                    },
-                    timeout=30,
-                )
+                    }
+                },
+                "_source": {"includes": ["path", "owner", "type", "doc_metadata", "full_html"]},
+                "size": size,
+            }
+            # Ask for highlight snippets from full_html when a query is provided
+            if q:
+                body["highlight"] = {
+                    "fields": {
+                        "full_html": {
+                            "fragment_size": 300,
+                            "number_of_fragments": 1,
+                            "pre_tags": ["<strong>"],
+                            "post_tags": ["</strong>"],
+                        }
+                    }
+                }
             else:
-                # No query: show recent docs (match_all)
-                resp = http.post(
-                    f"{base_url.rstrip('/')}/{index_name}/_search",
-                    auth=(username, password),
-                    headers={"Content-Type": "application/json"},
-                    json={
-                        "query": {"match_all": {}},
-                        "size": size,
-                        "sort": [{"_id": "desc"}],
-                        "_source": {"includes": ["path", "owner", "type", "doc_metadata"]},
-                    },
-                    timeout=30,
-                )
+                body["sort"] = [{"_id": "desc"}]
+
+            resp = http.post(
+                f"{base_url.rstrip('/')}/{index_name}/_search",
+                auth=(username, password),
+                headers={"Content-Type": "application/json"},
+                json=body,
+                timeout=30,
+            )
 
             if resp.ok:
                 print(f"[search] OpenSearch succeeded", flush=True)
@@ -560,26 +567,29 @@ def search_drive():
                 print(f"[search] OpenSearch returned {data.get('hits', {}).get('total', {})}", flush=True)
                 hits = data.get("hits", {}).get("hits", [])
                 print(f"[search] OpenSearch found {len(hits)} hits", flush=True)
-                print(f"[search] OpenSearch hits: {hits}", flush=True)
+
                 results = []
+                print(hits[0].get("_source", {}).get("doc_metadata", {}).get("type"), flush=True)
                 for h in hits:
                     gid = h.get("_id")
                     src = h.get("_source") or {}
                     meta = src.get("doc_metadata") or {}
-                    # Enrich from navigation if available; otherwise use OS source
-                    ref = navigation_data.doc_reference_dict.get(gid)
-                    if ref:
-                        results.append(ref)
-                    else:
-                        results.append(
-                            {
-                                "id": gid,
-                                "full_path": src.get("path") or "",
-                                "name": meta.get("title") or (src.get("path") or gid),
-                                "owner": src.get("owner"),
-                                "type": src.get("type"),
-                            }
-                        )
+                    type = meta.get("type") or ""
+                    # Prefer OS highlight if present; otherwise build a snippet from full_html
+                    hl = (h.get("highlight") or {}).get("full_html")
+                    description = render_snippet(hl, src.get("full_html") or "", q)
+                    print(type, flush=True)
+                    results.append(
+                        {
+                            "id": gid,
+                            "full_path": src.get("path") or "",
+                            "breadcrumbs": src.get("path", "").split("/")[:-1],
+                            "name": meta.get("title") or (src.get("path") or gid),
+                            "owner": src.get("owner"),
+                            "type": type,
+                            "description": description,
+                        }
+                    )
                 search_results = results
                 used_opensearch = True
             else:
@@ -896,7 +906,7 @@ def _requests_session_with_env_ca(raw):
     ctx = ssl.create_default_context()
     ctx.load_verify_locations(cadata=cadata)
 
-    from requests.adapters import HTTPAdapter
+
 
     class SSLContextAdapter(HTTPAdapter):
         def __init__(self, ssl_context=None, **kwargs):
@@ -1064,7 +1074,7 @@ def opensearch_list_docs():
                     "size": size,
                     "from": from_,
                     "default_operator": "and",
-                    "_source_includes": "path,owner,type,doc_metadata",
+                    "_source_includes": "path,owner,type,doc_metadata,full_html",
                 },
                 timeout=30,
             )
@@ -1076,7 +1086,7 @@ def opensearch_list_docs():
                 headers={"Content-Type": "application/json"},
                 json={
                     "query": {"match_all": {}},
-                    "_source": {"includes": ["path", "owner", "type", "doc_metadata"]},
+                    "_source": {"includes": ["path", "owner", "type", "doc_metadata", "full_html"]},
                     "size": size,
                     "from": from_,
                 },
@@ -1101,6 +1111,8 @@ def opensearch_list_docs():
                     "owner": src.get("owner"),
                     "type": src.get("type"),
                     "title": meta.get("title"),
+                    "full_html_snippet": (src.get("full_html") or "")[:200],
+                    
                 }
             )
 
