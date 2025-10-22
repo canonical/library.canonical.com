@@ -88,7 +88,7 @@ def render_snippet(
     radius: int = 120,
 ) -> str:
     """
-    Prefer OpenSearch highlight (sanitized). Fallback: make_snippet() 
+    Prefer OpenSearch highlight. Fallback: make_snippet()
     then wrap query terms in <strong>.
     Returns sanitized HTML containing only <strong> tags.
     """
