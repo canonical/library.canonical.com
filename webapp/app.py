@@ -277,6 +277,26 @@ def _requests_session_with_env_ca(raw):
     return s
 
 
+def _ensure_highlight_limit(index_name: str, limit: int = 5_000_000) -> None:
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+    if not (base_url and username and password):
+        return
+    http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+    try:
+        http.put(
+            f"{base_url.rstrip('/')}/{index_name}/_settings",
+            auth=(username, password),
+            headers={"Content-Type": "application/json"},
+            json={"index.highlight.max_analyzed_offset": limit},
+            timeout=20,
+        )
+    except Exception as e:
+        print(f"[search] failed to set max_analyzed_offset: {e}", flush=True)
+
+
 # =========================
 # Navigation and Document Functions
 # =========================
@@ -654,6 +674,24 @@ def search_drive():
                 timeout=30,
             )
 
+            # If we hit the 400 offset error, bump setting and retry once
+            if resp.status_code == 400:
+                try:
+                    err = resp.json()
+                except Exception:
+                    err = {"error": {"reason": resp.text}}
+                reason_blob = json.dumps(err.get("error", {})).lower()
+                if "max_analyzed_offset" in reason_blob or "max analyzed offset" in reason_blob:
+                    print("[search] exceeded max_analyzed_offset; raising limit and retrying", flush=True)
+                    _ensure_highlight_limit(index_name, 5_000_000)
+                    resp = http.post(
+                        f"{base_url.rstrip('/')}/{index_name}/_search",
+                        auth=(username, password),
+                        headers={"Content-Type": "application/json"},
+                        json=body,
+                        timeout=30,
+                    )
+            # Handle response
             if resp.ok:
                 print("OpenSearch succeeded", flush=True)
                 data = resp.json()
