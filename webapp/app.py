@@ -500,7 +500,7 @@ def init_scheduler(app):
                                 meta.get("name", ""),
                             )
                             return "created", doc_id, None
-                        except IntegrityError as e:
+                        except IntegrityError:
                             db.session.rollback()
                             return "skipped", doc_id, None
                         except Exception as e:
@@ -526,9 +526,10 @@ def init_scheduler(app):
                                 f"[ingest] error id={doc_id}: {err}",
                                 flush=True,
                             )
-                content = f"done created={created} skipped={skipped} errors={errors} total={total}"
+                content = f"done created={created} skipped={skipped} "
+                content_2 = f"errors={errors} total={total}"
                 print(
-                    f"[ingest] {content}",
+                    f"[ingest] {content} {content_2}",
                     flush=True,
                 )
             except Exception as e:
