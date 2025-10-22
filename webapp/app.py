@@ -259,15 +259,15 @@ def _requests_session_with_env_ca(raw):
     ctx = ssl.create_default_context()
     ctx.load_verify_locations(cadata=cadata)
 
-
-
     class SSLContextAdapter(HTTPAdapter):
         def __init__(self, ssl_context=None, **kwargs):
             self.ssl_context = ssl_context
             super().__init__(**kwargs)
+
         def init_poolmanager(self, *args, **kwargs):
             kwargs["ssl_context"] = self.ssl_context
             return super().init_poolmanager(*args, **kwargs)
+
         def proxy_manager_for(self, *args, **kwargs):
             kwargs["ssl_context"] = self.ssl_context
             return super().proxy_manager_for(*args, **kwargs)
@@ -275,6 +275,7 @@ def _requests_session_with_env_ca(raw):
     s = requests.Session()
     s.mount("https://", SSLContextAdapter(ctx))
     return s
+
 
 # =========================
 # Navigation and Document Functions
@@ -444,7 +445,7 @@ def init_scheduler(app):
                 cache_updated = True
             else:
                 print("No URLs expiring soon, no action taken.")
-    
+
     def ingest_all_documents_job():
         """
         Ensure all documents exist in the DB by fetching from Drive if missing.
@@ -484,7 +485,11 @@ def init_scheduler(app):
                             from webapp.models import Document
 
                             # Fast skip if exists
-                            if db.session.query(Document.id).filter_by(google_drive_id=doc_id).first():
+                            if (
+                                db.session.query(Document.id)
+                                .filter_by(google_drive_id=doc_id)
+                                .first()
+                            ):
                                 return "skipped", doc_id, None
 
                             # Parse and persist
@@ -506,7 +511,10 @@ def init_scheduler(app):
                             # Ensure thread-local session is released
                             db.session.remove()
 
-                print(f"[ingest] starting {total} docs with {workers} workers", flush=True)
+                print(
+                    f"[ingest] starting {total} docs with {workers} workers",
+                    flush=True,
+                )
                 with ThreadPoolExecutor(max_workers=workers) as ex:
                     for status, doc_id, err in ex.map(_ingest_one, items):
                         if status == "created":
@@ -515,17 +523,23 @@ def init_scheduler(app):
                             skipped += 1
                         else:
                             errors += 1
-                            print(f"[ingest] error id={doc_id}: {err}", flush=True)
+                            print(
+                                f"[ingest] error id={doc_id}: {err}",
+                                flush=True,
+                            )
 
-                print(f"[ingest] done created={created} skipped={skipped} errors={errors} total={total}", flush=True)
+                print(
+                    f"[ingest] done created={created} skipped={skipped} errors={errors} total={total}",
+                    flush=True,
+                )
             except Exception as e:
                 print(f"[ingest] fatal error: {e}", flush=True)
 
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_task)                 # Run once
-    scheduler.add_job(check_status_cache)             # Run on load
-    scheduler.add_job(ingest_all_documents_job)       # Run on load
+    scheduler.add_job(scheduled_task)  # Run once
+    scheduler.add_job(check_status_cache)  # Run on load
+    scheduler.add_job(ingest_all_documents_job)  # Run on load
     scheduler.add_job(scheduled_task, "interval", minutes=5)
     # Optionally re-run ingest every N hours (uncomment if desired)
     # scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
@@ -564,8 +578,13 @@ def search_drive():
     """
     q = request.args.get("q", "") or ""
     size = int(request.args.get("size", "20"))
-    index_name = request.args.get("index") or os.getenv("OPENSEARCH_INDEX", "library-docs")
-    operator = (request.args.get("operator") or os.getenv("OPENSEARCH_DEFAULT_OPERATOR", "or")).lower()
+    index_name = request.args.get("index") or os.getenv(
+        "OPENSEARCH_INDEX", "library-docs"
+    )
+    operator = (
+        request.args.get("operator")
+        or os.getenv("OPENSEARCH_DEFAULT_OPERATOR", "or")
+    ).lower()
     operator = operator if operator in ("and", "or") else "or"
 
     navigation_data = get_navigation_data()
@@ -580,8 +599,13 @@ def search_drive():
 
     if base_url and username and password:
         try:
-            http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
-            print(f"[search] querying OpenSearch index='{index_name}' q='{q}' size={size} operator={operator}", flush=True)
+            http = (
+                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            )
+            print(
+                f"[search] querying OpenSearch index='{index_name}' q='{q}' size={size} operator={operator}",
+                flush=True,
+            )
 
             # Use POST with query_string so we can both include full_html and get highlights
             body = {
@@ -591,7 +615,15 @@ def search_drive():
                         "default_operator": operator,
                     }
                 },
-                "_source": {"includes": ["path", "owner", "type", "doc_metadata", "full_html"]},
+                "_source": {
+                    "includes": [
+                        "path",
+                        "owner",
+                        "type",
+                        "doc_metadata",
+                        "full_html",
+                    ]
+                },
                 "size": size,
             }
             # Ask for highlight snippets from full_html when a query is provided
@@ -603,14 +635,14 @@ def search_drive():
                     "fields": {
                         "full_html": {
                             "type": "unified",
-                            "fragment_size": 300,          # large enough to cover a full sentence
-                            "number_of_fragments": 1,       # one sentence-level fragment
-                            "boundary_scanner": "sentence", # sentence-aware splitting
+                            "fragment_size": 300,  # large enough to cover a full sentence
+                            "number_of_fragments": 1,  # one sentence-level fragment
+                            "boundary_scanner": "sentence",  # sentence-aware splitting
                             "boundary_scanner_locale": "en-US",
                             "pre_tags": ["<strong>"],
                             "post_tags": ["</strong>"],
                         }
-                    }
+                    },
                 }
             else:
                 body["sort"] = [{"_id": "desc"}]
@@ -626,9 +658,14 @@ def search_drive():
             if resp.ok:
                 print(f"[search] OpenSearch succeeded", flush=True)
                 data = resp.json()
-                print(f"[search] OpenSearch returned {data.get('hits', {}).get('total', {})}", flush=True)
+                print(
+                    f"[search] OpenSearch returned {data.get('hits', {}).get('total', {})}",
+                    flush=True,
+                )
                 hits = data.get("hits", {}).get("hits", [])
-                print(f"[search] OpenSearch found {len(hits)} hits", flush=True)
+                print(
+                    f"[search] OpenSearch found {len(hits)} hits", flush=True
+                )
 
                 results = []
                 for h in hits:
@@ -638,14 +675,17 @@ def search_drive():
                     type = meta.get("type") or ""
                     # Prefer OS highlight if present; otherwise build a snippet from full_html
                     hl = (h.get("highlight") or {}).get("full_html")
-                    description = render_snippet(hl, src.get("full_html") or "", q)
+                    description = render_snippet(
+                        hl, src.get("full_html") or "", q
+                    )
                     print(type, flush=True)
                     results.append(
                         {
                             "id": gid,
                             "full_path": src.get("path") or "",
                             "breadcrumbs": src.get("path", "").split("/")[:-1],
-                            "name": meta.get("title") or (src.get("path") or gid),
+                            "name": meta.get("title")
+                            or (src.get("path") or gid),
                             "owner": src.get("owner"),
                             "type": type,
                             "description": description,
@@ -654,7 +694,10 @@ def search_drive():
                 search_results = results
                 used_opensearch = True
             else:
-                print(f"[search] OpenSearch failed {resp.status_code}: {resp.text[:300]}", flush=True)
+                print(
+                    f"[search] OpenSearch failed {resp.status_code}: {resp.text[:300]}",
+                    flush=True,
+                )
         except Exception as e:
             print(f"[search] OpenSearch error: {e}", flush=True)
 
@@ -761,18 +804,25 @@ def clear_cache_doc(path=None):
                 )
                 gid = target.get("id")
             except Exception as e:
-                print(f"Could not resolve target doc from navigation: {e}", flush=True)
+                print(
+                    f"Could not resolve target doc from navigation: {e}",
+                    flush=True,
+                )
 
             deleted = 0
             if gid:
-                deleted = Document.query.filter_by(google_drive_id=gid).delete()
+                deleted = Document.query.filter_by(
+                    google_drive_id=gid
+                ).delete()
             if not deleted:
                 # Fallback: delete by path (paths are saved with a leading slash)
                 full_path = f"/{new_path}" if new_path else "/"
                 deleted = Document.query.filter_by(path=full_path).delete()
 
             _db.session.commit()
-            print(f"DB: deleted rows={deleted} for path '{new_path}'", flush=True)
+            print(
+                f"DB: deleted rows={deleted} for path '{new_path}'", flush=True
+            )
         except Exception as e:
             print(f"DB delete failed for '{new_path}': {e}", flush=True)
 
@@ -842,7 +892,7 @@ def document(path=None):
         target_document["name"],
     )
     # Attach metadata and headings map to the target document for rendering
-    target_document["metadata"] = soup.metadata 
+    target_document["metadata"] = soup.metadata
     target_document["headings_map"] = soup.headings_map
 
     # Render the main template with navigation and document content
@@ -900,8 +950,9 @@ def restore_cleared_cached():
     # Redirect the user to the home page
     return flask.redirect("/")
 
+
 # =========================
-# Open Search Routes    
+# Open Search Routes
 # =========================
 @app.route("/opensearch/bulk/run", methods=["GET", "POST"])
 def opensearch_bulk_run():
@@ -913,7 +964,9 @@ def opensearch_bulk_run():
     username = os.getenv("OPENSEARCH_USERNAME")
     password = os.getenv("OPENSEARCH_PASSWORD")
     tls_ca = os.getenv("OPENSEARCH_TLS_CA")  # single line with \n is OK
-    index_name = request.args.get("index") or os.getenv("OPENSEARCH_INDEX", "library-docs")
+    index_name = request.args.get("index") or os.getenv(
+        "OPENSEARCH_INDEX", "library-docs"
+    )
 
     if not base_url or not username or not password:
         return ("Missing OPENSEARCH_URL/USERNAME/PASSWORD", 400)
@@ -923,9 +976,12 @@ def opensearch_bulk_run():
 
     # Build NDJSON generator from DB
     from webapp.models import Document
+
     def ndjson_iter():
         for doc in db.session.query(Document).yield_per(1000):
-            action = {"index": {"_index": index_name, "_id": doc.google_drive_id}}
+            action = {
+                "index": {"_index": index_name, "_id": doc.google_drive_id}
+            }
             yield json.dumps(action, ensure_ascii=False) + "\n"
             source = {
                 "google_drive_ID": doc.google_drive_id,
@@ -967,7 +1023,11 @@ def opensearch_bulk_run():
             {
                 "errors": body.get("errors"),
                 "took": body.get("took"),
-                "items_count": len(body.get("items", [])) if isinstance(body.get("items"), list) else None,
+                "items_count": (
+                    len(body.get("items", []))
+                    if isinstance(body.get("items"), list)
+                    else None
+                ),
             }
         )
         if body.get("errors") is True:
@@ -998,7 +1058,9 @@ def opensearch_list_indices():
 
     try:
         try:
-            http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            http = (
+                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            )
         except NameError:
             http = requests
 
@@ -1009,7 +1071,15 @@ def opensearch_list_indices():
             timeout=20,
         )
         # Pass through JSON body and status
-        return (resp.text, resp.status_code, {"Content-Type": resp.headers.get("Content-Type", "application/json")})
+        return (
+            resp.text,
+            resp.status_code,
+            {
+                "Content-Type": resp.headers.get(
+                    "Content-Type", "application/json"
+                )
+            },
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -1033,7 +1103,9 @@ def opensearch_list_docs():
     if not (base_url and username and password):
         return jsonify({"error": "OpenSearch not configured"}), 503
 
-    index_name = request.args.get("index") or os.getenv("OPENSEARCH_INDEX", "library-docs")
+    index_name = request.args.get("index") or os.getenv(
+        "OPENSEARCH_INDEX", "library-docs"
+    )
     size = int(request.args.get("size", "50"))
     from_ = int(request.args.get("from", "0"))
     q = request.args.get("q")
@@ -1041,7 +1113,9 @@ def opensearch_list_docs():
 
     try:
         try:
-            http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            http = (
+                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            )
         except NameError:
             http = requests
 
@@ -1067,7 +1141,15 @@ def opensearch_list_docs():
                 headers={"Content-Type": "application/json"},
                 json={
                     "query": {"match_all": {}},
-                    "_source": {"includes": ["path", "owner", "type", "doc_metadata", "full_html"]},
+                    "_source": {
+                        "includes": [
+                            "path",
+                            "owner",
+                            "type",
+                            "doc_metadata",
+                            "full_html",
+                        ]
+                    },
                     "size": size,
                     "from": from_,
                 },
@@ -1079,7 +1161,11 @@ def opensearch_list_docs():
             return jsonify(data), resp.status_code
 
         hits = data.get("hits", {})
-        total = hits.get("total", {}).get("value") if isinstance(hits.get("total"), dict) else hits.get("total")
+        total = (
+            hits.get("total", {}).get("value")
+            if isinstance(hits.get("total"), dict)
+            else hits.get("total")
+        )
         items = []
         for h in hits.get("hits", []):
             src = h.get("_source") or {}
@@ -1093,11 +1179,21 @@ def opensearch_list_docs():
                     "type": src.get("type"),
                     "title": meta.get("title"),
                     "full_html_snippet": (src.get("full_html") or "")[:200],
-                    
                 }
             )
 
-        return jsonify({"index": index_name, "from": from_, "size": size, "total": total, "hits": items}), resp.status_code
+        return (
+            jsonify(
+                {
+                    "index": index_name,
+                    "from": from_,
+                    "size": size,
+                    "total": total,
+                    "hits": items,
+                }
+            ),
+            resp.status_code,
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -1127,5 +1223,3 @@ def initialized():
 # =========================
 if __name__ == "__main__":
     app.run()
-
-
