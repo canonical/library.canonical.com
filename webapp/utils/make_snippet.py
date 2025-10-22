@@ -71,7 +71,7 @@ def sanitize_highlight_fragment(fragment: str) -> str:
             flags=re.IGNORECASE,
         )
 
-    # Normalize any remaining <mark> to <strong>, then strip tags except <strong>
+    # Normalize any remaining <mark> to <strong>, strip tags except <strong>
     s = s.replace("<mark>", "<strong>").replace("</mark>", "</strong>")
     s = _strip_tags_except_strong(s)
 
@@ -88,7 +88,8 @@ def render_snippet(
     radius: int = 120,
 ) -> str:
     """
-    Prefer OpenSearch highlight (sanitized). Fallback: make_snippet() then wrap query terms in <strong>.
+    Prefer OpenSearch highlight (sanitized). Fallback: make_snippet() 
+    then wrap query terms in <strong>.
     Returns sanitized HTML containing only <strong> tags.
     """
     if highlight_fragments and highlight_fragments[0]:

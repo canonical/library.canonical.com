@@ -28,7 +28,8 @@ from webapp.sso import init_sso
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 from webapp.db import db
-from webapp.utils.make_snippet import make_snippet, render_snippet
+from webapp.utils.make_snippet import render_snippet
+from webapp.models import Document
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
@@ -659,7 +660,7 @@ def search_drive():
                 print(f"[search] OpenSearch succeeded", flush=True)
                 data = resp.json()
                 print(
-                    f"[search] OpenSearch returned {data.get('hits', {}).get('total', {})}",
+                    f"OpenSearch {data.get('hits', {}).get('total', {})}",
                     flush=True,
                 )
                 hits = data.get("hits", {}).get("hits", [])
@@ -673,7 +674,7 @@ def search_drive():
                     src = h.get("_source") or {}
                     meta = src.get("doc_metadata") or {}
                     type = meta.get("type") or ""
-                    # Prefer OS highlight if present; otherwise build a snippet from full_html
+                    # Prefer OS highlight or full_html fallback
                     hl = (h.get("highlight") or {}).get("full_html")
                     description = render_snippet(
                         hl, src.get("full_html") or "", q
@@ -695,7 +696,7 @@ def search_drive():
                 used_opensearch = True
             else:
                 print(
-                    f"[search] OpenSearch failed {resp.status_code}: {resp.text[:300]}",
+                    f"OpenSearch failed {resp.status_code}: {resp.text[:300]}",
                     flush=True,
                 )
         except Exception as e:
@@ -777,7 +778,8 @@ def create_copy_template():
 @app.route("/clear-cache/<path:path>")
 def clear_cache_doc(path=None):
     """
-    Clear cache for a specific document and remove its DB row (so it will be refetched).
+    Clear cache for a specific document and remove its DB row.
+    so it will be refetched from Google Drive on next access.
     """
     print("Clearing cache")
     print("PATH\n", path)
@@ -790,9 +792,6 @@ def clear_cache_doc(path=None):
     # Delete the DB row for this document (if DB is enabled)
     if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
         try:
-            from webapp.models import Document
-            from webapp.db import db as _db
-
             # Try to resolve the Google Drive ID from navigation
             gid = None
             try:
@@ -815,11 +814,10 @@ def clear_cache_doc(path=None):
                     google_drive_id=gid
                 ).delete()
             if not deleted:
-                # Fallback: delete by path (paths are saved with a leading slash)
                 full_path = f"/{new_path}" if new_path else "/"
                 deleted = Document.query.filter_by(path=full_path).delete()
 
-            _db.session.commit()
+            db.session.commit()
             print(
                 f"DB: deleted rows={deleted} for path '{new_path}'", flush=True
             )
@@ -974,9 +972,6 @@ def opensearch_bulk_run():
     def fmt_date(d):
         return d.strftime("%d-%m-%Y") if d else None
 
-    # Build NDJSON generator from DB
-    from webapp.models import Document
-
     def ndjson_iter():
         for doc in db.session.query(Document).yield_per(1000):
             action = {
@@ -1121,6 +1116,7 @@ def opensearch_list_docs():
 
         if q:
             # Simple URI search like docs: GET /{index}/_search?q=...
+            includes = "path,owner,type,doc_metadata,full_html"
             resp = http.get(
                 f"{base_url.rstrip('/')}/{index_name}/_search",
                 auth=(username, password),
@@ -1129,12 +1125,12 @@ def opensearch_list_docs():
                     "size": size,
                     "from": from_,
                     "default_operator": "and",
-                    "_source_includes": "path,owner,type,doc_metadata,full_html",
+                    "_source_includes": includes,
                 },
                 timeout=30,
             )
         else:
-            # JSON body search with match_all (lets us control _source/includes)
+            # JSON body search with match_all
             resp = http.post(
                 f"{base_url.rstrip('/')}/{index_name}/_search",
                 auth=(username, password),
