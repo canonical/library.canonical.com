@@ -219,6 +219,62 @@ def get_urls_expiring_soon():
     return expiring_urls
 
 
+def _requests_session_with_env_ca(raw):
+    """
+    Accepts OPENSEARCH_TLS_CA as:
+      - Inline PEM chain in one line with literal '\n'
+      - Regular PEM (multi-line)
+      - Base64 of PEM/DER
+    Returns a requests.Session with SSLContext using this CA.
+    """
+    if not raw:
+        return None
+
+    val = str(raw).strip().strip('"').strip("'")
+    if "\\n" in val:
+        val = val.replace("\\n", "\n")
+    val = val.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [ln.lstrip() for ln in val.splitlines()]
+    val = "\n".join(lines).strip()
+
+    cadata = None  # str or bytes
+    if "BEGIN CERTIFICATE" in val:
+        # Ensure proper formatting and trailing newline
+        pem = textwrap.dedent(val).strip()
+        if not pem.endswith("\n"):
+            pem += "\n"
+        cadata = pem
+    else:
+        # Try base64 decode (PEM text or DER)
+        try:
+            raw_bytes = base64.b64decode(val, validate=True)
+        except binascii.Error:
+            raise ValueError("OPENSEARCH_TLS_CA is neither PEM nor base64")
+        try:
+            txt = raw_bytes.decode("utf-8")
+            cadata = txt if "BEGIN CERTIFICATE" in txt else raw_bytes
+        except UnicodeDecodeError:
+            cadata = raw_bytes
+
+    ctx = ssl.create_default_context()
+    ctx.load_verify_locations(cadata=cadata)
+
+
+
+    class SSLContextAdapter(HTTPAdapter):
+        def __init__(self, ssl_context=None, **kwargs):
+            self.ssl_context = ssl_context
+            super().__init__(**kwargs)
+        def init_poolmanager(self, *args, **kwargs):
+            kwargs["ssl_context"] = self.ssl_context
+            return super().init_poolmanager(*args, **kwargs)
+        def proxy_manager_for(self, *args, **kwargs):
+            kwargs["ssl_context"] = self.ssl_context
+            return super().proxy_manager_for(*args, **kwargs)
+
+    s = requests.Session()
+    s.mount("https://", SSLContextAdapter(ctx))
+    return s
 
 # =========================
 # Navigation and Document Functions
@@ -507,7 +563,7 @@ def search_drive():
       - operator: 'or' (default) or 'and' for q queries
     """
     q = request.args.get("q", "") or ""
-    size = int(request.args.get("size", "50"))
+    size = int(request.args.get("size", "20"))
     index_name = request.args.get("index") or os.getenv("OPENSEARCH_INDEX", "library-docs")
     operator = (request.args.get("operator") or os.getenv("OPENSEARCH_DEFAULT_OPERATOR", "or")).lower()
     operator = operator if operator in ("and", "or") else "or"
@@ -541,10 +597,16 @@ def search_drive():
             # Ask for highlight snippets from full_html when a query is provided
             if q:
                 body["highlight"] = {
+                    "type": "unified",
+                    "order": "score",
+                    "require_field_match": False,
                     "fields": {
                         "full_html": {
-                            "fragment_size": 300,
-                            "number_of_fragments": 1,
+                            "type": "unified",
+                            "fragment_size": 300,          # large enough to cover a full sentence
+                            "number_of_fragments": 1,       # one sentence-level fragment
+                            "boundary_scanner": "sentence", # sentence-aware splitting
+                            "boundary_scanner_locale": "en-US",
                             "pre_tags": ["<strong>"],
                             "post_tags": ["</strong>"],
                         }
@@ -569,7 +631,6 @@ def search_drive():
                 print(f"[search] OpenSearch found {len(hits)} hits", flush=True)
 
                 results = []
-                print(hits[0].get("_source", {}).get("doc_metadata", {}).get("type"), flush=True)
                 for h in hits:
                     gid = h.get("_id")
                     src = h.get("_source") or {}
@@ -839,90 +900,9 @@ def restore_cleared_cached():
     # Redirect the user to the home page
     return flask.redirect("/")
 
-
 # =========================
-# App Lifecycle Hooks
+# Open Search Routes    
 # =========================
-@app.before_request
-def initialized():
-    """
-    Before request hook to initialize the Google Drive instance
-    and the navigation builder.
-    This is executed only once per application context.
-    """
-    global initialized_executed, gdrive_instance, nav_changes
-    if not initialized_executed:
-        initialized_executed = True
-        with app.app_context():
-            gdrive_instance = get_google_drive_instance()
-            nav_changes = NavigationBuilder(gdrive_instance, ROOT)
-            get_list_of_urls()
-            init_scheduler(app)
-
-
-# =========================
-# Main Entrypoint
-# =========================
-if __name__ == "__main__":
-    app.run()
-
-def _requests_session_with_env_ca(raw):
-    """
-    Accepts OPENSEARCH_TLS_CA as:
-      - Inline PEM chain in one line with literal '\n'
-      - Regular PEM (multi-line)
-      - Base64 of PEM/DER
-    Returns a requests.Session with SSLContext using this CA.
-    """
-    if not raw:
-        return None
-
-    val = str(raw).strip().strip('"').strip("'")
-    if "\\n" in val:
-        val = val.replace("\\n", "\n")
-    val = val.replace("\r\n", "\n").replace("\r", "\n")
-    lines = [ln.lstrip() for ln in val.splitlines()]
-    val = "\n".join(lines).strip()
-
-    cadata = None  # str or bytes
-    if "BEGIN CERTIFICATE" in val:
-        # Ensure proper formatting and trailing newline
-        pem = textwrap.dedent(val).strip()
-        if not pem.endswith("\n"):
-            pem += "\n"
-        cadata = pem
-    else:
-        # Try base64 decode (PEM text or DER)
-        try:
-            raw_bytes = base64.b64decode(val, validate=True)
-        except binascii.Error:
-            raise ValueError("OPENSEARCH_TLS_CA is neither PEM nor base64")
-        try:
-            txt = raw_bytes.decode("utf-8")
-            cadata = txt if "BEGIN CERTIFICATE" in txt else raw_bytes
-        except UnicodeDecodeError:
-            cadata = raw_bytes
-
-    ctx = ssl.create_default_context()
-    ctx.load_verify_locations(cadata=cadata)
-
-
-
-    class SSLContextAdapter(HTTPAdapter):
-        def __init__(self, ssl_context=None, **kwargs):
-            self.ssl_context = ssl_context
-            super().__init__(**kwargs)
-        def init_poolmanager(self, *args, **kwargs):
-            kwargs["ssl_context"] = self.ssl_context
-            return super().init_poolmanager(*args, **kwargs)
-        def proxy_manager_for(self, *args, **kwargs):
-            kwargs["ssl_context"] = self.ssl_context
-            return super().proxy_manager_for(*args, **kwargs)
-
-    s = requests.Session()
-    s.mount("https://", SSLContextAdapter(ctx))
-    return s
-
 @app.route("/opensearch/bulk/run", methods=["GET", "POST"])
 def opensearch_bulk_run():
     # Require DB
@@ -1001,6 +981,7 @@ def opensearch_bulk_run():
         summary["text"] = resp.text[:1000]
 
     return jsonify(summary), resp.status_code
+
 
 @app.route("/opensearch/indices", methods=["GET"])
 def opensearch_list_indices():
@@ -1119,3 +1100,32 @@ def opensearch_list_docs():
         return jsonify({"index": index_name, "from": from_, "size": size, "total": total, "hits": items}), resp.status_code
     except Exception as e:
         return jsonify({"error": str(e)}), 502
+
+
+# =========================
+# App Lifecycle Hooks
+# =========================
+@app.before_request
+def initialized():
+    """
+    Before request hook to initialize the Google Drive instance
+    and the navigation builder.
+    This is executed only once per application context.
+    """
+    global initialized_executed, gdrive_instance, nav_changes
+    if not initialized_executed:
+        initialized_executed = True
+        with app.app_context():
+            gdrive_instance = get_google_drive_instance()
+            nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+            get_list_of_urls()
+            init_scheduler(app)
+
+
+# =========================
+# Main Entrypoint
+# =========================
+if __name__ == "__main__":
+    app.run()
+
+
