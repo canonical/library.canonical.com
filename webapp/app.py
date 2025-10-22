@@ -681,8 +681,11 @@ def search_drive():
                 except Exception:
                     err = {"error": {"reason": resp.text}}
                 reason_blob = json.dumps(err.get("error", {})).lower()
-                if "max_analyzed_offset" in reason_blob or "max analyzed offset" in reason_blob:
-                    print("[search] exceeded max_analyzed_offset; raising limit and retrying", flush=True)
+                if (
+                    "max_analyzed_offset" in reason_blob
+                    or "max analyzed offset" in reason_blob
+                ):
+                    print("[search] raising limit and retrying", flush=True)
                     _ensure_highlight_limit(index_name, 5_000_000)
                     resp = http.post(
                         f"{base_url.rstrip('/')}/{index_name}/_search",
