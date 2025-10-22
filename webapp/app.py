@@ -12,7 +12,7 @@ import base64
 import binascii
 import textwrap
 import requests
-from flask import jsonify, request, request, g, session, has_request_context
+from flask import jsonify, request, g, session, has_request_context
 from sqlalchemy.exc import IntegrityError
 from requests.adapters import HTTPAdapter
 
@@ -69,7 +69,6 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
         "POSTGRESQL_DB_CONNECT_STRING"
     )
     db.init_app(app)
-    from webapp.models import Document  # noqa: F401 needed for db.create_all()
 
     with app.app_context():
         db.create_all()
@@ -502,7 +501,6 @@ def init_scheduler(app):
                             )
                             return "created", doc_id, None
                         except IntegrityError as e:
-                            # Race between threads inserting the same doc
                             db.session.rollback()
                             return "skipped", doc_id, None
                         except Exception as e:
@@ -528,9 +526,9 @@ def init_scheduler(app):
                                 f"[ingest] error id={doc_id}: {err}",
                                 flush=True,
                             )
-
+                content = f"done created={created} skipped={skipped} errors={errors} total={total}"
                 print(
-                    f"[ingest] done created={created} skipped={skipped} errors={errors} total={total}",
+                    f"[ingest] {content}",
                     flush=True,
                 )
             except Exception as e:
@@ -570,7 +568,7 @@ def refresh_navigation():
 @app.route("/search")
 def search_drive():
     """
-    Search: use OpenSearch when configured; fallback to Drive only if OS is not configured or errors.
+    Search: use OpenSearch when configured; fallback to Drive
     Query params:
       - q: query string (optional)
       - size: number of results (default 50)
@@ -604,11 +602,11 @@ def search_drive():
                 _requests_session_with_env_ca(tls_ca) if tls_ca else requests
             )
             print(
-                f"[search] querying OpenSearch index='{index_name}' q='{q}' size={size} operator={operator}",
+                "Querying OpenSearch...",
                 flush=True,
             )
 
-            # Use POST with query_string so we can both include full_html and get highlights
+            # Use POST with full_html and get highlights
             body = {
                 "query": {
                     "query_string": {
@@ -627,7 +625,6 @@ def search_drive():
                 },
                 "size": size,
             }
-            # Ask for highlight snippets from full_html when a query is provided
             if q:
                 body["highlight"] = {
                     "type": "unified",
@@ -636,9 +633,9 @@ def search_drive():
                     "fields": {
                         "full_html": {
                             "type": "unified",
-                            "fragment_size": 300,  # large enough to cover a full sentence
-                            "number_of_fragments": 1,  # one sentence-level fragment
-                            "boundary_scanner": "sentence",  # sentence-aware splitting
+                            "fragment_size": 300,
+                            "number_of_fragments": 1,
+                            "boundary_scanner": "sentence",
                             "boundary_scanner_locale": "en-US",
                             "pre_tags": ["<strong>"],
                             "post_tags": ["</strong>"],
@@ -657,7 +654,7 @@ def search_drive():
             )
 
             if resp.ok:
-                print(f"[search] OpenSearch succeeded", flush=True)
+                print("OpenSearch succeeded", flush=True)
                 data = resp.json()
                 print(
                     f"OpenSearch {data.get('hits', {}).get('total', {})}",
