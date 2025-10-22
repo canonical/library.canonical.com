@@ -80,3 +80,15 @@ config:
     CLIENT__X509_CERT_URL:
       type: string
       default: ""
+    OPENSEARCH_USERNAME:
+      type: string
+      default: ""
+    OPENSEARCH_PASSWORD:
+      type: string
+      default: ""
+    OPENSEARCH_URL:
+      type: string
+      default: ""
+    OPENSEARCH_TLS_CA:
+      type: string
+      default: ""
