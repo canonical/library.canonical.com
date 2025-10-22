@@ -30,9 +30,10 @@ def get_or_parse_document(
         print("Using database to fetch or parse document", flush=True)
         from webapp.models import Document  # Import only when DB is used
         from sqlalchemy.exc import OperationalError
+
         print("Checking for document in DB", flush=True)
         print(f"Doc ID: {doc_id}", flush=True)
-        #print(f"Doc Metadata: {doc_dict}", flush=True)
+        # print(f"Doc Metadata: {doc_dict}", flush=True)
         try:
             # use correct column name
             document = Document.query.filter_by(google_drive_id=doc_id).first()
@@ -52,7 +53,10 @@ def get_or_parse_document(
                 )
                 return parser
         except OperationalError:
-            print("Database not available, falling back to Google Drive.", flush=True)
+            print(
+                "Database not available, falling back to Google Drive.",
+                flush=True,
+            )
 
     # Not in DB or DB unavailable: fetch, parse, and (if possible) store
     from webapp.parser import Parser
@@ -67,7 +71,9 @@ def get_or_parse_document(
 
             # derive fields from parser metadata and nav dict
             md = parser.metadata or {}
-            owners = md.get("owner") or md.get("owner(s)") or md.get("author(s)")
+            owners = (
+                md.get("owner") or md.get("owner(s)") or md.get("author(s)")
+            )
             if isinstance(owners, list):
                 owner = ", ".join([o for o in owners if o]) if owners else None
             else:
@@ -77,7 +83,9 @@ def get_or_parse_document(
             dpr = None
             if md.get("date_planned_review"):
                 try:
-                    dpr = datetime.strptime(md["date_planned_review"], "%d-%m-%Y").date()
+                    dpr = datetime.strptime(
+                        md["date_planned_review"], "%d-%m-%Y"
+                    ).date()
                 except ValueError:
                     dpr = None
 
@@ -93,8 +101,8 @@ def get_or_parse_document(
                 owner=owner,
                 full_html=str(parser.html),
                 path=path,
-                doc_metadata=md,                 
-                headings_map=parser.headings_map 
+                doc_metadata=md,
+                headings_map=parser.headings_map,
             )
             db.session.add(new_doc)
             db.session.commit()

@@ -2,6 +2,7 @@ import re
 import html
 from typing import List, Optional
 
+
 def _strip_tags_except_strong(s: str) -> str:
     if not s:
         return ""
@@ -9,31 +10,42 @@ def _strip_tags_except_strong(s: str) -> str:
     # Normalize any <mark> to <strong>
     s = s.replace("<mark>", "<strong>").replace("</mark>", "</strong>")
     # Protect <strong> tags so we can strip other tags safely
-    s = s.replace("<strong>", "[[[STRONG_OPEN]]]").replace("</strong>", "[[[STRONG_CLOSE]]]")
+    s = s.replace("<strong>", "[[[STRONG_OPEN]]]").replace(
+        "</strong>", "[[[STRONG_CLOSE]]]"
+    )
     # Remove any remaining HTML tags
     s = re.sub(r"<[^>]+>", " ", s)
     # Restore strong tags
-    s = s.replace("[[[STRONG_OPEN]]]", "<strong>").replace("[[[STRONG_CLOSE]]]", "</strong>")
+    s = s.replace("[[[STRONG_OPEN]]]", "<strong>").replace(
+        "[[[STRONG_CLOSE]]]", "</strong>"
+    )
     # Collapse whitespace
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
+
 def _terms_from_query(query: str) -> List[str]:
     return [t.lower() for t in re.findall(r"[A-Za-z0-9]+", query or "")]
+
 
 def _highlight_terms(text: str, query: str, max_marks: int = 5) -> str:
     terms = list({t for t in _terms_from_query(query) if t})
     if not text or not terms:
         return text or ""
-    pattern = re.compile(r"(" + "|".join(map(re.escape, terms)) + r")", re.IGNORECASE)
+    pattern = re.compile(
+        r"(" + "|".join(map(re.escape, terms)) + r")", re.IGNORECASE
+    )
     count = 0
+
     def repl(m):
         nonlocal count
         if count >= max_marks:
             return m.group(0)
         count += 1
         return f"<strong>{m.group(0)}</strong>"
+
     return pattern.sub(repl, text)
+
 
 def sanitize_highlight_fragment(fragment: str) -> str:
     """
@@ -52,7 +64,12 @@ def sanitize_highlight_fragment(fragment: str) -> str:
     prev = None
     while prev != s:
         prev = s
-        s = re.sub(r"(<[^>]*?)</?(?:mark|strong)>([^>]*>)", r"\1\2", s, flags=re.IGNORECASE)
+        s = re.sub(
+            r"(<[^>]*?)</?(?:mark|strong)>([^>]*>)",
+            r"\1\2",
+            s,
+            flags=re.IGNORECASE,
+        )
 
     # Normalize any remaining <mark> to <strong>, then strip tags except <strong>
     s = s.replace("<mark>", "<strong>").replace("</mark>", "</strong>")
@@ -63,10 +80,13 @@ def sanitize_highlight_fragment(fragment: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
-def render_snippet(highlight_fragments: Optional[List[str]],
-                   html_or_text: str,
-                   query: str,
-                   radius: int = 120) -> str:
+
+def render_snippet(
+    highlight_fragments: Optional[List[str]],
+    html_or_text: str,
+    query: str,
+    radius: int = 120,
+) -> str:
     """
     Prefer OpenSearch highlight (sanitized). Fallback: make_snippet() then wrap query terms in <strong>.
     Returns sanitized HTML containing only <strong> tags.
@@ -75,6 +95,7 @@ def render_snippet(highlight_fragments: Optional[List[str]],
         return sanitize_highlight_fragment(highlight_fragments[0])
     snippet_text = make_snippet(html_or_text, query, radius)
     return _highlight_terms(snippet_text, query)
+
 
 def make_snippet(html_or_text: str, query: str, radius: int = 120) -> str:
     if not html_or_text:
