@@ -65,10 +65,14 @@
                       style="height: 24px;">
                       {% if library_obj.name|lower != "index" %}
                         {{ library_obj.name | safe }}
-                        <span class="p-chip--information is-readonly is-inline u-vertical-align--middle">{{search_result.type}}</span>
+                        {% if search_result.type %}
+                          <span class="p-chip--information is-readonly is-inline u-vertical-align--middle">{{search_result.type}}</span>
+                        {% endif %}
                       {% else %}
                         {% with parent = library_obj.breadcrumbs|last %}{{ parent.name | safe }}{% endwith %}
-                        <span class="p-chip--information is-readonly is-inline u-vertical-align--middle">{{search_result.type}}</span>
+                        {% if search_result.type %}
+                          <span class="p-chip--information is-readonly is-inline u-vertical-align--middle">{{search_result.type}}</span>
+                        {% endif %}
                       {% endif %}
                     </a>
                   </p>
