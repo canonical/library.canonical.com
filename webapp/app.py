@@ -562,7 +562,7 @@ def init_scheduler(app):
     scheduler.add_job(ingest_all_documents_job)  # Run on load
     scheduler.add_job(scheduled_task, "interval", minutes=5)
     # Optionally re-run ingest every N hours (uncomment if desired)
-    # scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
+    scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
     scheduler.start()
     return scheduler
 
