@@ -10,9 +10,7 @@ class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     google_drive_id = db.Column(db.String, unique=True, nullable=False)
     date_planned_review = db.Column(db.Date, nullable=True)
-    doc_type = db.Column(
-        "type", db.Enum(*DOC_TYPES, name="doc_type"), nullable=True
-    )
+    doc_type = db.Column(db.String, nullable=True)
     owner = db.Column(db.String, nullable=True)
     full_html = db.Column(db.Text, nullable=False)
     path = db.Column(db.String, unique=True, nullable=False, index=True)
