@@ -6,9 +6,17 @@ import copy
 import flask
 from apscheduler.schedulers.background import BackgroundScheduler
 import dotenv
+import json
+import ssl
+import base64
+import binascii
+import textwrap
+import requests
+from flask import jsonify, request, g, session, has_request_context
+from sqlalchemy.exc import IntegrityError
+from requests.adapters import HTTPAdapter
 
 # import talisker
-from flask import request, g, session, has_request_context
 from canonicalwebteam.flask_base.app import FlaskBase
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
@@ -20,7 +28,8 @@ from webapp.sso import init_sso
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 from webapp.db import db
-
+from webapp.utils.make_snippet import render_snippet
+from webapp.models import Document
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
@@ -60,7 +69,6 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
         "POSTGRESQL_DB_CONNECT_STRING"
     )
     db.init_app(app)
-    from webapp.models import Document  # noqa: F401 needed for db.create_all()
 
     with app.app_context():
         db.create_all()
@@ -209,6 +217,84 @@ def get_urls_expiring_soon():
         print("TTL checking is only supported with Redis cache.")
 
     return expiring_urls
+
+
+def _requests_session_with_env_ca(raw):
+    """
+    Accepts OPENSEARCH_TLS_CA as:
+      - Inline PEM chain in one line with literal '\n'
+      - Regular PEM (multi-line)
+      - Base64 of PEM/DER
+    Returns a requests.Session with SSLContext using this CA.
+    """
+    if not raw:
+        return None
+
+    val = str(raw).strip().strip('"').strip("'")
+    if "\\n" in val:
+        val = val.replace("\\n", "\n")
+    val = val.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [ln.lstrip() for ln in val.splitlines()]
+    val = "\n".join(lines).strip()
+
+    cadata = None  # str or bytes
+    if "BEGIN CERTIFICATE" in val:
+        # Ensure proper formatting and trailing newline
+        pem = textwrap.dedent(val).strip()
+        if not pem.endswith("\n"):
+            pem += "\n"
+        cadata = pem
+    else:
+        # Try base64 decode (PEM text or DER)
+        try:
+            raw_bytes = base64.b64decode(val, validate=True)
+        except binascii.Error:
+            raise ValueError("OPENSEARCH_TLS_CA is neither PEM nor base64")
+        try:
+            txt = raw_bytes.decode("utf-8")
+            cadata = txt if "BEGIN CERTIFICATE" in txt else raw_bytes
+        except UnicodeDecodeError:
+            cadata = raw_bytes
+
+    ctx = ssl.create_default_context()
+    ctx.load_verify_locations(cadata=cadata)
+
+    class SSLContextAdapter(HTTPAdapter):
+        def __init__(self, ssl_context=None, **kwargs):
+            self.ssl_context = ssl_context
+            super().__init__(**kwargs)
+
+        def init_poolmanager(self, *args, **kwargs):
+            kwargs["ssl_context"] = self.ssl_context
+            return super().init_poolmanager(*args, **kwargs)
+
+        def proxy_manager_for(self, *args, **kwargs):
+            kwargs["ssl_context"] = self.ssl_context
+            return super().proxy_manager_for(*args, **kwargs)
+
+    s = requests.Session()
+    s.mount("https://", SSLContextAdapter(ctx))
+    return s
+
+
+def _ensure_highlight_limit(index_name: str, limit: int = 5_000_000) -> None:
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+    if not (base_url and username and password):
+        return
+    http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+    try:
+        http.put(
+            f"{base_url.rstrip('/')}/{index_name}/_settings",
+            auth=(username, password),
+            headers={"Content-Type": "application/json"},
+            json={"index.highlight.max_analyzed_offset": limit},
+            timeout=20,
+        )
+    except Exception as e:
+        print(f"[search] failed to set max_analyzed_offset: {e}", flush=True)
 
 
 # =========================
@@ -380,21 +466,103 @@ def init_scheduler(app):
             else:
                 print("No URLs expiring soon, no action taken.")
 
+    def ingest_all_documents_job():
+        """
+        Ensure all documents exist in the DB by fetching from Drive if missing.
+        Runs in parallel with a configurable number of threads.
+        """
+        if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+            print("DB not configured; skipping ingest job", flush=True)
+            return
+
+        workers = int(os.getenv("INGEST_WORKERS", "10"))  # tune as needed
+
+        with app.app_context():
+            try:
+                try:
+                    nav = construct_navigation_data()
+                except Exception:
+                    nav = get_navigation_data()
+
+                doc_dict = getattr(nav, "doc_reference_dict", {}) or {}
+                items = list(doc_dict.items())
+                total = len(items)
+                if total == 0:
+                    print("[ingest] nothing to ingest", flush=True)
+                    return
+
+                created = 0
+                skipped = 0
+                errors = 0
+
+                def _ingest_one(args):
+                    doc_id, meta = args
+                    # New app context per thread
+                    with app.app_context():
+                        try:
+                            # Build a fresh Drive client for this thread
+                            drive = GoogleDrive(cache)
+                            from webapp.models import Document
+
+                            # Fast skip if exists
+                            if (
+                                db.session.query(Document.id)
+                                .filter_by(google_drive_id=doc_id)
+                                .first()
+                            ):
+                                return "skipped", doc_id, None
+
+                            # Parse and persist
+                            get_or_parse_document(
+                                drive,
+                                doc_id,
+                                doc_dict,
+                                meta.get("name", ""),
+                            )
+                            return "created", doc_id, None
+                        except IntegrityError:
+                            db.session.rollback()
+                            return "skipped", doc_id, None
+                        except Exception as e:
+                            db.session.rollback()
+                            return "error", doc_id, str(e)
+                        finally:
+                            # Ensure thread-local session is released
+                            db.session.remove()
+
+                print(
+                    f"[ingest] starting {total} docs with {workers} workers",
+                    flush=True,
+                )
+                with ThreadPoolExecutor(max_workers=workers) as ex:
+                    for status, doc_id, err in ex.map(_ingest_one, items):
+                        if status == "created":
+                            created += 1
+                        elif status == "skipped":
+                            skipped += 1
+                        else:
+                            errors += 1
+                            print(
+                                f"[ingest] error id={doc_id}: {err}",
+                                flush=True,
+                            )
+                content = f"done created={created} skipped={skipped} "
+                content_2 = f"errors={errors} total={total}"
+                print(
+                    f"[ingest] {content} {content_2}",
+                    flush=True,
+                )
+            except Exception as e:
+                print(f"[ingest] fatal error: {e}", flush=True)
+
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)  # Run once
     scheduler.add_job(check_status_cache)  # Run on load
-    scheduler.add_job(
-        scheduled_task, "interval", minutes=5
-    )  # Run every 5 minutes
-    scheduler.add_job(
-        check_status_cache,
-        "cron",
-        day_of_week="sun",
-        hour=7,
-        minute=0,
-        id="weekly_cache_check",
-    )  # Run every Sunday at 7:00 AM
+    scheduler.add_job(ingest_all_documents_job)  # Run on load
+    scheduler.add_job(scheduled_task, "interval", minutes=5)
+    # Optionally re-run ingest every N hours (uncomment if desired)
+    # scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
     scheduler.start()
     return scheduler
 
@@ -421,20 +589,173 @@ def refresh_navigation():
 @app.route("/search")
 def search_drive():
     """
-    Route to search the Google Drive. The search results are displayed in a
-    separate page.
+    Search: use OpenSearch when configured; fallback to Drive
+    Query params:
+      - q: query string (optional)
+      - size: number of results (default 50)
+      - index: override index (default OPENSEARCH_INDEX or 'library-docs')
+      - operator: 'or' (default) or 'and' for q queries
     """
-    query = request.args.get("q", "")
-    google_drive = get_google_drive_instance()
-    search_results = google_drive.search_drive(query)
+    q = request.args.get("q", "") or ""
+    size = int(request.args.get("size", "20"))
+    index_name = request.args.get("index") or os.getenv(
+        "OPENSEARCH_INDEX", "library-docs"
+    )
+    operator = (
+        request.args.get("operator")
+        or os.getenv("OPENSEARCH_DEFAULT_OPERATOR", "or")
+    ).lower()
+    operator = operator if operator in ("and", "or") else "or"
+
     navigation_data = get_navigation_data()
+
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+
+    search_results = None
+    used_opensearch = False
+
+    if base_url and username and password:
+        try:
+            http = (
+                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            )
+            print(
+                "Querying OpenSearch...",
+                flush=True,
+            )
+
+            # Use POST with full_html and get highlights
+            body = {
+                "query": {
+                    "query_string": {
+                        "query": q if q else "*",
+                        "default_operator": operator,
+                    }
+                },
+                "_source": {
+                    "includes": [
+                        "path",
+                        "owner",
+                        "type",
+                        "doc_metadata",
+                        "full_html",
+                    ]
+                },
+                "size": size,
+            }
+            if q:
+                body["highlight"] = {
+                    "type": "unified",
+                    "order": "score",
+                    "require_field_match": False,
+                    "fields": {
+                        "full_html": {
+                            "type": "unified",
+                            "fragment_size": 300,
+                            "number_of_fragments": 1,
+                            "boundary_scanner": "sentence",
+                            "boundary_scanner_locale": "en-US",
+                            "pre_tags": ["<strong>"],
+                            "post_tags": ["</strong>"],
+                        }
+                    },
+                }
+            else:
+                body["sort"] = [{"_id": "desc"}]
+
+            resp = http.post(
+                f"{base_url.rstrip('/')}/{index_name}/_search",
+                auth=(username, password),
+                headers={"Content-Type": "application/json"},
+                json=body,
+                timeout=30,
+            )
+
+            # If we hit the 400 offset error, bump setting and retry once
+            if resp.status_code == 400:
+                try:
+                    err = resp.json()
+                except Exception:
+                    err = {"error": {"reason": resp.text}}
+                reason_blob = json.dumps(err.get("error", {})).lower()
+                if (
+                    "max_analyzed_offset" in reason_blob
+                    or "max analyzed offset" in reason_blob
+                ):
+                    print("[search] raising limit and retrying", flush=True)
+                    _ensure_highlight_limit(index_name, 5_000_000)
+                    resp = http.post(
+                        f"{base_url.rstrip('/')}/{index_name}/_search",
+                        auth=(username, password),
+                        headers={"Content-Type": "application/json"},
+                        json=body,
+                        timeout=30,
+                    )
+            # Handle response
+            if resp.ok:
+                print("OpenSearch succeeded", flush=True)
+                data = resp.json()
+                print(
+                    f"OpenSearch {data.get('hits', {}).get('total', {})}",
+                    flush=True,
+                )
+                hits = data.get("hits", {}).get("hits", [])
+                print(
+                    f"[search] OpenSearch found {len(hits)} hits", flush=True
+                )
+
+                results = []
+                for h in hits:
+                    gid = h.get("_id")
+                    src = h.get("_source") or {}
+                    meta = src.get("doc_metadata") or {}
+                    type = meta.get("type") or ""
+                    # Prefer OS highlight or full_html fallback
+                    hl = (h.get("highlight") or {}).get("full_html")
+                    description = render_snippet(
+                        hl, src.get("full_html") or "", q
+                    )
+                    print(type, flush=True)
+                    results.append(
+                        {
+                            "id": gid,
+                            "full_path": src.get("path") or "",
+                            "breadcrumbs": src.get("path", "").split("/")[:-1],
+                            "name": meta.get("title")
+                            or (src.get("path") or gid),
+                            "owner": src.get("owner"),
+                            "type": type,
+                            "description": description,
+                        }
+                    )
+                search_results = results
+                used_opensearch = True
+            else:
+                print(
+                    f"OpenSearch failed {resp.status_code}: {resp.text[:300]}",
+                    flush=True,
+                )
+        except Exception as e:
+            print(f"[search] OpenSearch error: {e}", flush=True)
+
+    # Fallback only if OpenSearch not configured or errored out
+    if search_results is None:
+        print("[search] Falling back to Google Drive search", flush=True)
+        google_drive = get_google_drive_instance()
+        search_results = google_drive.search_drive(q)
 
     return flask.render_template(
         "search.html",
         search_results=search_results,
         doc_reference_dict=navigation_data.doc_reference_dict,
-        query=query,
+        query=q,
         TARGET_DRIVE=TARGET_DRIVE,
+        navigation=navigation_data.hierarchy,
+        previous_slug=request.path.strip("/"),
+        used_opensearch=used_opensearch,
     )
 
 
@@ -496,21 +817,60 @@ def create_copy_template():
 @app.route("/clear-cache/<path:path>")
 def clear_cache_doc(path=None):
     """
-    Clear cache for a specific document
+    Clear cache for a specific document and remove its DB row.
+    so it will be refetched from Google Drive on next access.
     """
     print("Clearing cache")
     print("PATH\n", path)
     if path is None:
         new_path = ""
     else:
+        # path is already relative; replace is harmless
         new_path = path.replace("/clear-cache", "")
-    cache_key = "view//%s" % new_path
 
+    # Delete the DB row for this document (if DB is enabled)
+    if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
+        try:
+            # Try to resolve the Google Drive ID from navigation
+            gid = None
+            try:
+                navigation_data = get_navigation_data()
+                target = (
+                    get_target_document(new_path, navigation_data.hierarchy)
+                    if new_path
+                    else navigation_data.hierarchy["index"]
+                )
+                gid = target.get("id")
+            except Exception as e:
+                print(
+                    f"Could not resolve target doc from navigation: {e}",
+                    flush=True,
+                )
+
+            deleted = 0
+            if gid:
+                deleted = Document.query.filter_by(
+                    google_drive_id=gid
+                ).delete()
+            if not deleted:
+                full_path = f"/{new_path}" if new_path else "/"
+                deleted = Document.query.filter_by(path=full_path).delete()
+
+            db.session.commit()
+            print(
+                f"DB: deleted rows={deleted} for path '{new_path}'", flush=True
+            )
+        except Exception as e:
+            print(f"DB delete failed for '{new_path}': {e}", flush=True)
+
+    # Clear the view cache entry
+    cache_key = "view//%s" % new_path
     print("Cache Key", cache_key)
-    if cache.delete(cache_key):  # Delete the cache entry
+    if cache.delete(cache_key):
         print(f"Cache for '{new_path}' has been cleared.", 200)
     else:
         print(f"Cache for '{new_path}' not found.", 404)
+
     print("Redirecting to", new_path)
     return flask.redirect("/" + new_path)
 
@@ -626,6 +986,251 @@ def restore_cleared_cached():
 
     # Redirect the user to the home page
     return flask.redirect("/")
+
+
+# =========================
+# Open Search Routes
+# =========================
+@app.route("/opensearch/bulk/run", methods=["GET", "POST"])
+def opensearch_bulk_run():
+    # Require DB
+    if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+        return ("DB not configured", 503)
+
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")  # single line with \n is OK
+    index_name = request.args.get("index") or os.getenv(
+        "OPENSEARCH_INDEX", "library-docs"
+    )
+
+    if not base_url or not username or not password:
+        return ("Missing OPENSEARCH_URL/USERNAME/PASSWORD", 400)
+
+    def fmt_date(d):
+        return d.strftime("%d-%m-%Y") if d else None
+
+    def ndjson_iter():
+        for doc in db.session.query(Document).yield_per(1000):
+            action = {
+                "index": {"_index": index_name, "_id": doc.google_drive_id}
+            }
+            yield json.dumps(action, ensure_ascii=False) + "\n"
+            source = {
+                "google_drive_ID": doc.google_drive_id,
+                "date_planned_review": fmt_date(doc.date_planned_review),
+                "type": doc.doc_type,
+                "owner": doc.owner,
+                "full_html": doc.full_html,
+                "path": doc.path,
+            }
+            if hasattr(doc, "doc_metadata") and doc.doc_metadata is not None:
+                source["doc_metadata"] = doc.doc_metadata
+            if hasattr(doc, "headings_map") and doc.headings_map is not None:
+                source["headings_map"] = doc.headings_map
+            yield json.dumps(source, ensure_ascii=False) + "\n"
+
+    # HTTPS client with CA from env
+    try:
+        http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+    except Exception as e:
+        return jsonify({"error": f"Invalid OPENSEARCH_TLS_CA: {e}"}), 400
+
+    # Send to OpenSearch bulk endpoint
+    try:
+        resp = http.post(
+            f"{base_url.rstrip('/')}/_bulk",
+            data=ndjson_iter(),
+            headers={"Content-Type": "application/x-ndjson"},
+            auth=(username, password),
+            timeout=300,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+    # Parse response and return a compact summary
+    summary = {"status": resp.status_code}
+    try:
+        body = resp.json()
+        summary.update(
+            {
+                "errors": body.get("errors"),
+                "took": body.get("took"),
+                "items_count": (
+                    len(body.get("items", []))
+                    if isinstance(body.get("items"), list)
+                    else None
+                ),
+            }
+        )
+        if body.get("errors") is True:
+            # include first error item for quick debug
+            for it in body.get("items", []):
+                op = next(iter(it))
+                if it[op].get("error"):
+                    summary["first_error"] = it[op]["error"]
+                    break
+    except ValueError:
+        summary["text"] = resp.text[:1000]
+
+    return jsonify(summary), resp.status_code
+
+
+@app.route("/opensearch/indices", methods=["GET"])
+def opensearch_list_indices():
+    """
+    List OpenSearch indices via _cat/indices.
+    """
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+
+    if not (base_url and username and password):
+        return jsonify({"error": "OpenSearch not configured"}), 503
+
+    try:
+        try:
+            http = (
+                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            )
+        except NameError:
+            http = requests
+
+        resp = http.get(
+            f"{base_url.rstrip('/')}/_cat/indices",
+            auth=(username, password),
+            params={"format": "json", "expand_wildcards": "all"},
+            timeout=20,
+        )
+        # Pass through JSON body and status
+        return (
+            resp.text,
+            resp.status_code,
+            {
+                "Content-Type": resp.headers.get(
+                    "Content-Type", "application/json"
+                )
+            },
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
+@app.route("/opensearch/docs", methods=["GET"])
+def opensearch_list_docs():
+    """
+    List documents from an OpenSearch index.
+    Query params:
+      - index: index name (default OPENSEARCH_INDEX or 'library-docs')
+      - q: optional simple query (uses GET q=... form if provided)
+      - size: page size (default 50)
+      - from: offset for pagination (default 0)
+      - raw=1: return raw OpenSearch response
+    """
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+
+    if not (base_url and username and password):
+        return jsonify({"error": "OpenSearch not configured"}), 503
+
+    index_name = request.args.get("index") or os.getenv(
+        "OPENSEARCH_INDEX", "library-docs"
+    )
+    size = int(request.args.get("size", "50"))
+    from_ = int(request.args.get("from", "0"))
+    q = request.args.get("q")
+    raw = request.args.get("raw") == "1"
+
+    try:
+        try:
+            http = (
+                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            )
+        except NameError:
+            http = requests
+
+        if q:
+            # Simple URI search like docs: GET /{index}/_search?q=...
+            includes = "path,owner,type,doc_metadata,full_html"
+            resp = http.get(
+                f"{base_url.rstrip('/')}/{index_name}/_search",
+                auth=(username, password),
+                params={
+                    "q": q,
+                    "size": size,
+                    "from": from_,
+                    "default_operator": "and",
+                    "_source_includes": includes,
+                },
+                timeout=30,
+            )
+        else:
+            # JSON body search with match_all
+            resp = http.post(
+                f"{base_url.rstrip('/')}/{index_name}/_search",
+                auth=(username, password),
+                headers={"Content-Type": "application/json"},
+                json={
+                    "query": {"match_all": {}},
+                    "_source": {
+                        "includes": [
+                            "path",
+                            "owner",
+                            "type",
+                            "doc_metadata",
+                            "full_html",
+                        ]
+                    },
+                    "size": size,
+                    "from": from_,
+                },
+                timeout=30,
+            )
+
+        data = resp.json()
+        if raw:
+            return jsonify(data), resp.status_code
+
+        hits = data.get("hits", {})
+        total = (
+            hits.get("total", {}).get("value")
+            if isinstance(hits.get("total"), dict)
+            else hits.get("total")
+        )
+        items = []
+        for h in hits.get("hits", []):
+            src = h.get("_source") or {}
+            meta = src.get("doc_metadata") or {}
+            items.append(
+                {
+                    "id": h.get("_id"),
+                    "score": h.get("_score"),
+                    "path": src.get("path"),
+                    "owner": src.get("owner"),
+                    "type": src.get("type"),
+                    "title": meta.get("title"),
+                    "full_html_snippet": (src.get("full_html") or "")[:200],
+                }
+            )
+
+        return (
+            jsonify(
+                {
+                    "index": index_name,
+                    "from": from_,
+                    "size": size,
+                    "total": total,
+                    "hits": items,
+                }
+            ),
+            resp.status_code,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
 
 
 # =========================

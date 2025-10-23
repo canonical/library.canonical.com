@@ -2,92 +2,119 @@
 {% block title %}Canonical Reference Library | Search{% endblock %}
 {% block description %}Search Canonical Reference Library{% endblock %}
 {% block content %}
-  {% include "_partial/_navigation.html" %}
-  {% if query %}
-    {% if search_results %}
-      <div class="p-strip is-shallow">
-        <div class="u-fixed-width">
-          <h1>Search results for "{{ query }}"</h1>
-        </div>
+<div class="l-site" style="min-width: 100%;">
+  <div class="l-docs">
+
+    <aside class="l-docs__sidebar">
+      {% include "_partial/_side-navigation.html" %}
+    </aside> 
+    
+    <div class="l-docs__title u-fixed-width">
+      <script src="/static/js/build/search.js"></script>
+      <div class="l-docs__main-search">
+        <form action="/search" class="p-search-box">
+          <label class="u-off-screen" for="search">Search</label>
+          <input type="search" class="p-search-box__input" name="q" placeholder="Search our sites" required="" aria-label="Search our sites" style="border-top-color: transparent; background-color: #eaeaea;">
+          <button type="reset" class="p-search-box__reset">
+            <i class="p-icon--close"></i>
+          </button>
+          <button type="submit" class="p-search-box__button">
+            <i class="p-icon--search"></i>
+          </button>
+        </form>
       </div>
-    {% else %}
-      <div class="p-strip is-shallow">
-        <div class="u-fixed-width">
-          <h1>We couldn't find anything results for "{{ query }}"</h1>
-        </div>
+      <div>
+        {% if query %}
+          {% if search_results %}
+            <div class="p-strip is-shallow">
+              <div class="u-fixed-width">
+                <h1>Search results for "{{ query }}"</h1>
+              </div>
+            </div>
+          {% else %}
+            <div class="p-strip is-shallow">
+              <div class="u-fixed-width">
+                <h1>We couldn't find anything results for "{{ query }}"</h1>
+              </div>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="p-strip is-shallow">
+            <div class="u-fixed-width">
+              <h1>Search Canonical Reference Library</h1>
+            </div>
+          </div>
+        {% endif %}
+        <hr class="is-muted is-fixed-width u-no-margin--bottom">
+        {% if search_results and query %}
+          {% for search_result in search_results %}
+            {% if search_result.id in doc_reference_dict %}
+              {% set library_obj = doc_reference_dict[search_result.id] %}
+              {% if library_obj.full_path and library_obj.mimeType != "folder" %}
+                <div class="p-strip is-shallow u-fixed-width u-text-max-width">
+                  <ol class="p-breadcrumbs__items" style="color: rgba(0, 0, 0, 0.6);">
+                    {% for page in library_obj.breadcrumbs %}
+                    <li class="p-breadcrumbs__item">
+                      {{ page.name }}
+                    </li>
+                    {% endfor %}
+                  </ol>
+                  <p class="p-heading--5">
+                    <a href="{% if library_obj.full_path %}{{ library_obj.full_path }}{% else %}/{{ library_obj.slug }}{% endif %}"
+                      class="title-main"
+                      style="height: 24px;">
+                      {% if library_obj.name|lower != "index" %}
+                        {{ library_obj.name | safe }}
+                        {% if search_result.type %}
+                          <span class="p-chip--information is-readonly is-inline u-vertical-align--middle">{{search_result.type}}</span>
+                        {% endif %}
+                      {% else %}
+                        {% with parent = library_obj.breadcrumbs|last %}{{ parent.name | safe }}{% endwith %}
+                        {% if search_result.type %}
+                          <span class="p-chip--information is-readonly is-inline u-vertical-align--middle">{{search_result.type}}</span>
+                        {% endif %}
+                      {% endif %}
+                    </a>
+                  </p>
+                  {% if search_result.description %}<p>{{ search_result.description | safe }}</p>
+                  {% else %}
+                    <p>This document doesn't have description yet, you can add one to the metadata of the document: <a href="https://docs.google.com/document/d/{{library_obj.id}}">https://docs.google.com/document/d/{{library_obj.id}}</a></p>
+                  {% endif %}
+                </div>
+                <hr class="is-muted is-fixed-width u-no-margin--bottom">
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% elif query %}
+          <div class="p-strip">
+            <div class="row">
+              <div class="col-6">
+                <h3>Why not try widening your search?</h3>
+                <p>You can do this by:</p>
+                <ul class="p-list">
+                  <li class="p-list__item is-ticked">Adding alternative words or phrases</li>
+                  <li class="p-list__item is-ticked">Using individual words instead of phrases</li>
+                  <li class="p-list__item is-ticked">Trying a different spelling</li>
+                </ul>
+              </div>
+              <div class="col-6">
+                <h3>Still no luck?</h3>
+                <ul class="p-list">
+                  <li class="p-list__item is-ticked">
+                    <a href="/">Visit the Library homepage</a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        {% endif %}
       </div>
-    {% endif %}
-  {% else %}
-    <div class="p-strip is-shallow">
-      <div class="u-fixed-width">
-        <h1>Search Canonical Reference Library</h1>
-      </div>
-    </div>
-  {% endif %}
-  <div class="p-strip is-shallow">
-    <div class="u-fixed-width">
-      <form class="p-search-box" action="/search">
-        <label for="search-input" class="u-off-screen">Search</label>
-        <input class="p-search-box__input"
-               name="q"
-               id="search-input"
-               type="search"
-               {% if query %}value="{{ query }}"{% endif %}
-               placeholder="e.g. juju" />
-        {% if siteSearch %}<input name="siteSearch" type="hidden" value="{{ siteSearch }}" />{% endif %}
-        <button type="submit" alt="search" class="p-search-box__button" alt="search">
-          <i class="p-icon--search">Submit</i>
-        </button>
-      </form>
     </div>
   </div>
-  {% if search_results and query %}
-    {% for search_result in search_results %}
-      {% if search_result.id in doc_reference_dict %}
-        {% set library_obj = doc_reference_dict[search_result.id] %}
-        {% if library_obj.full_path and library_obj.mimeType != "folder" %}
-          <div class="p-strip is-shallow u-fixed-width u-text-max-width">
-            <p class="p-heading--5">
-              <a href="{% if library_obj.full_path %}{{ library_obj.full_path }}{% else %}/{{ library_obj.slug }}{% endif %}"
-                 class="title-main">
-                {% if library_obj.name|lower != "index" %}
-                  {{ library_obj.name | safe }}
-                {% else %}
-                  {% with parent = library_obj.breadcrumbs|last %}{{ parent.name | safe }}{% endwith %}
-                {% endif %}
-              </a>
-            </p>
-            {% if search_result.description %}<p>{{ search_result.description }}</p>
-            {% else %}
-              <p>This document doesn't have description yet, you can add one to the metadata of the document: <a href="https://docs.google.com/document/d/{{library_obj.id}}">https://docs.google.com/document/d/{{library_obj.id}}</a></p>
-            {% endif %}
-            <a href="{{ library_obj.full_path }}">https://library.canonical.com{{ library_obj.full_path }}</a>
-          </div>
-          <hr class="is-muted is-fixed-width u-no-margin--bottom">
-        {% endif %}
-      {% endif %}
-    {% endfor %}
-  {% elif query %}
-    <div class="p-strip">
-      <div class="row">
-        <div class="col-6">
-          <h3>Why not try widening your search?</h3>
-          <p>You can do this by:</p>
-          <ul class="p-list">
-            <li class="p-list__item is-ticked">Adding alternative words or phrases</li>
-            <li class="p-list__item is-ticked">Using individual words instead of phrases</li>
-            <li class="p-list__item is-ticked">Trying a different spelling</li>
-          </ul>
-        </div>
-        <div class="col-6">
-          <h3>Still no luck?</h3>
-          <ul class="p-list">
-            <li class="p-list__item is-ticked">
-              <a href="/">Visit the Library homepage</a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  {% endif %}
+
+  <div class="l-docs__footer l-footer--sticky">
+    {% include "_partial/_footer.html" %}
+  </div>
+</div>
+
 {% endblock content %}
