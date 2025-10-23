@@ -70,8 +70,9 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     )
     db.init_app(app)
 
-    with app.app_context():
-        db.create_all()
+    # Only for Local testing
+    # with app.app_context():
+    #     db.create_all()
 
 # Initialize the connection to Redis or SimpleCache
 if "REDIS_DB_CONNECT_STRING" in os.environ:
