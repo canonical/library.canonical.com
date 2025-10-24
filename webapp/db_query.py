@@ -62,7 +62,7 @@ def get_or_parse_document(
                 )
                 return parser
         except (OperationalError, ProgrammingError) as e:
-            # UndefinedTable or DB unavailable -> fallback to Drive and stop using DB
+            # fallback to Drive and stop using DB
             _disable_db(str(e))
 
     # Not in DB or DB unavailable: fetch, parse, and (if possible) store
