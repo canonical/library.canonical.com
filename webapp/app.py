@@ -90,7 +90,7 @@ def ensure_documents_table():
                 db.create_all()
             else:
                 print(
-                    "[db] Documents table missing but DB is read-only; skipping create_all()",
+                    "[db]table missing,DB is read-only; skipping create_all()",
                     flush=True,
                 )
     except Exception as e:
