@@ -105,26 +105,17 @@ def ensure_documents_columns():
                 return
             cols = {c["name"] for c in insp.get_columns("Documents")}
             alters = []
+            base = 'ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS {} {} NULL'
             if "doc_type" not in cols:
-                alters.append(
-                    'ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS doc_type varchar NULL'
-                )
+                alters.append(base.format("doc_type", "varchar"))
             if "date_planned_review" not in cols:
-                alters.append(
-                    'ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS date_planned_review date NULL'
-                )
+                alters.append(base.format("date_planned_review", "date"))
             if "owner" not in cols:
-                alters.append(
-                    'ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS owner varchar NULL'
-                )
+                alters.append(base.format("owner", "varchar"))
             if "doc_metadata" not in cols:
-                alters.append(
-                    'ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS doc_metadata json NULL'
-                )
+                alters.append(base.format("doc_metadata", "json"))
             if "headings_map" not in cols:
-                alters.append(
-                    'ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS headings_map json NULL'
-                )
+                alters.append(base.format("headings_map", "json"))
             if alters and db_can_write():
                 with db.engine.begin() as conn:
                     for stmt in alters:
