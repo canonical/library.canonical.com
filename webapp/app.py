@@ -146,8 +146,8 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     ensure_documents_table()
     ensure_documents_columns()
     # Only for Local testing
-    with app.app_context():
-        db.create_all()
+    # with app.app_context():
+    #     db.create_all()
 
 # Initialize the connection to Redis or SimpleCache
 if "REDIS_DB_CONNECT_STRING" in os.environ:
