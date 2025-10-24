@@ -63,6 +63,7 @@ app = FlaskBase(
 # Initialize the App SSO
 init_sso(app)
 
+
 # Initialize the connection to DB
 def db_can_write() -> bool:
     try:
@@ -72,6 +73,7 @@ def db_can_write() -> bool:
     except Exception as e:
         print(f"[db] read-only probe failed: {e}", flush=True)
         return False
+
 
 def ensure_documents_table():
     """
@@ -87,10 +89,12 @@ def ensure_documents_table():
                 print("[db] Creating schema via create_all()", flush=True)
                 db.create_all()
             else:
-                print("[db] Documents table missing but DB is read-only; skipping create_all()", flush=True)
+                print(
+                    "[db] Documents table missing but DB is read-only; skipping create_all()",
+                    flush=True,
+                )
     except Exception as e:
         print(f"[db] ensure schema failed: {e}", flush=True)
-
 
 
 if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
