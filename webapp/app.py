@@ -14,6 +14,7 @@ import textwrap
 import requests
 from flask import jsonify, request, g, session, has_request_context
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import inspect, text
 from requests.adapters import HTTPAdapter
 
 # import talisker
@@ -62,14 +63,47 @@ app = FlaskBase(
 # Initialize the App SSO
 init_sso(app)
 
+
 # Initialize the connection to DB
+def db_can_write() -> bool:
+    try:
+        with db.engine.connect() as conn:
+            ro = conn.execute(text("SHOW transaction_read_only")).scalar()
+            return str(ro).lower() in ("off", "false", "0")
+    except Exception as e:
+        print(f"[db] read-only probe failed: {e}", flush=True)
+        return False
+
+
+def ensure_documents_table():
+    """
+    Create schema once if missing and DB is writable.
+    Skip silently on read-only endpoints.
+    """
+    try:
+        with app.app_context():
+            insp = inspect(db.engine)
+            if "Documents" in insp.get_table_names():
+                return
+            if db_can_write():
+                print("[db] Creating schema via create_all()", flush=True)
+                db.create_all()
+            else:
+                print(
+                    "[db]table missing,DB is read-only; skipping create_all()",
+                    flush=True,
+                )
+    except Exception as e:
+        print(f"[db] ensure schema failed: {e}", flush=True)
+
+
 if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     print("\n\nUsing PostgreSQL database\n\n", flush=True)
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
         "POSTGRESQL_DB_CONNECT_STRING"
     )
     db.init_app(app)
-
+    ensure_documents_table()
     # Only for Local testing
     # with app.app_context():
     #     db.create_all()
