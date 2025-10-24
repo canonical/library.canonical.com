@@ -105,10 +105,16 @@ def ensure_documents_columns():
                 return
             cols = {c["name"] for c in insp.get_columns("Documents")}
             alters = []
-            base = 'ALTER TABLE "Documents" ' \
-            'ADD COLUMN IF NOT EXISTS {} {} NULL'
-            elsetext ='CREATE UNIQUE INDEX IF NOT ' \
-            'EXISTS documents_path_uidx ON "Documents"(path)'
+
+            base = (
+                'ALTER TABLE "Documents" '
+                "ADD COLUMN IF NOT EXISTS {} {} NULL"
+            )
+            elsetext = (
+                "CREATE UNIQUE INDEX IF NOT EXISTS "
+                'documents_path_uidx ON "Documents"(path)'
+            )
+
             if "doc_type" not in cols:
                 alters.append(base.format("doc_type", "varchar"))
             if "date_planned_review" not in cols:
@@ -119,17 +125,14 @@ def ensure_documents_columns():
                 alters.append(base.format("doc_metadata", "json"))
             if "headings_map" not in cols:
                 alters.append(base.format("headings_map", "json"))
+
             if alters and db_can_write():
                 with db.engine.begin() as conn:
                     for stmt in alters:
                         conn.execute(text(stmt))
                 # Ensure unique index on path
                 with db.engine.begin() as conn:
-                    conn.execute(
-                        text(
-                            elsetext
-                        )
-                    )
+                    conn.execute(text(elsetext))
     except Exception as e:
         print(f"[db] ensure columns failed: {e}", flush=True)
 
