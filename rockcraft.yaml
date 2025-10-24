@@ -39,7 +39,6 @@ parts:  # you need to uncomment this line to add or update any part.
        - flask/app/webapp
        - flask/app/templates
        - flask/app/static
-       - flask/app/migrate.py
 
 # you may need Ubuntu packages to build a python dependency. Add them here if necessary.
 #   flask-framework/dependencies:
