@@ -97,6 +97,35 @@ def ensure_documents_table():
         print(f"[db] ensure schema failed: {e}", flush=True)
 
 
+def ensure_documents_columns():
+    try:
+        with app.app_context():
+            insp = inspect(db.engine)
+            if "Documents" not in insp.get_table_names():
+                return
+            cols = {c["name"] for c in insp.get_columns("Documents")}
+            alters = []
+            if "doc_type" not in cols:
+                alters.append('ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS doc_type varchar NULL')
+            if "date_planned_review" not in cols:
+                alters.append('ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS date_planned_review date NULL')
+            if "owner" not in cols:
+                alters.append('ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS owner varchar NULL')
+            if "doc_metadata" not in cols:
+                alters.append('ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS doc_metadata json NULL')
+            if "headings_map" not in cols:
+                alters.append('ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS headings_map json NULL')
+            if alters and db_can_write():
+                with db.engine.begin() as conn:
+                    for stmt in alters:
+                        conn.execute(text(stmt))
+                # Ensure unique index on path
+                with db.engine.begin() as conn:
+                    conn.execute(text('CREATE UNIQUE INDEX IF NOT EXISTS documents_path_uidx ON "Documents"(path)'))
+    except Exception as e:
+        print(f"[db] ensure columns failed: {e}", flush=True)
+
+
 if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     print("\n\nUsing PostgreSQL database\n\n", flush=True)
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
@@ -104,9 +133,10 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     )
     db.init_app(app)
     ensure_documents_table()
+    ensure_documents_columns()
     # Only for Local testing
-    # with app.app_context():
-    #     db.create_all()
+    with app.app_context():
+        db.create_all()
 
 # Initialize the connection to Redis or SimpleCache
 if "REDIS_DB_CONNECT_STRING" in os.environ:
