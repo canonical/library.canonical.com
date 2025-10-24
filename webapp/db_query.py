@@ -2,17 +2,22 @@ import os
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.exc import OperationalError, ProgrammingError
+from webapp.models import Document
+from webapp.db import db
 
 USE_DB_ENV = "POSTGRESQL_DB_CONNECT_STRING" in os.environ
 _USE_DB_RUNTIME = True  # toggled off if table missing/RO
 
+
 def use_db() -> bool:
     return USE_DB_ENV and _USE_DB_RUNTIME
+
 
 def _disable_db(reason: str):
     global _USE_DB_RUNTIME
     _USE_DB_RUNTIME = False
     print(f"[db] Disabling DB usage at runtime: {reason}", flush=True)
+
 
 def _normalize_doc_type(t: Optional[str]) -> Optional[str]:
     if not t:
@@ -37,7 +42,6 @@ def get_or_parse_document(
 ):
     if use_db():
         print("Using database to fetch or parse document", flush=True)
-        from webapp.models import Document  # Import only when DB is used
 
         print("Checking for document in DB", flush=True)
         print(f"Doc ID: {doc_id}", flush=True)
@@ -48,7 +52,10 @@ def get_or_parse_document(
                 from webapp.parser import Parser
 
                 parser = Parser(
-                    google_drive, doc_id, doc_dict, doc_name,
+                    google_drive,
+                    doc_id,
+                    doc_dict,
+                    doc_name,
                     html_string=document.full_html,
                     metadata=document.doc_metadata,
                     headings_map=document.headings_map,
@@ -66,9 +73,6 @@ def get_or_parse_document(
 
     if use_db():
         try:
-            from webapp.models import Document
-            from webapp.db import db
-
             # derive fields from parser metadata and nav dict
             md = parser.metadata or {}
             owners = (
