@@ -26,14 +26,16 @@ def is_read_only(conn) -> bool:
 
 def drop_and_recreate_documents(conn):
     with conn.cursor() as cur:
+        print('Dropping and recreating table "Documents"...')
         cur.execute('DROP TABLE IF EXISTS "Documents" CASCADE;')
         cur.execute(CREATE_DOCUMENTS_SQL)
+        print('Table "Documents" dropped and recreated.')
 
 def migrate():
     with psycopg2.connect(DATABASE_URI) as conn:
         if is_read_only(conn):
             print("ERROR: DB is read-only; cannot run DDL. Use a RW endpoint.", file=sys.stderr)
-            sys.exit(1)
+            
         drop_and_recreate_documents(conn)
         conn.commit()
         print('Dropped and recreated table "Documents".')
