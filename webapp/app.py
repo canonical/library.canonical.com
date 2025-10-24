@@ -105,7 +105,10 @@ def ensure_documents_columns():
                 return
             cols = {c["name"] for c in insp.get_columns("Documents")}
             alters = []
-            base = 'ALTER TABLE "Documents" ADD COLUMN IF NOT EXISTS {} {} NULL'
+            base = 'ALTER TABLE "Documents" ' \
+            'ADD COLUMN IF NOT EXISTS {} {} NULL'
+            elsetext ='CREATE UNIQUE INDEX IF NOT ' \
+            'EXISTS documents_path_uidx ON "Documents"(path)'
             if "doc_type" not in cols:
                 alters.append(base.format("doc_type", "varchar"))
             if "date_planned_review" not in cols:
@@ -124,7 +127,7 @@ def ensure_documents_columns():
                 with db.engine.begin() as conn:
                     conn.execute(
                         text(
-                            'CREATE UNIQUE INDEX IF NOT EXISTS documents_path_uidx ON "Documents"(path)'
+                            elsetext
                         )
                     )
     except Exception as e:
