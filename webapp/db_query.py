@@ -1,9 +1,18 @@
 import os
 from datetime import datetime
 from typing import Optional
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
-USE_DB = "POSTGRESQL_DB_CONNECT_STRING" in os.environ
+USE_DB_ENV = "POSTGRESQL_DB_CONNECT_STRING" in os.environ
+_USE_DB_RUNTIME = True  # toggled off if table missing/RO
 
+def use_db() -> bool:
+    return USE_DB_ENV and _USE_DB_RUNTIME
+
+def _disable_db(reason: str):
+    global _USE_DB_RUNTIME
+    _USE_DB_RUNTIME = False
+    print(f"[db] Disabling DB usage at runtime: {reason}", flush=True)
 
 def _normalize_doc_type(t: Optional[str]) -> Optional[str]:
     if not t:
@@ -26,37 +35,28 @@ def get_or_parse_document(
     doc_dict,
     doc_name,
 ):
-    if USE_DB:
+    if use_db():
         print("Using database to fetch or parse document", flush=True)
         from webapp.models import Document  # Import only when DB is used
-        from sqlalchemy.exc import OperationalError
 
         print("Checking for document in DB", flush=True)
         print(f"Doc ID: {doc_id}", flush=True)
-        # print(f"Doc Metadata: {doc_dict}", flush=True)
         try:
-            # use correct column name
             document = Document.query.filter_by(google_drive_id=doc_id).first()
             if document:
                 print("Found document in DB", flush=True)
                 from webapp.parser import Parser
 
-                print(document, flush=True)
                 parser = Parser(
-                    google_drive,
-                    doc_id,
-                    doc_dict,
-                    doc_name,
+                    google_drive, doc_id, doc_dict, doc_name,
                     html_string=document.full_html,
                     metadata=document.doc_metadata,
                     headings_map=document.headings_map,
                 )
                 return parser
-        except OperationalError:
-            print(
-                "Database not available, falling back to Google Drive.",
-                flush=True,
-            )
+        except (OperationalError, ProgrammingError) as e:
+            # UndefinedTable or DB unavailable -> fallback to Drive and stop using DB
+            _disable_db(str(e))
 
     # Not in DB or DB unavailable: fetch, parse, and (if possible) store
     from webapp.parser import Parser
@@ -64,7 +64,7 @@ def get_or_parse_document(
     parser = Parser(google_drive, doc_id, doc_dict, doc_name)
     print("Parsing document from Google Drive", flush=True)
 
-    if USE_DB:
+    if use_db():
         try:
             from webapp.models import Document
             from webapp.db import db
@@ -107,6 +107,8 @@ def get_or_parse_document(
             db.session.add(new_doc)
             db.session.commit()
             print("Document saved to DB successfully", flush=True)
+        except (OperationalError, ProgrammingError) as e:
+            _disable_db(str(e))
         except Exception as e:
             print(f"Could not save to DB: {e}", flush=True)
 
