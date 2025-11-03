@@ -92,8 +92,7 @@ class Parser:
                         if "start" not in ol["class"]:
                             ol["class"].append("start")
                         # Reset the tracking for this level to avoid accidental carry-over
-                        if alphabetic_suffix in previous_ols:
-                            del previous_ols[alphabetic_suffix]
+                        del previous_ols[alphabetic_suffix]
 
             # get the level of nesting from the class name
             numeric_suffix = ol["class"][0][len("lst-kix") :][-1]  # noqa: E203
@@ -151,9 +150,7 @@ class Parser:
                         if "start" not in ul["class"]:
                             ul["class"].append("start")
                         # Reset the tracking for this level to avoid accidental carry-over
-                        numeric_suffix_temp = ul["class"][0][len("lst-kix") :][-1]  # noqa: E203
-                        if alphabetic_suffix in previous_uls:
-                            del previous_uls[alphabetic_suffix]
+                        del previous_uls[alphabetic_suffix]
 
             # get the level of nesting from the class name
             numeric_suffix = ul["class"][0][len("lst-kix") :][-1]  # noqa: E203
