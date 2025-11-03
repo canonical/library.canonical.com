@@ -684,6 +684,8 @@ def search_drive():
     operator = operator if operator in ("and", "or") else "or"
 
     navigation_data = get_navigation_data()
+    # Ensure nothing is highlighted/expanded on the Search page
+    reset_navigation_flags(navigation_data.hierarchy)
 
     base_url = os.getenv("OPENSEARCH_URL")
     username = os.getenv("OPENSEARCH_USERNAME")
@@ -830,7 +832,9 @@ def search_drive():
         query=q,
         TARGET_DRIVE=TARGET_DRIVE,
         navigation=navigation_data.hierarchy,
-        previous_slug=request.path.strip("/"),
+        # Provide an empty previous_slug so the client-side nav
+        # doesn't try to select a current page in the tree.
+        previous_slug="",
         used_opensearch=used_opensearch,
     )
 

@@ -69,21 +69,20 @@
                     {% endfor %}
                   </ol>
                   <p class="p-heading--5">
+                    {% set display_name = library_obj.name %}
+                    {% if library_obj.name|lower == "index" %}
+                      {% set parent = library_obj.breadcrumbs|last %}
+                      {% set display_name = parent.name %}
+                    {% endif %}
+
                     <a href="{% if library_obj.full_path %}{{ library_obj.full_path }}{% else %}/{{ library_obj.slug }}{% endif %}"
                       class="title-main"
                       style="height: 24px;">
-                      {% if library_obj.name|lower != "index" %}
-                        {{ library_obj.name | safe }}
-                        {% if search_result.type %}
-                          <span class="p-chip--information is-readonly is-inline u-vertical-align--middle">{{search_result.type}}</span>
-                        {% endif %}
-                      {% else %}
-                        {% with parent = library_obj.breadcrumbs|last %}{{ parent.name | safe }}{% endwith %}
-                        {% if search_result.type %}
-                          <span class="p-chip--information is-readonly is-inline u-vertical-align--middle">{{search_result.type}}</span>
-                        {% endif %}
-                      {% endif %}
+                      {{ display_name | safe }}
                     </a>
+                    {% if search_result.type %}
+                      <span class="p-chip--information is-readonly is-inline u-vertical-align--middle" style="margin-left: 1rem;">{{ search_result.type }}</span>
+                    {% endif %}
                   </p>
                   {% if search_result.description %}<p>{{ search_result.description | safe }}</p>
                   {% else %}
