@@ -10,6 +10,22 @@ from webapp.utils.entity_to_char import entity_to_char
 ROOT = os.getenv("ROOT_FOLDER", "library")
 
 
+def next_meaningful_sibling(node):
+    """
+    Find the first meaningful next sibling, skipping whitespace NavigableString nodes.
+    
+    Args:
+        node: A BeautifulSoup node to find the next sibling of
+        
+    Returns:
+        The next meaningful sibling node or None if there is no next sibling
+    """
+    sib = node.next_sibling
+    while sib and (isinstance(sib, NavigableString) and not sib.strip()):
+        sib = sib.next_sibling
+    return sib
+
+
 class Parser:
     def __init__(
         self,
@@ -62,6 +78,23 @@ class Parser:
         previous_ols = {}
 
         for ol in ol_elements:
+            # Check if there's a boundary between previous list and current list
+            alphabetic_suffix = ol["class"][0]
+            if alphabetic_suffix in previous_ols:
+                # Find the previous mention of that list
+                previous_list = previous_ols[alphabetic_suffix]
+                if previous_list is not None:
+                    # Check if there's a meaningful sibling between the previous list and this one
+                    next_sib = next_meaningful_sibling(previous_list)
+                    if next_sib is not None and next_sib != ol:
+                        # There's a non-whitespace sibling between the lists
+                        # This indicates a boundary - the current list should start fresh
+                        if "start" not in ol["class"]:
+                            ol["class"].append("start")
+                        # Reset the tracking for this level to avoid accidental carry-over
+                        if alphabetic_suffix in previous_ols:
+                            del previous_ols[alphabetic_suffix]
+
             # get the level of nesting from the class name
             numeric_suffix = ol["class"][0][len("lst-kix") :][-1]  # noqa: E203
             # check if it is the start of a new list
@@ -85,6 +118,7 @@ class Parser:
                         target_location.find_all("li")[-1].append(ol)
                 # add the current list to the previous_ols dict
                 previous_ols[numeric_suffix] = ol
+                previous_ols[alphabetic_suffix] = ol
             # if it's not the start of a new list extract the indervidual li's
             else:
                 target_location = previous_ols[str(int(numeric_suffix))]
@@ -109,13 +143,17 @@ class Parser:
                 # Find the previous mention of that list
                 previous_list = previous_uls[alphabetic_suffix]
                 if previous_list is not None:
-                    # Check the previous list to see if it has a sibling
-                    next_siblings = previous_list.findNextSiblings()
-                    if len(next_siblings) != 0:
-                        next = previous_list.next_sibling()
-                        if len(next) != 0 and next[0].name != "li":
-                            # if the previous list has a sibling that is not a list add start to mark it as a new list
+                    # Check if there's a meaningful sibling between the previous list and this one
+                    next_sib = next_meaningful_sibling(previous_list)
+                    if next_sib is not None and next_sib != ul:
+                        # There's a non-whitespace sibling between the lists
+                        # This indicates a boundary - the current list should start fresh
+                        if "start" not in ul["class"]:
                             ul["class"].append("start")
+                        # Reset the tracking for this level to avoid accidental carry-over
+                        numeric_suffix_temp = ul["class"][0][len("lst-kix") :][-1]  # noqa: E203
+                        if alphabetic_suffix in previous_uls:
+                            del previous_uls[alphabetic_suffix]
 
             # get the level of nesting from the class name
             numeric_suffix = ul["class"][0][len("lst-kix") :][-1]  # noqa: E203
