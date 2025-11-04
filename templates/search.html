@@ -63,7 +63,7 @@
                 <div class="p-strip is-shallow u-fixed-width u-text-max-width">
                   <ol class="p-breadcrumbs__items" style="color: rgba(0, 0, 0, 0.6);">
                     {% for page in library_obj.breadcrumbs %}
-                    <li class="p-breadcrumbs__item">
+                    <li class="p-breadcrumbs__item" style="padding-top: 0px;">
                       {{ page.name }}
                     </li>
                     {% endfor %}
@@ -74,14 +74,14 @@
                       {% set parent = library_obj.breadcrumbs|last %}
                       {% set display_name = parent.name %}
                     {% endif %}
-
+                    {% set chip_type = search_result.type %}
                     <a href="{% if library_obj.full_path %}{{ library_obj.full_path }}{% else %}/{{ library_obj.slug }}{% endif %}"
                       class="title-main"
                       style="height: 24px;">
                       {{ display_name | safe }}
                     </a>
-                    {% if search_result.type %}
-                      <span class="p-chip--information is-readonly is-inline u-vertical-align--middle" style="margin-left: 1rem;">{{ search_result.type }}</span>
+                    {% if chip_type %}
+                      <span class="p-chip--information is-readonly is-inline u-vertical-align--middle" style="margin-left: 1rem;">{{ chip_type }}</span>
                     {% endif %}
                   </p>
                   {% if search_result.description %}<p>{{ search_result.description | safe }}</p>
