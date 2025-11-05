@@ -328,7 +328,7 @@ def assets_ready() -> bool:
 @app.context_processor
 def inject_assets():
     """
-    Provide latest built CSS bundle path 
+    Provide latest built CSS bundle path
     Returns None if none found so template can skip the include.
     """
     try:
