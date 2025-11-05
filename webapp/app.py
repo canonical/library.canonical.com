@@ -319,7 +319,7 @@ def assets_ready() -> bool:
     ok = os.path.exists(styles) and len(hashed) > 0
     if not ok:
         print(
-            f"[assets] not ready (styles.css: {os.path.exists(styles)}, hashed count: {len(hashed)})",
+            f"[assets] not ready (styles.css: {os.path.exists(styles)}, )",
             flush=True,
         )
     return ok
@@ -328,7 +328,7 @@ def assets_ready() -> bool:
 @app.context_processor
 def inject_assets():
     """
-    Provide latest built CSS bundle path (css/index-*.css) as 'hashed_css_path'.
+    Provide latest built CSS bundle path 
     Returns None if none found so template can skip the include.
     """
     try:
@@ -694,8 +694,8 @@ def init_scheduler(app):
         trigger="date",
         run_date=datetime.now() + timedelta(minutes=5),
         id="initial-cache-check",  # stable id so it can be replaced/inspected
-        replace_existing=True,       # in case the scheduler restarts
-        misfire_grace_time=3600,     # run if we wake within an hour
+        replace_existing=True,  # in case the scheduler restarts
+        misfire_grace_time=3600,  # run if we wake within an hour
     )
     # Weekly run every Sunday at 07:00
     scheduler.add_job(
@@ -1021,7 +1021,9 @@ def clear_cache_doc(path=None):
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout=604800, unless=lambda: not assets_ready())  # Skip caching until assets exist
+@cache.cached(
+    timeout=604800, unless=lambda: not assets_ready()
+)  # Skip caching until assets exist
 def document(path=None):
     global url_updated
     global cache_updated
@@ -1126,7 +1128,7 @@ def restore_cleared_cached():
     thread = Thread(target=cache_warm_and_unset, args=(urls,))
     thread.start()
     # Print a notification to the console
-    print(f"\n\n Started caching for {len(urls)} URLs in the background. \n\n")
+    print(f"\n\n Started caching {len(urls)} URLs in the background. \n\n")
 
     # Redirect the user to the home page
     return flask.redirect("/")
@@ -1145,7 +1147,9 @@ def clear_all_views():
 
     url_file_path = os.path.join(app.static_folder, "assets", "url_list.txt")
     if not os.path.exists(url_file_path):
-        print("[cache] url_list.txt not found; cleared root/nav only", flush=True)
+        print(
+            "[cache] url_list.txt not found cleared root/nav only", flush=True
+        )
         return flask.redirect("/")
 
     removed = 0
