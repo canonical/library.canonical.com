@@ -2,6 +2,8 @@
 # Imports and Environment
 # =========================
 import os
+import glob
+from datetime import datetime, timedelta
 import copy
 import flask
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -257,6 +259,15 @@ def warm_cache_for_urls(urls):
     Warm up the cache for a list of URLs by using a thread pool to
     handle multiple URLs concurrently.
     """
+    # Skip warming until assets are present to avoid caching pages that link
+    # to missing CSS bundles during first boot
+    try:
+        if not assets_ready():
+            print("[warm] assets not ready; skipping warm", flush=True)
+            return
+    except NameError:
+        # assets_ready defined later; if not found, proceed as before
+        pass
     with app.app_context():
         navigation_data = construct_navigation_data()
         cache_navigation_data = navigation_data
@@ -293,6 +304,43 @@ def get_urls_expiring_soon():
         print("TTL checking is only supported with Redis cache.")
 
     return expiring_urls
+
+
+def assets_ready() -> bool:
+    """
+    Return True when critical static assets exist on disk so cached pages
+    won't link to missing CSS. Criteria:
+    - static/css/styles.css exists
+    - at least one hashed CSS bundle static/css/index-*.css exists
+    """
+    css_dir = os.path.join(app.static_folder, "css")
+    styles = os.path.join(css_dir, "styles.css")
+    hashed = glob.glob(os.path.join(css_dir, "index-*.css"))
+    ok = os.path.exists(styles) and len(hashed) > 0
+    if not ok:
+        print(
+            f"[assets] not ready (styles.css: {os.path.exists(styles)}, )",
+            flush=True,
+        )
+    return ok
+
+
+@app.context_processor
+def inject_assets():
+    """
+    Provide latest built CSS bundle path
+    Returns None if none found so template can skip the include.
+    """
+    try:
+        css_dir = os.path.join(app.static_folder, "css")
+        matches = glob.glob(os.path.join(css_dir, "index-*.css"))
+        if not matches:
+            return {"hashed_css_path": None}
+        latest = max(matches, key=os.path.getmtime)
+        rel = os.path.relpath(latest, app.static_folder)
+        return {"hashed_css_path": rel.replace("\\", "/")}
+    except Exception:
+        return {"hashed_css_path": None}
 
 
 def _requests_session_with_env_ca(raw):
@@ -515,6 +563,10 @@ def init_scheduler(app):
         """
         Check the status of the cache and warm it if needed.
         """
+        # Defer cache status work until assets exist
+        if not assets_ready():
+            print("[warm] assets not ready; delaying cache check", flush=True)
+            return
         global cache_warming_in_progress
         global cache_updated
         # Delete the old url_list.txt if it exists
@@ -634,10 +686,22 @@ def init_scheduler(app):
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)  # Run once
-    scheduler.add_job(check_status_cache)  # Run on load
     scheduler.add_job(ingest_all_documents_job)  # Run on load
     scheduler.add_job(scheduled_task, "interval", minutes=5)
-    # Optionally re-run ingest every N hours (uncomment if desired)
+    # Delay initial cache status/warm by 5 minutes to allow assets to be built
+    scheduler.add_job(
+        check_status_cache,
+        trigger="date",
+        run_date=datetime.now() + timedelta(minutes=5),
+        id="initial-cache-check",  # stable id so it can be replaced/inspected
+        replace_existing=True,  # in case the scheduler restarts
+        misfire_grace_time=3600,  # run if we wake within an hour
+    )
+    # Weekly run every Sunday at 07:00
+    scheduler.add_job(
+        check_status_cache, trigger="cron", day_of_week="sun", hour=7, minute=0
+    )
+    # Optionally re-run ingest every N hours (kept)
     scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
     scheduler.start()
     return scheduler
@@ -957,7 +1021,9 @@ def clear_cache_doc(path=None):
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout=604800)  # 7 days cached = 604800 seconds 1 day = 86400
+@cache.cached(
+    timeout=604800, unless=lambda: not assets_ready()
+)  # Skip caching until assets exist
 def document(path=None):
     global url_updated
     global cache_updated
@@ -1062,9 +1128,42 @@ def restore_cleared_cached():
     thread = Thread(target=cache_warm_and_unset, args=(urls,))
     thread.start()
     # Print a notification to the console
-    print(f"\n\n Started caching for {len(urls)} URLs in the background. \n\n")
+    print(f"\n\n Started caching {len(urls)} URLs in the background. \n\n")
 
     # Redirect the user to the home page
+    return flask.redirect("/")
+
+
+@app.route("/clear-all-views")
+def clear_all_views():
+    """
+    Clear cached HTML for all known document routes using url_list.txt.
+    Also clears the root view and navigation cache. Useful when a stale
+    hashed CSS was baked into cached pages and needs to be purged.
+    """
+    # Clear root and navigation first
+    cache.delete("view//")
+    cache.delete("navigation")
+
+    url_file_path = os.path.join(app.static_folder, "assets", "url_list.txt")
+    if not os.path.exists(url_file_path):
+        print(
+            "[cache] url_list.txt not found cleared root/nav only", flush=True
+        )
+        return flask.redirect("/")
+
+    removed = 0
+    with open(url_file_path, "r") as f:
+        for line in f:
+            url = line.strip()
+            if not url:
+                continue
+            path = url.lstrip("/")
+            key = f"view//{path}"
+            if cache.delete(key):
+                removed += 1
+
+    print(f"[cache] cleared {removed} view entries from url_list", flush=True)
     return flask.redirect("/")
 
 
