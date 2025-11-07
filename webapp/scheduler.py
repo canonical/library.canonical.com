@@ -1,9 +1,7 @@
 import os
-from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import text
 
 import webapp.state as state
 from webapp.services.navigation_service import construct_navigation_data
@@ -199,7 +197,7 @@ def init_scheduler(app, document_fn):
             # Re-check for the file after construction
             if not os.path.exists(url_file_path):
                 print(
-                    f"[cache] url_list.txt not found after rebuild",
+                    "[cache] url_list.txt not found after rebuild",
                     flush=True,
                 )
                 return

@@ -1,9 +1,9 @@
 import os
 from flask_caching import Cache
 try:
-    from webapp.db import db 
-except Exception: 
-    db = None  
+    from webapp.db import db
+except Exception:
+    db = None
 
 
 cache = Cache()
