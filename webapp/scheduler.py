@@ -76,7 +76,9 @@ def init_scheduler(app, document_fn):
                 print(f"Found {len(expiring_urls)} URLs expiring, warming cache")
                 state.cache_warming_in_progress = True
                 urls_to_warm = [u["url"] for u in expiring_urls]
-                warm_cache_for_urls(urls_to_warm, app, construct_navigation_data, document_fn)
+                # Ensure Flask application context is active for navigation construction
+                with app.app_context():
+                    warm_cache_for_urls(urls_to_warm, app, construct_navigation_data, document_fn)
                 state.cache_warming_in_progress = False
                 state.cache_updated = True
             else:
@@ -180,9 +182,8 @@ def init_scheduler(app, document_fn):
 
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)  # Run once
-    # Build navigation/cache status (once), and clean cache immediately after
-    scheduler.add_job(check_status_cache)  # Run once on load
     scheduler.add_job(scheduled_clean_cache)  # Run once on load
+    scheduler.add_job(check_status_cache)  # Run once on load
     scheduler.add_job(ingest_all_documents_job)  # Run on load
     scheduler.add_job(scheduled_task, "interval", minutes=5)
     scheduler.add_job(check_status_cache, trigger="cron", day_of_week="sun", hour=7, minute=0)

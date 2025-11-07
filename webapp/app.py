@@ -7,6 +7,7 @@ import flask
 import dotenv
 import json
 import requests
+from threading import Thread
 from flask import request, g, session
 
 # import talisker
@@ -433,9 +434,10 @@ def document(path=None):
     # Otherwise, get navigation data from cache or build if needed
     else:
         navigation_data = get_navigation_data()
+        reset_navigation_flags(navigation_data.hierarchy)
 
     # Reset all navigation flags before marking the current document
-    reset_navigation_flags(navigation_data.hierarchy)
+    
 
     # Try to find and mark the target document as active/expanded
     try:
