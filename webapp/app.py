@@ -150,9 +150,7 @@ def search_drive():
 
     if base_url and username and password:
         try:
-            http = (
-                requests_session_with_env_ca(tls_ca) if tls_ca else requests
-            )
+            http = requests_session_with_env_ca(tls_ca) if tls_ca else requests
             print(
                 "Querying OpenSearch...",
                 flush=True,
