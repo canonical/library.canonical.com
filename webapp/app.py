@@ -95,6 +95,7 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
 # Initialize the cache extension (Redis or Simple)
 init_cache(app)
 
+
 # =========================
 # Route Definitions
 # =========================
@@ -409,7 +410,7 @@ def clear_cache_doc(path=None):
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout=604800,)
+@cache.cached(timeout=604800)
 def document(path=None):
     """
     The entire site is rendered by this function (except /search). As all
@@ -435,9 +436,6 @@ def document(path=None):
     else:
         navigation_data = get_navigation_data()
         reset_navigation_flags(navigation_data.hierarchy)
-
-    # Reset all navigation flags before marking the current document
-    
 
     # Try to find and mark the target document as active/expanded
     try:

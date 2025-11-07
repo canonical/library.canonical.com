@@ -1,13 +1,11 @@
 import os
 from flask_caching import Cache
-
-# Re-export existing db instance so consumers can import from one place if desired
 try:
-    from webapp.db import db  # type: ignore
-except Exception:  # pragma: no cover - local tooling may not resolve
-    db = None  # Fallback to avoid import errors in non-DB contexts
+    from webapp.db import db 
+except Exception: 
+    db = None  
 
-# Application-wide cache instance (initialized via init_cache)
+
 cache = Cache()
 
 

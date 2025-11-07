@@ -54,7 +54,6 @@ def opensearch_bulk_run():
                 source["headings_map"] = doc.headings_map
             yield json.dumps(source, ensure_ascii=False) + "\n"
 
-    # HTTPS client with CA from env
     try:
         http = requests_session_with_env_ca(tls_ca) if tls_ca else requests
     except Exception as e:
@@ -127,7 +126,11 @@ def opensearch_list_indices():
         return (
             resp.text,
             resp.status_code,
-            {"Content-Type": resp.headers.get("Content-Type", "application/json")},
+            {
+                "Content-Type": resp.headers.get(
+                    "Content-Type", "application/json"
+                )
+            },
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 502

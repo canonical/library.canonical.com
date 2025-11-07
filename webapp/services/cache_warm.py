@@ -42,7 +42,12 @@ def warm_single_url(app, url: str, navigation_data, document_fn) -> None:
         print(f"Error warming cache for {url}: {e}")
 
 
-def warm_cache_for_urls(urls, app, construct_navigation_data_fn=construct_navigation_data, document_fn=None) -> None:
+def warm_cache_for_urls(
+    urls,
+    app,
+    construct_navigation_data_fn=construct_navigation_data,
+    document_fn=None,
+) -> None:
     """Warm cache for a list of URLs in parallel.
 
     - Skips work until assets_ready() is True to avoid caching pages that link
@@ -57,7 +62,9 @@ def warm_cache_for_urls(urls, app, construct_navigation_data_fn=construct_naviga
 
     with ThreadPoolExecutor(max_workers=8) as executor:
         executor.map(
-            lambda url: warm_single_url(app, url, navigation_data, document_fn),
+            lambda url: warm_single_url(
+                app, url, navigation_data, document_fn
+            ),
             urls,
         )
     print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
