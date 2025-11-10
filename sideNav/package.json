@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@canonical/react-components": "^1.7.3",
+    "@canonical/react-components": "^3.0.0",
     "@emotion/styled": "11.14.0",
     "@mui/icons-material": "5.16.14",
     "classnames": "^2.5.1",
