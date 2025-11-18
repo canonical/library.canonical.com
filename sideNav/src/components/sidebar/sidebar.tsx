@@ -224,20 +224,6 @@ const Sidebar: React.FC<sidebarProps> = ({
     return (
       <>
         <div className='navigation'>
-          <div className='navigation__about-container'
-          onMouseEnter={() => setMouseHover(true)}
-          onMouseLeave={() => setMouseHover(false)}
-          style = {{
-            backgroundColor: backgroundColor,
-            borderLeftColor: "black",
-            borderLeftStyle:'solid',
-            borderLeftWidth: aboutSelected? '2px': "0px"
-          }} 
-          >
-           <p className='navigation__about-tittle' 
-           onClick={() => handleAboutClick()}
-           >The Library</p>
-          </div>
           <div>
           {showHidden && renderHide()}
           {testRoot.postChildren?.sort((a,b) => {
