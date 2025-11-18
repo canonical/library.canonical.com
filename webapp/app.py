@@ -1078,6 +1078,16 @@ def document(path=None):
     target_document["metadata"] = soup.metadata
     target_document["headings_map"] = soup.headings_map
 
+    # Extract page title from H1 tag or fallback to metadata/document name
+    page_title = None
+    h1_tag = soup.html.select_one("h1")
+    if h1_tag:
+        page_title = h1_tag.get_text(strip=True)
+    elif soup.metadata.get("title"):
+        page_title = soup.metadata.get("title")
+    else:
+        page_title = target_document["name"]
+
     # Render the main template with navigation and document content
     return flask.render_template(
         "index.html",
@@ -1085,6 +1095,7 @@ def document(path=None):
         html=soup.html,
         root_name=ROOT,
         document=target_document,
+        title=page_title,
     )
 
 

@@ -1,5 +1,5 @@
 {% extends 'base_layout.html' %}
-{% block title %}Canonical Reference Library | Canonical{% endblock %}
+{% block title %}{% if title %}{{ title }} | Canonical Reference Library{% else %}Canonical Reference Library | Canonical{% endif %}{% endblock %}
 
 {% block description %}
 Canonical Reference Library is single source of information for all corporate knowledge with Canonical
