@@ -259,6 +259,16 @@ def warm_cache_for_urls(urls):
     Warm up the cache for a list of URLs by using a thread pool to
     handle multiple URLs concurrently.
     """
+    # Skip warming until assets are present to avoid caching pages that link
+    # to missing CSS bundles during first boot
+    try:
+        if not assets_ready():
+            print("[warm] assets not ready; skipping warm", flush=True)
+            return
+    except NameError:
+        # assets_ready defined later; if not found, proceed as before
+        pass
+
     with app.app_context():
         navigation_data = construct_navigation_data()
         cache_navigation_data = navigation_data
@@ -297,19 +307,39 @@ def get_urls_expiring_soon():
     return expiring_urls
 
 
-def redis_healthy() -> bool:
-    """Return True if Redis cache backend appears healthy.
+def assets_ready() -> bool:
     """
+    Return True when critical static assets exist on disk so cached pages
+    won't link to missing CSS. Criteria:
+    - static/css/styles.css exists
+    - at least one hashed CSS bundle static/css/index-*.css exists
+    """
+    css_dir = os.path.join(app.static_folder, "css")
+    styles = os.path.join(css_dir, "styles.css")
+    hashed = glob.glob(os.path.join(css_dir, "index-*.css"))
+    ok = os.path.exists(styles) and len(hashed) > 0
+    if not ok:
+        print(
+            f"[assets] not ready (styles.css: {os.path.exists(styles)}, )",
+            flush=True,
+        )
+    return ok
+
+
+def redis_healthy() -> bool:
+    """Return True if Redis cache backend appears healthy."""
     try:
         # Flask-Caching RedisCache stores the client in cache.cache
         backend = getattr(cache, "cache", None)
         if backend is None:
-            return True 
+            return True
         return True
     except Exception as e:
-        print(f"[cache] redis unhealthy; bypassing cache this request: {e}", flush=True)
+        print(
+            f"[cache] redis unhealthy; bypassing cache this request: {e}",
+            flush=True,
+        )
         return False
-
 
 
 @app.context_processor
@@ -550,6 +580,10 @@ def init_scheduler(app):
         """
         Check the status of the cache and warm it if needed.
         """
+        # Defer cache status work until assets exist
+        if not assets_ready():
+            print("[warm] assets not ready; delaying cache check", flush=True)
+            return
         global cache_warming_in_progress
         global cache_updated
         # Delete the old url_list.txt if it exists
@@ -1004,7 +1038,9 @@ def clear_cache_doc(path=None):
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout=604800, unless=lambda: not redis_healthy())
+@cache.cached(
+    timeout=604800, unless=lambda: not redis_healthy() or not assets_ready()
+)
 def document(path=None):
     global url_updated
     global cache_updated
