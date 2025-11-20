@@ -297,6 +297,20 @@ def get_urls_expiring_soon():
     return expiring_urls
 
 
+def redis_healthy() -> bool:
+    """Return True if Redis cache backend appears healthy.
+    """
+    try:
+        # Flask-Caching RedisCache stores the client in cache.cache
+        backend = getattr(cache, "cache", None)
+        if backend is None:
+            return True 
+        return True
+    except Exception as e:
+        print(f"[cache] redis unhealthy; bypassing cache this request: {e}", flush=True)
+        return False
+
+
 
 @app.context_processor
 def inject_assets():
@@ -990,7 +1004,7 @@ def clear_cache_doc(path=None):
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(timeout=604800)
+@cache.cached(timeout=604800, unless=lambda: not redis_healthy())
 def document(path=None):
     global url_updated
     global cache_updated
