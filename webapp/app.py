@@ -2,37 +2,49 @@
 # Imports and Environment
 # =========================
 import os
-import glob
-from datetime import datetime, timedelta
 import copy
 import flask
-from apscheduler.schedulers.background import BackgroundScheduler
 import dotenv
 import json
-import ssl
-import base64
-import binascii
-import textwrap
 import requests
-from flask import jsonify, request, g, session, has_request_context
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import inspect, text
-from requests.adapters import HTTPAdapter
+from threading import Thread
+from flask import request, g, session
 
 # import talisker
 from canonicalwebteam.flask_base.app import FlaskBase
-from concurrent.futures import ThreadPoolExecutor
-from threading import Thread
 
-from webapp.db_query import get_or_parse_document
-from webapp.googledrive import GoogleDrive
+from webapp.services.document_service import get_or_parse_document
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
-from webapp.spreadsheet import GoggleSheet
-from flask_caching import Cache
 from webapp.db import db
+from webapp.extensions import cache, init_cache
+import webapp.state as state
 from webapp.utils.make_snippet import render_snippet
+from webapp.services.drive_service import get_google_drive_instance
+from webapp.services.navigation_service import (
+    reset_navigation_flags,
+    construct_navigation_data,
+    get_navigation_data,
+    get_target_document,
+)
+from webapp.services.cache_warm import (
+    warm_cache_for_urls,
+)
+from webapp.services.opensearch_service import (
+    requests_session_with_env_ca,
+    ensure_highlight_limit,
+)
+from webapp.scheduler import init_scheduler, scheduled_get_changes
+from webapp.opensearch_routes import opensearch_bp
 from webapp.models import Document
+from webapp.services.url_redirects import (
+    get_list_of_urls,
+    find_broken_url,
+)
+from webapp.services.db_bootstrap import (
+    ensure_documents_table,
+    ensure_documents_columns,
+)
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
@@ -65,78 +77,7 @@ app = FlaskBase(
 # Initialize the App SSO
 init_sso(app)
 
-
-# Initialize the connection to DB
-def db_can_write() -> bool:
-    try:
-        with db.engine.connect() as conn:
-            ro = conn.execute(text("SHOW transaction_read_only")).scalar()
-            return str(ro).lower() in ("off", "false", "0")
-    except Exception as e:
-        print(f"[db] read-only probe failed: {e}", flush=True)
-        return False
-
-
-def ensure_documents_table():
-    """
-    Create schema once if missing and DB is writable.
-    Skip silently on read-only endpoints.
-    """
-    try:
-        with app.app_context():
-            insp = inspect(db.engine)
-            if "Documents" in insp.get_table_names():
-                return
-            if db_can_write():
-                print("[db] Creating schema via create_all()", flush=True)
-                db.create_all()
-            else:
-                print(
-                    "[db]table missing,DB is read-only; skipping create_all()",
-                    flush=True,
-                )
-    except Exception as e:
-        print(f"[db] ensure schema failed: {e}", flush=True)
-
-
-def ensure_documents_columns():
-    try:
-        with app.app_context():
-            insp = inspect(db.engine)
-            if "Documents" not in insp.get_table_names():
-                return
-            cols = {c["name"] for c in insp.get_columns("Documents")}
-            alters = []
-
-            base = (
-                'ALTER TABLE "Documents" '
-                "ADD COLUMN IF NOT EXISTS {} {} NULL"
-            )
-            elsetext = (
-                "CREATE UNIQUE INDEX IF NOT EXISTS "
-                'documents_path_uidx ON "Documents"(path)'
-            )
-
-            if "doc_type" not in cols:
-                alters.append(base.format("doc_type", "varchar"))
-            if "date_planned_review" not in cols:
-                alters.append(base.format("date_planned_review", "date"))
-            if "owner" not in cols:
-                alters.append(base.format("owner", "varchar"))
-            if "doc_metadata" not in cols:
-                alters.append(base.format("doc_metadata", "json"))
-            if "headings_map" not in cols:
-                alters.append(base.format("headings_map", "json"))
-
-            if alters and db_can_write():
-                with db.engine.begin() as conn:
-                    for stmt in alters:
-                        conn.execute(text(stmt))
-                # Ensure unique index on path
-                with db.engine.begin() as conn:
-                    conn.execute(text(elsetext))
-    except Exception as e:
-        print(f"[db] ensure columns failed: {e}", flush=True)
+app.register_blueprint(opensearch_bp)
 
 
 if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
@@ -145,566 +86,14 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
         "POSTGRESQL_DB_CONNECT_STRING"
     )
     db.init_app(app)
-    ensure_documents_table()
-    ensure_documents_columns()
+    ensure_documents_table(app)
+    ensure_documents_columns(app)
     # Only for Local testing
     # with app.app_context():
     #     db.create_all()
 
-# Initialize the connection to Redis or SimpleCache
-if "REDIS_DB_CONNECT_STRING" in os.environ:
-
-    cache = Cache(
-        app,
-        config={
-            "CACHE_TYPE": "RedisCache",
-            "CACHE_REDIS_URL": os.getenv(
-                "REDIS_DB_CONNECT_STRING", "redis://localhost:6379"
-            ),  # default Redis DB # optional, overrides host/port/db
-        },
-    )
-    print("\n\nUsing Redis cache\n\n", flush=True)
-else:
-    cache = Cache(app, config={"CACHE_TYPE": "simple"})
-
-cache.init_app(app)
-
-# =========================
-# Global State Variables
-# =========================
-nav_changes = None
-url_updated = False
-gdrive_instance = None
-initialized_executed = False
-cache_warming_in_progress = False
-cache_navigation_data = None
-cache_updated = False
-
-
-# =========================
-# Utility Functions
-# =========================
-def get_google_drive_instance():
-    """
-    Return a singleton instance of GoogleDrive and cache in Flask's 'g'
-    object.
-    """
-    if "google_drive" not in g:
-        g.google_drive = GoogleDrive(cache)
-    return g.google_drive
-
-
-def get_list_of_urls():
-    """
-    Return a list of urls from Google Drive and cache in Flask's 'g'
-    object.
-    """
-
-    google_drive = get_google_drive_instance()
-    urls = []
-    print("FETCHING SPREADSHEET", flush=True)
-    print("URL_DOC", URL_DOC, flush=True)
-    list = google_drive.fetch_spreadsheet(URL_DOC)
-    lines = list.split("\n")[1:]
-    for line in lines:
-        url = line.split(",")
-        urls.append({"old": url[0], "new": url[1].replace("\r", "")})
-    g.list_of_urls = urls
-
-
-def find_broken_url(url):
-    """
-    Find the new url for a given old url
-    """
-    if "list_of_urls" not in g:
-        get_list_of_urls()
-    for u in g.list_of_urls:
-        if u["old"] == url:
-            return u["new"]
-    return None
-
-
-def reset_navigation_flags(navigation):
-    """
-    Reset the navigation flags for the given navigation structure.
-    Mostly used to reset the 'active' and 'expanded' flags when
-    all documents have been cached in the background to ensure
-    the navigation is in a clean state.
-    """
-    for key, item in navigation.items():
-        item["active"] = False
-        item["expanded"] = False
-        if "children" in item and isinstance(item["children"], dict):
-            reset_navigation_flags(item["children"])
-
-
-def warm_single_url(url, navigation_data):
-    """
-    Warm up the cache for a single URL by simulating a request context.
-    """
-    try:
-        path = url.lstrip("/")
-        nav_copy = copy.deepcopy(navigation_data)
-        print(f"Warming cache for {url} with path {path}")
-        with app.test_request_context(f"/{path}"):
-            g.navigation_data = nav_copy
-            document(path)
-    except Exception as e:
-        print(f"Error warming cache for {url}: {e}")
-
-
-def warm_cache_for_urls(urls):
-    global cache_navigation_data
-    """
-    Warm up the cache for a list of URLs by using a thread pool to
-    handle multiple URLs concurrently.
-    """
-    # Skip warming until assets are present to avoid caching pages that link
-    # to missing CSS bundles during first boot
-    try:
-        if not assets_ready():
-            print("[warm] assets not ready; skipping warm", flush=True)
-            return
-    except NameError:
-        # assets_ready defined later; if not found, proceed as before
-        pass
-    with app.app_context():
-        navigation_data = construct_navigation_data()
-        cache_navigation_data = navigation_data
-        with ThreadPoolExecutor(
-            max_workers=8
-        ) as executor:  # Adjust workers as needed
-            executor.map(
-                lambda url: warm_single_url(url, navigation_data), urls
-            )
-        print(f"\n\n Finished cache warming for {len(urls)} URLs. \n\n")
-
-
-def get_urls_expiring_soon():
-    """
-    Returns a list of URLs from url_list.txt whose cache
-    will expire in the next hour.
-    Only works if Redis is used as the cache backend.
-    """
-    expiring_urls = []
-    url_file_path = os.path.join(app.static_folder, "assets", "url_list.txt")
-    if not os.path.exists(url_file_path):
-        print("URL list file not found.")
-        return expiring_urls
-
-    # Read all URLs from the file
-    with open(url_file_path, "r") as f:
-        urls = [line.strip() for line in f if line.strip()]
-
-    # Check each cache key's TTL
-    if "REDIS_DB_CONNECT_STRING" in os.environ:
-        for url in urls:
-            expiring_urls.append({"url": url})
-    else:
-        print("TTL checking is only supported with Redis cache.")
-
-    return expiring_urls
-
-
-def assets_ready() -> bool:
-    """
-    Return True when critical static assets exist on disk so cached pages
-    won't link to missing CSS. Criteria:
-    - static/css/styles.css exists
-    - at least one hashed CSS bundle static/css/index-*.css exists
-    """
-    css_dir = os.path.join(app.static_folder, "css")
-    styles = os.path.join(css_dir, "styles.css")
-    hashed = glob.glob(os.path.join(css_dir, "index-*.css"))
-    ok = os.path.exists(styles) and len(hashed) > 0
-    if not ok:
-        print(
-            f"[assets] not ready (styles.css: {os.path.exists(styles)}, )",
-            flush=True,
-        )
-    return ok
-
-
-@app.context_processor
-def inject_assets():
-    """
-    Provide latest built CSS bundle path
-    Returns None if none found so template can skip the include.
-    """
-    try:
-        css_dir = os.path.join(app.static_folder, "css")
-        matches = glob.glob(os.path.join(css_dir, "index-*.css"))
-        if not matches:
-            return {"hashed_css_path": None}
-        latest = max(matches, key=os.path.getmtime)
-        rel = os.path.relpath(latest, app.static_folder)
-        return {"hashed_css_path": rel.replace("\\", "/")}
-    except Exception:
-        return {"hashed_css_path": None}
-
-
-def _requests_session_with_env_ca(raw):
-    """
-    Accepts OPENSEARCH_TLS_CA as:
-      - Inline PEM chain in one line with literal '\n'
-      - Regular PEM (multi-line)
-      - Base64 of PEM/DER
-    Returns a requests.Session with SSLContext using this CA.
-    """
-    if not raw:
-        return None
-
-    val = str(raw).strip().strip('"').strip("'")
-    if "\\n" in val:
-        val = val.replace("\\n", "\n")
-    val = val.replace("\r\n", "\n").replace("\r", "\n")
-    lines = [ln.lstrip() for ln in val.splitlines()]
-    val = "\n".join(lines).strip()
-
-    cadata = None  # str or bytes
-    if "BEGIN CERTIFICATE" in val:
-        # Ensure proper formatting and trailing newline
-        pem = textwrap.dedent(val).strip()
-        if not pem.endswith("\n"):
-            pem += "\n"
-        cadata = pem
-    else:
-        # Try base64 decode (PEM text or DER)
-        try:
-            raw_bytes = base64.b64decode(val, validate=True)
-        except binascii.Error:
-            raise ValueError("OPENSEARCH_TLS_CA is neither PEM nor base64")
-        try:
-            txt = raw_bytes.decode("utf-8")
-            cadata = txt if "BEGIN CERTIFICATE" in txt else raw_bytes
-        except UnicodeDecodeError:
-            cadata = raw_bytes
-
-    ctx = ssl.create_default_context()
-    ctx.load_verify_locations(cadata=cadata)
-
-    class SSLContextAdapter(HTTPAdapter):
-        def __init__(self, ssl_context=None, **kwargs):
-            self.ssl_context = ssl_context
-            super().__init__(**kwargs)
-
-        def init_poolmanager(self, *args, **kwargs):
-            kwargs["ssl_context"] = self.ssl_context
-            return super().init_poolmanager(*args, **kwargs)
-
-        def proxy_manager_for(self, *args, **kwargs):
-            kwargs["ssl_context"] = self.ssl_context
-            return super().proxy_manager_for(*args, **kwargs)
-
-    s = requests.Session()
-    s.mount("https://", SSLContextAdapter(ctx))
-    return s
-
-
-def _ensure_highlight_limit(index_name: str, limit: int = 5_000_000) -> None:
-    base_url = os.getenv("OPENSEARCH_URL")
-    username = os.getenv("OPENSEARCH_USERNAME")
-    password = os.getenv("OPENSEARCH_PASSWORD")
-    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
-    if not (base_url and username and password):
-        return
-    http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
-    try:
-        http.put(
-            f"{base_url.rstrip('/')}/{index_name}/_settings",
-            auth=(username, password),
-            headers={"Content-Type": "application/json"},
-            json={"index.highlight.max_analyzed_offset": limit},
-            timeout=20,
-        )
-    except Exception as e:
-        print(f"[search] failed to set max_analyzed_offset: {e}", flush=True)
-
-
-# =========================
-# Navigation and Document Functions
-# =========================
-def get_navigation_data():
-    """
-    Return the navigation data that was cached
-    in case it is available, otherwise construct it.
-    """
-
-    if "navigation_data" not in g:
-
-        if "navigation_data_cached" not in session:
-            g.navigation_data = construct_navigation_data()
-        else:
-            nav_data = cache.get("navigation")
-            if nav_data is None:
-                # Handle the case where the cache data is missing
-                g.navigation_data = construct_navigation_data()
-            else:
-                google_drive = get_google_drive_instance()
-                g.navigation_data = NavigationBuilder(
-                    google_drive,
-                    ROOT,
-                    True,
-                    nav_data["doc_reference_dict"],
-                    nav_data["temp_hierarchy"],
-                    nav_data["file_list"],
-                    nav_data["hierarchy"],
-                )
-    return g.navigation_data
-
-
-def construct_navigation_data():
-    """
-    Construct the navigation data  using the NavigationBuilder and cache it.
-    """
-    google_drive = get_google_drive_instance()
-    data = NavigationBuilder(google_drive, ROOT)
-    nav_data = {
-        "doc_reference_dict": data.doc_reference_dict,
-        "temp_hierarchy": data.temp_hierarchy,
-        "file_list": data.file_list,
-        "hierarchy": data.hierarchy,
-    }
-    cache.set("navigation", nav_data)
-    if has_request_context():
-        session["navigation_data_cached"] = True
-    return data
-
-
-def get_target_document(path, navigation):
-    """
-    Helper function that traverses the navigation hierarchy based on the URL
-    path and returns the target document.
-    """
-    if not path:
-        navigation["index"]["active"] = True
-        return navigation["index"]
-
-    split_slug = path.split("/")
-    target_page = navigation
-    for index, slug in enumerate(split_slug):
-        if len(split_slug) == index + 1:
-            target_page[slug]["active"] = True
-            if target_page[slug]["mimeType"] == "folder":
-                target_page[slug]["expanded"] = True
-                return target_page[slug]["children"]["index"]
-            else:
-                return target_page[slug]
-        target_page[slug]["expanded"] = True
-        target_page = target_page[slug]["children"]
-
-    raise ValueError(f"Document for path '{path}' not found.")
-
-
-# =========================
-# Scheduled Tasks / Cron Jobs
-# =========================
-def scheduled_get_changes():
-    """
-    Scheduled task to get changes in document
-    name or location from Google Drive.
-    Then process those changes to update
-    the navigation data and the urls for redirects.
-    """
-    global nav_changes
-    google_drive = gdrive_instance
-    changes = google_drive.get_latest_changes()
-    nav_changes = process_changes(changes, nav_changes, gdrive_instance)
-
-
-def process_changes(changes, navigation_data, google_drive):
-    global url_updated
-    """
-    Process the list of changes for docs and
-    locations from Google Drive. If a document's location
-    has changed, update the URLs in the redirects file.
-    """
-    new_nav = NavigationBuilder(google_drive, ROOT)
-    for change in changes:
-        if change["removed"]:
-            print("REMOVED")
-        else:
-            if "fileId" in change:
-                if change["fileId"] in navigation_data.doc_reference_dict:
-                    nav_item = navigation_data.doc_reference_dict[
-                        change["fileId"]
-                    ]
-                    new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
-                    if nav_item["full_path"] != new_nav_item["full_path"]:
-                        # Location Change process
-                        old_path = nav_item["full_path"][1:]
-                        new_path = new_nav_item["full_path"][1:]
-                        GoggleSheet(old_path, new_path).update_urls()
-                        url_updated = True
-    return new_nav
-
-
-def init_scheduler(app):
-    """
-    Initialize the background scheduler
-    for periodic tasks.
-    """
-
-    def scheduled_task():
-        """
-        The task of checking for changes in
-        Google Drive should be run periodically
-        on a schedule, every 5 minutes.
-        """
-        global nav_changes
-        with app.app_context():
-            google_drive = gdrive_instance
-            navigation = nav_changes
-            changes = google_drive.get_latest_changes()
-            new_nav = process_changes(changes, navigation, google_drive)
-            nav_changes = new_nav
-
-    def check_status_cache():
-        """
-        Check the status of the cache and warm it if needed.
-        """
-        # Defer cache status work until assets exist
-        if not assets_ready():
-            print("[warm] assets not ready; delaying cache check", flush=True)
-            return
-        global cache_warming_in_progress
-        global cache_updated
-        # Delete the old url_list.txt if it exists
-        url_list_path = os.path.join(
-            app.static_folder, "assets", "url_list.txt"
-        )
-        if os.path.exists(url_list_path):
-            os.remove(url_list_path)
-            print(f"Deleted old {url_list_path}")
-
-        with app.app_context():
-            construct_navigation_data()
-        if not cache_warming_in_progress:
-            print("\n\nChecking cache status...\n\n")
-            expiring_urls = get_urls_expiring_soon()
-            if expiring_urls:
-                print(
-                    f"Found {len(expiring_urls)} URLs expiring, warming cache"
-                )
-                cache_warming_in_progress = True
-                urls_to_warm = [u["url"] for u in expiring_urls]
-                warm_cache_for_urls(urls_to_warm)
-                cache_warming_in_progress = False
-                cache_updated = True
-            else:
-                print("No URLs expiring soon, no action taken.")
-
-    def ingest_all_documents_job():
-        """
-        Ensure all documents exist in the DB by fetching from Drive if missing.
-        Runs in parallel with a configurable number of threads.
-        """
-        if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
-            print("DB not configured; skipping ingest job", flush=True)
-            return
-
-        workers = int(os.getenv("INGEST_WORKERS", "10"))  # tune as needed
-
-        with app.app_context():
-            try:
-                try:
-                    nav = construct_navigation_data()
-                except Exception:
-                    nav = get_navigation_data()
-
-                doc_dict = getattr(nav, "doc_reference_dict", {}) or {}
-                items = list(doc_dict.items())
-                total = len(items)
-                if total == 0:
-                    print("[ingest] nothing to ingest", flush=True)
-                    return
-
-                created = 0
-                skipped = 0
-                errors = 0
-
-                def _ingest_one(args):
-                    doc_id, meta = args
-                    # New app context per thread
-                    with app.app_context():
-                        try:
-                            # Build a fresh Drive client for this thread
-                            drive = GoogleDrive(cache)
-                            from webapp.models import Document
-
-                            # Fast skip if exists
-                            if (
-                                db.session.query(Document.id)
-                                .filter_by(google_drive_id=doc_id)
-                                .first()
-                            ):
-                                return "skipped", doc_id, None
-
-                            # Parse and persist
-                            get_or_parse_document(
-                                drive,
-                                doc_id,
-                                doc_dict,
-                                meta.get("name", ""),
-                            )
-                            return "created", doc_id, None
-                        except IntegrityError:
-                            db.session.rollback()
-                            return "skipped", doc_id, None
-                        except Exception as e:
-                            db.session.rollback()
-                            return "error", doc_id, str(e)
-                        finally:
-                            # Ensure thread-local session is released
-                            db.session.remove()
-
-                print(
-                    f"[ingest] starting {total} docs with {workers} workers",
-                    flush=True,
-                )
-                with ThreadPoolExecutor(max_workers=workers) as ex:
-                    for status, doc_id, err in ex.map(_ingest_one, items):
-                        if status == "created":
-                            created += 1
-                        elif status == "skipped":
-                            skipped += 1
-                        else:
-                            errors += 1
-                            print(
-                                f"[ingest] error id={doc_id}: {err}",
-                                flush=True,
-                            )
-                content = f"done created={created} skipped={skipped} "
-                content_2 = f"errors={errors} total={total}"
-                print(
-                    f"[ingest] {content} {content_2}",
-                    flush=True,
-                )
-            except Exception as e:
-                print(f"[ingest] fatal error: {e}", flush=True)
-
-    # Initialize the scheduler
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_task)  # Run once
-    scheduler.add_job(ingest_all_documents_job)  # Run on load
-    scheduler.add_job(scheduled_task, "interval", minutes=5)
-    # Delay initial cache status/warm by 5 minutes to allow assets to be built
-    scheduler.add_job(
-        check_status_cache,
-        trigger="date",
-        run_date=datetime.now() + timedelta(minutes=5),
-        id="initial-cache-check",  # stable id so it can be replaced/inspected
-        replace_existing=True,  # in case the scheduler restarts
-        misfire_grace_time=3600,  # run if we wake within an hour
-    )
-    # Weekly run every Sunday at 07:00
-    scheduler.add_job(
-        check_status_cache, trigger="cron", day_of_week="sun", hour=7, minute=0
-    )
-    # Optionally re-run ingest every N hours (kept)
-    scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
-    scheduler.start()
-    return scheduler
+# Initialize the cache extension (Redis or Simple)
+init_cache(app)
 
 
 # =========================
@@ -761,9 +150,7 @@ def search_drive():
 
     if base_url and username and password:
         try:
-            http = (
-                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
-            )
+            http = requests_session_with_env_ca(tls_ca) if tls_ca else requests
             print(
                 "Querying OpenSearch...",
                 flush=True,
@@ -828,7 +215,7 @@ def search_drive():
                     or "max analyzed offset" in reason_blob
                 ):
                     print("[search] raising limit and retrying", flush=True)
-                    _ensure_highlight_limit(index_name, 5_000_000)
+                    ensure_highlight_limit(index_name, 5_000_000)
                     resp = http.post(
                         f"{base_url.rstrip('/')}/{index_name}/_search",
                         auth=(username, password),
@@ -1021,12 +408,8 @@ def clear_cache_doc(path=None):
 
 @app.route("/")
 @app.route("/<path:path>")
-@cache.cached(
-    timeout=604800, unless=lambda: not assets_ready()
-)  # Skip caching until assets exist
+@cache.cached(timeout=604800)
 def document(path=None):
-    global url_updated
-    global cache_updated
     """
     The entire site is rendered by this function (except /search). As all
     pages use the same template, the only difference between them is the
@@ -1034,25 +417,23 @@ def document(path=None):
     """
 
     # Handle navigation data refresh after cache warming or URL update
-    if cache_updated:
-        cache_updated = False
+    if state.cache_updated:
+        state.cache_updated = False
         navigation_data = construct_navigation_data()
         g.navigation_data = navigation_data
     # Handle navigation data refresh after URL update
-    elif url_updated and not cache_warming_in_progress:
-        url_updated = False
+    elif state.url_updated and not state.cache_warming_in_progress:
+        state.url_updated = False
         navigation_data = construct_navigation_data()
         g.navigation_data = navigation_data
     # If cache warming is in progress, use a copy of the navigation data
-    elif cache_warming_in_progress:
+    elif state.cache_warming_in_progress:
         print("Cache warming in progress, skipping navigation construction.")
-        navigation_data = copy.deepcopy(cache_navigation_data)
+        navigation_data = copy.deepcopy(state.cache_navigation_data)
     # Otherwise, get navigation data from cache or build if needed
     else:
         navigation_data = get_navigation_data()
-
-    # Reset all navigation flags before marking the current document
-    reset_navigation_flags(navigation_data.hierarchy)
+        reset_navigation_flags(navigation_data.hierarchy)
 
     # Try to find and mark the target document as active/expanded
     try:
@@ -1094,8 +475,7 @@ def restore_cleared_cached():
     Route to restore the cleared cache by warming up the cache for all URLs.
     This triggers cache warming in the background for each URL in url_list.txt.
     """
-    global cache_warming_in_progress
-    global cache_navigation_data
+    # use state flags
 
     # Path to the file containing all URLs to warm the cache for
     url_file_path = os.path.join(app.static_folder, "assets", "url_list.txt")
@@ -1109,20 +489,17 @@ def restore_cleared_cached():
     with open(url_file_path, "r") as f:
         urls = [line.strip() for line in f if line.strip()]
     # Build navigation data once and set the cache warming flag
-    cache_navigation_data = construct_navigation_data()
-    cache_warming_in_progress = True
+    state.cache_navigation_data = construct_navigation_data()
+    state.cache_warming_in_progress = True
 
     # Define a background function to warm the cache and reset flags when done
     def cache_warm_and_unset(urls):
         # Warm the cache for all URLs (runs in a background thread)
-        warm_cache_for_urls(urls)
+        warm_cache_for_urls(urls, app, construct_navigation_data, document)
         # After warming, reset global flags and navigation data
-        global cache_warming_in_progress
-        global cache_navigation_data
-        global cache_updated
-        cache_updated = True
-        cache_warming_in_progress = False
-        cache_navigation_data = None
+        state.cache_updated = True
+        state.cache_warming_in_progress = False
+        state.cache_navigation_data = None
 
     # Start cache warming in a background thread
     thread = Thread(target=cache_warm_and_unset, args=(urls,))
@@ -1168,248 +545,8 @@ def clear_all_views():
 
 
 # =========================
-# Open Search Routes
+# OpenSearch routes moved to webapp/opensearch_routes.py
 # =========================
-@app.route("/opensearch/bulk/run", methods=["GET", "POST"])
-def opensearch_bulk_run():
-    # Require DB
-    if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
-        return ("DB not configured", 503)
-
-    base_url = os.getenv("OPENSEARCH_URL")
-    username = os.getenv("OPENSEARCH_USERNAME")
-    password = os.getenv("OPENSEARCH_PASSWORD")
-    tls_ca = os.getenv("OPENSEARCH_TLS_CA")  # single line with \n is OK
-    index_name = request.args.get("index") or os.getenv(
-        "OPENSEARCH_INDEX", "library-docs"
-    )
-
-    if not base_url or not username or not password:
-        return ("Missing OPENSEARCH_URL/USERNAME/PASSWORD", 400)
-
-    def fmt_date(d):
-        return d.strftime("%d-%m-%Y") if d else None
-
-    def ndjson_iter():
-        for doc in db.session.query(Document).yield_per(1000):
-            action = {
-                "index": {"_index": index_name, "_id": doc.google_drive_id}
-            }
-            yield json.dumps(action, ensure_ascii=False) + "\n"
-            source = {
-                "google_drive_ID": doc.google_drive_id,
-                "date_planned_review": fmt_date(doc.date_planned_review),
-                "type": doc.doc_type,
-                "owner": doc.owner,
-                "full_html": doc.full_html,
-                "path": doc.path,
-            }
-            if hasattr(doc, "doc_metadata") and doc.doc_metadata is not None:
-                source["doc_metadata"] = doc.doc_metadata
-            if hasattr(doc, "headings_map") and doc.headings_map is not None:
-                source["headings_map"] = doc.headings_map
-            yield json.dumps(source, ensure_ascii=False) + "\n"
-
-    # HTTPS client with CA from env
-    try:
-        http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
-    except Exception as e:
-        return jsonify({"error": f"Invalid OPENSEARCH_TLS_CA: {e}"}), 400
-
-    # Send to OpenSearch bulk endpoint
-    try:
-        resp = http.post(
-            f"{base_url.rstrip('/')}/_bulk",
-            data=ndjson_iter(),
-            headers={"Content-Type": "application/x-ndjson"},
-            auth=(username, password),
-            timeout=300,
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-
-    # Parse response and return a compact summary
-    summary = {"status": resp.status_code}
-    try:
-        body = resp.json()
-        summary.update(
-            {
-                "errors": body.get("errors"),
-                "took": body.get("took"),
-                "items_count": (
-                    len(body.get("items", []))
-                    if isinstance(body.get("items"), list)
-                    else None
-                ),
-            }
-        )
-        if body.get("errors") is True:
-            # include first error item for quick debug
-            for it in body.get("items", []):
-                op = next(iter(it))
-                if it[op].get("error"):
-                    summary["first_error"] = it[op]["error"]
-                    break
-    except ValueError:
-        summary["text"] = resp.text[:1000]
-
-    return jsonify(summary), resp.status_code
-
-
-@app.route("/opensearch/indices", methods=["GET"])
-def opensearch_list_indices():
-    """
-    List OpenSearch indices via _cat/indices.
-    """
-    base_url = os.getenv("OPENSEARCH_URL")
-    username = os.getenv("OPENSEARCH_USERNAME")
-    password = os.getenv("OPENSEARCH_PASSWORD")
-    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
-
-    if not (base_url and username and password):
-        return jsonify({"error": "OpenSearch not configured"}), 503
-
-    try:
-        try:
-            http = (
-                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
-            )
-        except NameError:
-            http = requests
-
-        resp = http.get(
-            f"{base_url.rstrip('/')}/_cat/indices",
-            auth=(username, password),
-            params={"format": "json", "expand_wildcards": "all"},
-            timeout=20,
-        )
-        # Pass through JSON body and status
-        return (
-            resp.text,
-            resp.status_code,
-            {
-                "Content-Type": resp.headers.get(
-                    "Content-Type", "application/json"
-                )
-            },
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-
-
-@app.route("/opensearch/docs", methods=["GET"])
-def opensearch_list_docs():
-    """
-    List documents from an OpenSearch index.
-    Query params:
-      - index: index name (default OPENSEARCH_INDEX or 'library-docs')
-      - q: optional simple query (uses GET q=... form if provided)
-      - size: page size (default 50)
-      - from: offset for pagination (default 0)
-      - raw=1: return raw OpenSearch response
-    """
-    base_url = os.getenv("OPENSEARCH_URL")
-    username = os.getenv("OPENSEARCH_USERNAME")
-    password = os.getenv("OPENSEARCH_PASSWORD")
-    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
-
-    if not (base_url and username and password):
-        return jsonify({"error": "OpenSearch not configured"}), 503
-
-    index_name = request.args.get("index") or os.getenv(
-        "OPENSEARCH_INDEX", "library-docs"
-    )
-    size = int(request.args.get("size", "50"))
-    from_ = int(request.args.get("from", "0"))
-    q = request.args.get("q")
-    raw = request.args.get("raw") == "1"
-
-    try:
-        try:
-            http = (
-                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
-            )
-        except NameError:
-            http = requests
-
-        if q:
-            # Simple URI search like docs: GET /{index}/_search?q=...
-            includes = "path,owner,type,doc_metadata,full_html"
-            resp = http.get(
-                f"{base_url.rstrip('/')}/{index_name}/_search",
-                auth=(username, password),
-                params={
-                    "q": q,
-                    "size": size,
-                    "from": from_,
-                    "default_operator": "and",
-                    "_source_includes": includes,
-                },
-                timeout=30,
-            )
-        else:
-            # JSON body search with match_all
-            resp = http.post(
-                f"{base_url.rstrip('/')}/{index_name}/_search",
-                auth=(username, password),
-                headers={"Content-Type": "application/json"},
-                json={
-                    "query": {"match_all": {}},
-                    "_source": {
-                        "includes": [
-                            "path",
-                            "owner",
-                            "type",
-                            "doc_metadata",
-                            "full_html",
-                        ]
-                    },
-                    "size": size,
-                    "from": from_,
-                },
-                timeout=30,
-            )
-
-        data = resp.json()
-        if raw:
-            return jsonify(data), resp.status_code
-
-        hits = data.get("hits", {})
-        total = (
-            hits.get("total", {}).get("value")
-            if isinstance(hits.get("total"), dict)
-            else hits.get("total")
-        )
-        items = []
-        for h in hits.get("hits", []):
-            src = h.get("_source") or {}
-            meta = src.get("doc_metadata") or {}
-            items.append(
-                {
-                    "id": h.get("_id"),
-                    "score": h.get("_score"),
-                    "path": src.get("path"),
-                    "owner": src.get("owner"),
-                    "type": src.get("type"),
-                    "title": meta.get("title"),
-                    "full_html_snippet": (src.get("full_html") or "")[:200],
-                }
-            )
-
-        return (
-            jsonify(
-                {
-                    "index": index_name,
-                    "from": from_,
-                    "size": size,
-                    "total": total,
-                    "hits": items,
-                }
-            ),
-            resp.status_code,
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
 
 
 # =========================
@@ -1422,14 +559,13 @@ def initialized():
     and the navigation builder.
     This is executed only once per application context.
     """
-    global initialized_executed, gdrive_instance, nav_changes
-    if not initialized_executed:
-        initialized_executed = True
+    if not state.initialized_executed:
+        state.initialized_executed = True
         with app.app_context():
-            gdrive_instance = get_google_drive_instance()
-            nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+            state.gdrive_instance = get_google_drive_instance()
+            state.nav_changes = NavigationBuilder(state.gdrive_instance, ROOT)
             get_list_of_urls()
-            init_scheduler(app)
+            init_scheduler(app, document)
 
 
 # =========================
