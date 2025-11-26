@@ -101,7 +101,7 @@ class NavigationBuilder:
                 temp_name = "index"
             doc["isSoftRoot"] = "!" in temp_name
             doc["name"] = temp_name.replace("!", "")
-            if ("/" in doc["name"]):
+            if "/" in doc["name"]:
                 doc["name"] = doc["name"].replace("/", "-")
             doc["slug"] = "-".join(doc["name"].split(" ")).lower()
             doc["active"] = False
