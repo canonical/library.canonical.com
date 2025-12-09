@@ -268,6 +268,7 @@ def warm_cache_for_urls(urls):
     except NameError:
         # assets_ready defined later; if not found, proceed as before
         pass
+
     with app.app_context():
         navigation_data = construct_navigation_data()
         cache_navigation_data = navigation_data
@@ -323,6 +324,22 @@ def assets_ready() -> bool:
             flush=True,
         )
     return ok
+
+
+def redis_healthy() -> bool:
+    """Return True if Redis cache backend appears healthy."""
+    try:
+        # Flask-Caching RedisCache stores the client in cache.cache
+        backend = getattr(cache, "cache", None)
+        if backend is None:
+            return True
+        return True
+    except Exception as e:
+        print(
+            f"[cache] redis unhealthy; bypassing cache this request: {e}",
+            flush=True,
+        )
+        return False
 
 
 @app.context_processor
@@ -1022,8 +1039,8 @@ def clear_cache_doc(path=None):
 @app.route("/")
 @app.route("/<path:path>")
 @cache.cached(
-    timeout=604800, unless=lambda: not assets_ready()
-)  # Skip caching until assets exist
+    timeout=604800, unless=lambda: not redis_healthy() or not assets_ready()
+)
 def document(path=None):
     global url_updated
     global cache_updated
