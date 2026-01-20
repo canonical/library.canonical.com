@@ -14,6 +14,7 @@ import base64
 import binascii
 import textwrap
 import requests
+import time
 from flask import jsonify, request, g, session, has_request_context
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import inspect, text
@@ -772,10 +773,20 @@ def init_scheduler(app):
             except Exception as e:
                 print(f"[update] fatal error: {e}", flush=True)
 
+    def sync_open_search():
+        """
+        Sync all documents to OpenSearch index.
+        """
+        with app.app_context():
+            try:
+                opensearch_sync_all()
+            except Exception as e:
+                print(f"[opensearch sync] fatal error: {e}", flush=True)
+
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)  # Run once
-    scheduler.add_job(update_db_all_documents)  # Run on load
+    scheduler.add_job(update_db_all_documents)  # Run on load # Run on load
     scheduler.add_job(scheduled_task, "interval", minutes=5)
     # Delay initial cache status/warm by 5 minutes to allow assets to be built
     scheduler.add_job(
@@ -786,12 +797,16 @@ def init_scheduler(app):
         replace_existing=True,  # in case the scheduler restarts
         misfire_grace_time=3600,  # run if we wake within an hour
     )
+    scheduler.add_job(sync_open_search) 
     # Weekly run every Sunday at 07:00
     scheduler.add_job(
         update_db_all_documents, trigger="cron", day_of_week="sun", hour=6, minute=30
     )
     scheduler.add_job(
         check_status_cache, trigger="cron", day_of_week="sun", hour=7, minute=0
+    )
+    scheduler.add_job(
+        sync_open_search, trigger="cron", day_of_week="sun", hour=7, minute=0
     )
     # Optionally re-run ingest every N hours (kept)
     scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
@@ -1504,6 +1519,179 @@ def opensearch_list_docs():
         return jsonify({"error": str(e)}), 502
 
 
+def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use_alias: bool = True):
+    """
+    Full reindex via upserts from PostgreSQL into OpenSearch.
+    Optionally removes orphaned OpenSearch docs not present in DB.
+    When use_alias is True and dataset is large, writes to a temp index and swaps alias.
+    """
+    # Require DB and OpenSearch config
+    if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+        print("[opensearch] DB not configured", flush=True)
+        return ("DB not configured", 503)
+
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+    index_name = index_name or os.getenv("OPENSEARCH_INDEX", "library-docs")
+    if not (base_url and username and password):
+        return jsonify({"error": "OpenSearch not configured"}), 503
+
+    def http_client():
+        try:
+            return _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+        except Exception as e:
+            return jsonify({"error": f"Invalid OPENSEARCH_TLS_CA: {e}"}), 400
+
+    http = http_client()
+    if isinstance(http, tuple):
+        return http  # error tuple
+
+    def ensure_index(name: str):
+        try:
+            resp = http.head(f"{base_url.rstrip('/')}/{name}", auth=(username, password), timeout=10)
+            if resp.status_code == 200:
+                return True
+        except Exception:
+            pass
+        settings = {
+            "settings": {
+                "index": {"highlight": {"max_analyzed_offset": 5000000}}
+            },
+            "mappings": {
+                "properties": {
+                    "path": {"type": "keyword"},
+                    "owner": {"type": "keyword"},
+                    "type": {"type": "keyword"},
+                    "doc_metadata": {"type": "object", "enabled": True},
+                    "headings_map": {"type": "object", "enabled": True},
+                    "full_html": {"type": "text"},
+                }
+            },
+        }
+        r = http.put(
+            f"{base_url.rstrip('/')}/{name}",
+            auth=(username, password),
+            headers={"Content-Type": "application/json"},
+            json=settings,
+            timeout=20,
+        )
+        return r.ok
+
+    def ndjson_iter():
+        def fmt_date(d):
+            return d.strftime("%d-%m-%Y") if d else None
+        for doc in db.session.query(Document).yield_per(1000):
+            action = {"index": {"_index": target_index, "_id": doc.google_drive_id}}
+            yield json.dumps(action, ensure_ascii=False) + "\n"
+            source = {
+                "google_drive_ID": doc.google_drive_id,
+                "date_planned_review": fmt_date(doc.date_planned_review),
+                "type": doc.doc_type,
+                "owner": doc.owner,
+                "full_html": doc.full_html,
+                "path": doc.path,
+            }
+            if hasattr(doc, "doc_metadata") and doc.doc_metadata is not None:
+                source["doc_metadata"] = doc.doc_metadata
+            if hasattr(doc, "headings_map") and doc.headings_map is not None:
+                source["headings_map"] = doc.headings_map
+            yield json.dumps(source, ensure_ascii=False) + "\n"
+
+    # Decide target index (alias swap for large sets)
+    count = db.session.query(Document).count()
+    use_temp = use_alias and count > 10000
+    target_index = (
+        f"{index_name}-reindex-{int(time.time())}" if use_temp else index_name
+    )
+
+    if not ensure_index(target_index):
+        return jsonify({"error": f"Failed to ensure index '{target_index}'"}), 500
+
+    # Bulk upsert all docs
+    try:
+        resp = http.post(
+            f"{base_url.rstrip('/')}/_bulk",
+            data=ndjson_iter(),
+            headers={"Content-Type": "application/x-ndjson"},
+            auth=(username, password),
+            timeout=600,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+    summary = {"status": resp.status_code}
+    try:
+        body = resp.json()
+        summary.update(
+            {
+                "errors": body.get("errors"),
+                "took": body.get("took"),
+            }
+        )
+    except ValueError:
+        summary["text"] = resp.text[:500]
+
+    if not resp.ok:
+        return jsonify(summary), resp.status_code
+
+    # Orphan cleanup
+    if delete_orphans:
+        if use_temp:
+            # Alias swap: point alias index_name to target_index and remove old
+            try:
+                # Resolve current alias/index
+                alias_url = f"{base_url.rstrip('/')}/_alias/{index_name}"
+                r = http.get(alias_url, auth=(username, password), timeout=20)
+                actions = []
+                if r.ok:
+                    current = list(r.json().keys())
+                    for idx in current:
+                        actions.append({"remove": {"index": idx, "alias": index_name}})
+                actions.append({"add": {"index": target_index, "alias": index_name}})
+                u = http.post(
+                    f"{base_url.rstrip('/')}/_aliases",
+                    auth=(username, password),
+                    headers={"Content-Type": "application/json"},
+                    json={"actions": actions},
+                    timeout=20,
+                )
+                # Optionally delete old concrete indices if any
+                if r.ok:
+                    for idx in list(r.json().keys()):
+                        http.delete(
+                            f"{base_url.rstrip('/')}/{idx}",
+                            auth=(username, password),
+                            timeout=20,
+                        )
+            except Exception as e:
+                print(f"[opensearch] alias swap failed: {e}", flush=True)
+        else:
+            # Direct delete-by-query of orphans
+            try:
+                ids = [
+                    row[0]
+                    for row in db.session.query(Document.google_drive_id).yield_per(5000)
+                ]
+                dq = {
+                    "query": {
+                        "bool": {"must_not": [{"terms": {"_id": ids}}]}
+                    },
+                    "conflicts": "proceed",
+                }
+                dr = http.post(
+                    f"{base_url.rstrip('/')}/{index_name}/_delete_by_query",
+                    auth=(username, password),
+                    headers={"Content-Type": "application/json"},
+                    json=dq,
+                    timeout=120,
+                )
+                summary["deleted"] = (dr.json().get("deleted") if dr.ok else None)
+            except Exception as e:
+                print(f"[opensearch] delete-by-query failed: {e}", flush=True)
+
+    return jsonify(summary), 200
 # =========================
 # App Lifecycle Hooks
 # =========================
