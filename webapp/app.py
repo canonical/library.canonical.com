@@ -24,7 +24,7 @@ from canonicalwebteam.flask_base.app import FlaskBase
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 
-from webapp.db_query import get_or_parse_document
+from webapp.db_query import get_or_parse_document, parse_and_upsert_document
 from webapp.googledrive import GoogleDrive
 from webapp.navigation_builder import NavigationBuilder
 from webapp.sso import init_sso
@@ -700,10 +700,82 @@ def init_scheduler(app):
             except Exception as e:
                 print(f"[ingest] fatal error: {e}", flush=True)
 
+    def update_db_all_documents():
+        """
+        Re-parse all documents from Google Drive and upsert into the DB,
+        updating existing rows as needed. Invalidates per-document view cache
+        entries after successful update/create.
+        """
+        if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+            print("DB not configured; skipping update job", flush=True)
+            return
+
+        workers = int(os.getenv("INGEST_WORKERS", "10"))
+
+        with app.app_context():
+            try:
+                try:
+                    nav = construct_navigation_data()
+                except Exception:
+                    nav = get_navigation_data()
+
+                doc_dict = getattr(nav, "doc_reference_dict", {}) or {}
+                items = list(doc_dict.items())
+                total = len(items)
+                if total == 0:
+                    print("[update] nothing to update", flush=True)
+                    return
+
+                updated = 0
+                created = 0
+                errors = 0
+
+                def _update_one(args):
+                    doc_id, meta = args
+                    with app.app_context():
+                        try:
+                            drive = GoogleDrive(cache)
+                            status, path = parse_and_upsert_document(
+                                drive,
+                                doc_id,
+                                doc_dict,
+                                meta.get("name", ""),
+                            )
+                            rel = (path or "/").lstrip("/")
+                            key = f"view//{rel}"
+                            cache.delete(key)
+                            return status, doc_id, None
+                        except Exception as e:
+                            db.session.rollback()
+                            return "error", doc_id, str(e)
+                        finally:
+                            db.session.remove()
+
+                print(
+                    f"[update] starting {total} docs with {workers} workers",
+                    flush=True,
+                )
+                with ThreadPoolExecutor(max_workers=workers) as ex:
+                    for status, doc_id, err in ex.map(_update_one, items):
+                        if status == "updated":
+                            updated += 1
+                        elif status == "created":
+                            created += 1
+                        else:
+                            errors += 1
+                            print(f"[update] error id={doc_id}: {err}", flush=True)
+
+                print(
+                    f"[update] done updated={updated} created={created} errors={errors} total={total}",
+                    flush=True,
+                )
+            except Exception as e:
+                print(f"[update] fatal error: {e}", flush=True)
+
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)  # Run once
-    scheduler.add_job(ingest_all_documents_job)  # Run on load
+    scheduler.add_job(update_db_all_documents)  # Run on load
     scheduler.add_job(scheduled_task, "interval", minutes=5)
     # Delay initial cache status/warm by 5 minutes to allow assets to be built
     scheduler.add_job(
@@ -715,6 +787,9 @@ def init_scheduler(app):
         misfire_grace_time=3600,  # run if we wake within an hour
     )
     # Weekly run every Sunday at 07:00
+    scheduler.add_job(
+        update_db_all_documents, trigger="cron", day_of_week="sun", hour=6, minute=30
+    )
     scheduler.add_job(
         check_status_cache, trigger="cron", day_of_week="sun", hour=7, minute=0
     )
