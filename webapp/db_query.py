@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from webapp.models import Document
 from webapp.db import db
-from webapp.opensearch import opensearch_index_document
+from webapp.app import opensearch_index_document
 
 USE_DB_ENV = "POSTGRESQL_DB_CONNECT_STRING" in os.environ
 _USE_DB_RUNTIME = True  # toggled off if table missing/RO
