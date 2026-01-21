@@ -1692,6 +1692,116 @@ def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use
                 print(f"[opensearch] delete-by-query failed: {e}", flush=True)
 
     return jsonify(summary), 200
+
+
+def opensearch_index_document(doc_id: str, index_name: str = None, upsert: bool = True):
+    """
+    Add or update a single Document in OpenSearch based on the PostgreSQL row.
+    - doc_id: Google Drive ID (primary key used as OpenSearch _id)
+    - index_name: target index (default OPENSEARCH_INDEX)
+    - upsert: when True, replaces existing; when False, fails if exists
+    Returns (json, status_code).
+    """
+    if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+        return jsonify({"error": "DB not configured"}), 503
+
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+    index_name = index_name or os.getenv("OPENSEARCH_INDEX", "library-docs")
+    if not (base_url and username and password):
+        return jsonify({"error": "OpenSearch not configured"}), 503
+
+    def http_client():
+        try:
+            return _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+        except Exception as e:
+            return jsonify({"error": f"Invalid OPENSEARCH_TLS_CA: {e}"}), 400
+
+    http = http_client()
+    if isinstance(http, tuple):
+        return http
+
+    # Fetch document from DB
+    doc = db.session.query(Document).filter_by(google_drive_id=doc_id).first()
+    if not doc:
+        return jsonify({"error": f"Document {doc_id} not found in DB"}), 404
+
+    # Ensure index exists
+    try:
+        head = http.head(
+            f"{base_url.rstrip('/')}/{index_name}",
+            auth=(username, password),
+            timeout=10,
+        )
+        if head.status_code != 200:
+            # minimal mapping creation (same as bulk helper)
+            settings = {
+                "settings": {
+                    "index": {"highlight": {"max_analyzed_offset": 5000000}}
+                },
+                "mappings": {
+                    "properties": {
+                        "path": {"type": "keyword"},
+                        "owner": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "doc_metadata": {"type": "object", "enabled": True},
+                        "headings_map": {"type": "object", "enabled": True},
+                        "full_html": {"type": "text"},
+                    }
+                },
+            }
+            crt = http.put(
+                f"{base_url.rstrip('/')}/{index_name}",
+                auth=(username, password),
+                headers={"Content-Type": "application/json"},
+                json=settings,
+                timeout=20,
+            )
+            if not crt.ok:
+                return jsonify({"error": f"Failed to create index {index_name}", "body": crt.text[:300]}), crt.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+    # Build the document source
+    def fmt_date(d):
+        return d.strftime("%d-%m-%Y") if d else None
+    source = {
+        "google_drive_ID": doc.google_drive_id,
+        "date_planned_review": fmt_date(doc.date_planned_review),
+        "type": doc.doc_type,
+        "owner": doc.owner,
+        "full_html": doc.full_html,
+        "path": doc.path,
+    }
+    if hasattr(doc, "doc_metadata") and doc.doc_metadata is not None:
+        source["doc_metadata"] = doc.doc_metadata
+    if hasattr(doc, "headings_map") and doc.headings_map is not None:
+        source["headings_map"] = doc.headings_map
+
+    # Index or create
+    try:
+        params = {}
+        if not upsert:
+            params["op_type"] = "create"  # fail if exists
+        resp = http.put(
+            f"{base_url.rstrip('/')}/{index_name}/_doc/{doc_id}",
+            auth=(username, password),
+            headers={"Content-Type": "application/json"},
+            json=source,
+            params=params,
+            timeout=30,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+    try:
+        body = resp.json()
+    except ValueError:
+        body = {"text": resp.text[:300]}
+    status = 200 if resp.ok else resp.status_code
+    return jsonify({"status": resp.status_code, "result": body}), status
 # =========================
 # App Lifecycle Hooks
 # =========================
