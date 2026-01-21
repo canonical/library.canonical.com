@@ -148,7 +148,9 @@ def parse_and_upsert_document(
     dpr = None
     if md.get("date_planned_review"):
         try:
-            dpr = datetime.strptime(md["date_planned_review"], "%d-%m-%Y").date()
+            dpr = datetime.strptime(
+                md["date_planned_review"], "%d-%m-%Y"
+            ).date()
         except ValueError:
             dpr = None
 
@@ -159,7 +161,9 @@ def parse_and_upsert_document(
     if use_db():
         try:
             existing = (
-                db.session.query(Document).filter_by(google_drive_id=doc_id).first()
+                db.session.query(Document)
+                .filter_by(google_drive_id=doc_id)
+                .first()
             )
             if existing:
                 existing.date_planned_review = dpr

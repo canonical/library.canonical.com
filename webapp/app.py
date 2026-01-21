@@ -764,7 +764,10 @@ def init_scheduler(app):
                             created += 1
                         else:
                             errors += 1
-                            print(f"[update] error id={doc_id}: {err}", flush=True)
+                            print(
+                                f"[update] error id={doc_id}: {err}",
+                                flush=True,
+                            )
 
                 print(
                     f"[update] done updated={updated} created={created} errors={errors} total={total}",
@@ -797,10 +800,14 @@ def init_scheduler(app):
         replace_existing=True,  # in case the scheduler restarts
         misfire_grace_time=3600,  # run if we wake within an hour
     )
-    scheduler.add_job(sync_open_search) 
+    scheduler.add_job(sync_open_search)
     # Weekly run every Sunday at 07:00
     scheduler.add_job(
-        update_db_all_documents, trigger="cron", day_of_week="sun", hour=6, minute=30
+        update_db_all_documents,
+        trigger="cron",
+        day_of_week="sun",
+        hour=6,
+        minute=30,
     )
     scheduler.add_job(
         check_status_cache, trigger="cron", day_of_week="sun", hour=7, minute=0
@@ -1519,7 +1526,9 @@ def opensearch_list_docs():
         return jsonify({"error": str(e)}), 502
 
 
-def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use_alias: bool = True):
+def opensearch_sync_all(
+    index_name: str = None, delete_orphans: bool = True, use_alias: bool = True
+):
     """
     Full reindex via upserts from PostgreSQL into OpenSearch.
     Optionally removes orphaned OpenSearch docs not present in DB.
@@ -1540,7 +1549,9 @@ def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use
 
     def http_client():
         try:
-            return _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            return (
+                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            )
         except Exception as e:
             return jsonify({"error": f"Invalid OPENSEARCH_TLS_CA: {e}"}), 400
 
@@ -1550,7 +1561,11 @@ def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use
 
     def ensure_index(name: str):
         try:
-            resp = http.head(f"{base_url.rstrip('/')}/{name}", auth=(username, password), timeout=10)
+            resp = http.head(
+                f"{base_url.rstrip('/')}/{name}",
+                auth=(username, password),
+                timeout=10,
+            )
             if resp.status_code == 200:
                 return True
         except Exception:
@@ -1582,8 +1597,11 @@ def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use
     def ndjson_iter():
         def fmt_date(d):
             return d.strftime("%d-%m-%Y") if d else None
+
         for doc in db.session.query(Document).yield_per(1000):
-            action = {"index": {"_index": target_index, "_id": doc.google_drive_id}}
+            action = {
+                "index": {"_index": target_index, "_id": doc.google_drive_id}
+            }
             yield json.dumps(action, ensure_ascii=False) + "\n"
             source = {
                 "google_drive_ID": doc.google_drive_id,
@@ -1607,7 +1625,10 @@ def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use
     )
 
     if not ensure_index(target_index):
-        return jsonify({"error": f"Failed to ensure index '{target_index}'"}), 500
+        return (
+            jsonify({"error": f"Failed to ensure index '{target_index}'"}),
+            500,
+        )
 
     # Bulk upsert all docs
     try:
@@ -1648,8 +1669,12 @@ def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use
                 if r.ok:
                     current = list(r.json().keys())
                     for idx in current:
-                        actions.append({"remove": {"index": idx, "alias": index_name}})
-                actions.append({"add": {"index": target_index, "alias": index_name}})
+                        actions.append(
+                            {"remove": {"index": idx, "alias": index_name}}
+                        )
+                actions.append(
+                    {"add": {"index": target_index, "alias": index_name}}
+                )
                 u = http.post(
                     f"{base_url.rstrip('/')}/_aliases",
                     auth=(username, password),
@@ -1672,12 +1697,12 @@ def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use
             try:
                 ids = [
                     row[0]
-                    for row in db.session.query(Document.google_drive_id).yield_per(5000)
+                    for row in db.session.query(
+                        Document.google_drive_id
+                    ).yield_per(5000)
                 ]
                 dq = {
-                    "query": {
-                        "bool": {"must_not": [{"terms": {"_id": ids}}]}
-                    },
+                    "query": {"bool": {"must_not": [{"terms": {"_id": ids}}]}},
                     "conflicts": "proceed",
                 }
                 dr = http.post(
@@ -1687,14 +1712,18 @@ def opensearch_sync_all(index_name: str = None, delete_orphans: bool = True, use
                     json=dq,
                     timeout=120,
                 )
-                summary["deleted"] = (dr.json().get("deleted") if dr.ok else None)
+                summary["deleted"] = (
+                    dr.json().get("deleted") if dr.ok else None
+                )
             except Exception as e:
                 print(f"[opensearch] delete-by-query failed: {e}", flush=True)
 
     return jsonify(summary), 200
 
 
-def opensearch_index_document(doc_id: str, index_name: str = None, upsert: bool = True):
+def opensearch_index_document(
+    doc_id: str, index_name: str = None, upsert: bool = True
+):
     """
     Add or update a single Document in OpenSearch based on the PostgreSQL row.
     - doc_id: Google Drive ID (primary key used as OpenSearch _id)
@@ -1715,7 +1744,9 @@ def opensearch_index_document(doc_id: str, index_name: str = None, upsert: bool 
 
     def http_client():
         try:
-            return _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            return (
+                _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+            )
         except Exception as e:
             return jsonify({"error": f"Invalid OPENSEARCH_TLS_CA: {e}"}), 400
 
@@ -1760,13 +1791,22 @@ def opensearch_index_document(doc_id: str, index_name: str = None, upsert: bool 
                 timeout=20,
             )
             if not crt.ok:
-                return jsonify({"error": f"Failed to create index {index_name}", "body": crt.text[:300]}), crt.status_code
+                return (
+                    jsonify(
+                        {
+                            "error": f"Failed to create index {index_name}",
+                            "body": crt.text[:300],
+                        }
+                    ),
+                    crt.status_code,
+                )
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
     # Build the document source
     def fmt_date(d):
         return d.strftime("%d-%m-%Y") if d else None
+
     source = {
         "google_drive_ID": doc.google_drive_id,
         "date_planned_review": fmt_date(doc.date_planned_review),
@@ -1802,6 +1842,8 @@ def opensearch_index_document(doc_id: str, index_name: str = None, upsert: bool 
         body = {"text": resp.text[:300]}
     status = 200 if resp.ok else resp.status_code
     return jsonify({"status": resp.status_code, "result": body}), status
+
+
 # =========================
 # App Lifecycle Hooks
 # =========================
