@@ -769,8 +769,10 @@ def init_scheduler(app):
                                 flush=True,
                             )
 
+                msg = f"updated={updated} created={created}" 
+                msg2 = f"errors={errors} total={total}"
                 print(
-                    f"[update] done updated={updated} created={created} errors={errors} total={total}",
+                    f"[update] done {msg} {msg2}",
                     flush=True,
                 )
             except Exception as e:
@@ -1532,7 +1534,8 @@ def opensearch_sync_all(
     """
     Full reindex via upserts from PostgreSQL into OpenSearch.
     Optionally removes orphaned OpenSearch docs not present in DB.
-    When use_alias is True and dataset is large, writes to a temp index and swaps alias.
+    When use_alias is True and dataset is large,
+    writes to a temp index and swaps alias.
     """
     # Require DB and OpenSearch config
     if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
@@ -1675,7 +1678,7 @@ def opensearch_sync_all(
                 actions.append(
                     {"add": {"index": target_index, "alias": index_name}}
                 )
-                u = http.post(
+                http.post(
                     f"{base_url.rstrip('/')}/_aliases",
                     auth=(username, password),
                     headers={"Content-Type": "application/json"},
