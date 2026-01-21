@@ -769,7 +769,7 @@ def init_scheduler(app):
                                 flush=True,
                             )
 
-                msg = f"updated={updated} created={created}" 
+                msg = f"updated={updated} created={created}"
                 msg2 = f"errors={errors} total={total}"
                 print(
                     f"[update] done {msg} {msg2}",
