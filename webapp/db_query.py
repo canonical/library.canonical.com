@@ -113,6 +113,7 @@ def get_or_parse_document(
             db.session.commit()
             print("Document saved to DB successfully", flush=True)
             opensearch_index_document(new_doc)
+            print("Document indexed in OpenSearch successfully", flush=True)
         except (OperationalError, ProgrammingError) as e:
             _disable_db(str(e))
         except Exception as e:
