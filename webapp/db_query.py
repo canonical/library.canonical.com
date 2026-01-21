@@ -4,7 +4,6 @@ from typing import Optional
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from webapp.models import Document
 from webapp.db import db
-from webapp.app import opensearch_index_document
 
 USE_DB_ENV = "POSTGRESQL_DB_CONNECT_STRING" in os.environ
 _USE_DB_RUNTIME = True  # toggled off if table missing/RO
@@ -112,8 +111,18 @@ def get_or_parse_document(
             db.session.add(new_doc)
             db.session.commit()
             print("Document saved to DB successfully", flush=True)
-            opensearch_index_document(new_doc)
-            print("Document indexed in OpenSearch successfully", flush=True)
+            try:
+                # Import here to avoid circular import at module load time
+                from webapp.app import opensearch_index_document
+
+                opensearch_index_document(new_doc.google_drive_id)
+                print(
+                    "Document indexed in OpenSearch successfully",
+                    flush=True,
+                )
+            except Exception as e:
+                # Don't fail document save if OpenSearch indexing fails
+                print(f"OpenSearch indexing skipped/failed: {e}", flush=True)
         except (OperationalError, ProgrammingError) as e:
             _disable_db(str(e))
         except Exception as e:
