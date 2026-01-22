@@ -9,7 +9,7 @@ from webapp.settings import SERVICE_ACCOUNT_INFO
 
 
 TARGET_DRIVE = os.getenv("TARGET_DRIVE", "0ABG0Z5eOlOvhUk9PVA")
-URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
+URL_DOC = os.getenv("URL_DOC", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
 MAX_CACHE_AGE = 14
 
 
