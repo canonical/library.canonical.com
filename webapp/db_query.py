@@ -111,9 +111,100 @@ def get_or_parse_document(
             db.session.add(new_doc)
             db.session.commit()
             print("Document saved to DB successfully", flush=True)
+            try:
+                # Import here to avoid circular import at module load time
+                from webapp.app import opensearch_index_document
+
+                opensearch_index_document(new_doc.google_drive_id)
+                print(
+                    "Document indexed in OpenSearch successfully",
+                    flush=True,
+                )
+            except Exception as e:
+                # Don't fail document save if OpenSearch indexing fails
+                print(f"OpenSearch indexing skipped/failed: {e}", flush=True)
         except (OperationalError, ProgrammingError) as e:
             _disable_db(str(e))
         except Exception as e:
             print(f"Could not save to DB: {e}", flush=True)
 
     return parser
+
+
+def parse_and_upsert_document(
+    google_drive,
+    doc_id,
+    doc_dict,
+    doc_name,
+):
+    """
+    Force-parse a document from Google Drive and upsert it into the DB.
+    Returns a tuple (status, path) where status is "created" or "updated".
+    """
+    from webapp.parser import Parser
+
+    parser = Parser(google_drive, doc_id, doc_dict, doc_name)
+
+    # Derive fields from parser metadata and nav dict
+    md = parser.metadata or {}
+    owners = md.get("owner") or md.get("owner(s)") or md.get("author(s)")
+    if isinstance(owners, list):
+        owner = ", ".join([o for o in owners if o]) if owners else None
+    else:
+        owner = owners or None
+
+    doc_type = _normalize_doc_type(md.get("type"))
+    dpr = None
+    if md.get("date_planned_review"):
+        try:
+            dpr = datetime.strptime(
+                md["date_planned_review"], "%d-%m-%Y"
+            ).date()
+        except ValueError:
+            dpr = None
+
+    ref = doc_dict.get(doc_id) or {}
+    path = ref.get("full_path") or ref.get("path") or "/"
+
+    status = "skipped"
+    if use_db():
+        try:
+            existing = (
+                db.session.query(Document)
+                .filter_by(google_drive_id=doc_id)
+                .first()
+            )
+            if existing:
+                existing.date_planned_review = dpr
+                existing.doc_type = doc_type
+                existing.owner = owner
+                existing.full_html = str(parser.html)
+                existing.path = path
+                existing.doc_metadata = md
+                existing.headings_map = parser.headings_map
+                db.session.commit()
+                status = "updated"
+            else:
+                new_doc = Document(
+                    google_drive_id=doc_id,
+                    date_planned_review=dpr,
+                    doc_type=doc_type,
+                    owner=owner,
+                    full_html=str(parser.html),
+                    path=path,
+                    doc_metadata=md,
+                    headings_map=parser.headings_map,
+                )
+                db.session.add(new_doc)
+                db.session.commit()
+                status = "created"
+        except (OperationalError, ProgrammingError) as e:
+            _disable_db(str(e))
+        except Exception as e:
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
+            raise e
+
+    return status, path

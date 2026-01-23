@@ -80,7 +80,8 @@ jobs:
         run: |
           sudo apt update
           sudo apt install --only-upgrade python3-pip # install from package manager not pip
-          sudo pip3 install flake8 black
+          # Pin versions to ensure consistent results across environments
+          sudo pip3 install flake8==7.1.1 black==24.4.2
 
       - name: Lint python
         run: yarn lint-python
