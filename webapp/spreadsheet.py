@@ -27,7 +27,10 @@ class GoggleSheet:
             SERVICE_ACCOUNT_INFO, scopes=scopes
         )
         self.service = build(
-            "sheets", "v4", credentials=credentials, cache_discovery=False
+            "sheets",
+            "v4",
+            credentials=credentials,
+            cache_discovery=False,
         )
 
     def update_urls(self):
