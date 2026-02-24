@@ -342,6 +342,9 @@ class Parser:
                             value = col.get_text(strip=True)
                             current_row.append(value)
                         reviewer_dict = {}
+                        if current_row[0] == "Document ID":
+                            print( "BREAK")
+                            break
                         for i in range(len(reviewers)):
                             if (
                                 reviewers[i] == "reviewer(s)"
