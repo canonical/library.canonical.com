@@ -41,7 +41,13 @@ class Parser:
         with open("webapp/config/bs4_ignores.json") as f:
             bs4_ignores = json.load(f)
 
-        self.parse_metadata()
+        try:
+            self.parse_metadata()
+        except Exception as e:
+            raise Exception(
+                f"Metadata table parsing failed: {str(e)}. "
+                "Please check that the document has a properly formatted metadata table."
+            ) from e
         self.parse_nested_lists()
         self.parse_nested_bullet_lists()
         self.parse_links()

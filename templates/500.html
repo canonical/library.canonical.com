@@ -5,9 +5,35 @@
 {% block meta_description %}Something&rsquo;s gone wrong.{% endblock %}
 
 {% block content %}
-<div class="p-strip is-deep">
-  <div class="row">
-    <div class="col-6 col-start-large-4">
+<div class="l-site" style="min-width: 100%;">
+  <div class="l-docs">
+
+    <aside class="l-docs__sidebar">
+      {% include "_partial/_side-navigation.html" %}
+    </aside> 
+    
+    <div class="l-docs__title u-fixed-width">
+      <div class="l-docs__main-search">
+        <form action="/search" class="p-search-box">
+          <label class="u-off-screen" for="search">Search</label>
+          <input 
+            type="search" 
+            class="p-search-box__input" 
+            name="q" 
+            placeholder="Search our sites" 
+            required="" 
+            aria-label="Search our sites" 
+            style="border-top-color: transparent; background-color: #eaeaea;"
+            value="{{ query|e }}"
+          />
+          <button type="reset" class="p-search-box__reset">
+            <i class="p-icon--close"></i>
+          </button>
+          <button type="submit" class="p-search-box__button">
+            <i class="p-icon--search"></i>
+          </button>
+        </form>
+      </div>
       <h1>500: Server error</h1>
       <p class="p-heading--4">Something&rsquo;s gone wrong.</p>
       {% if message %}<blockquote><code>{{ message }}</code></blockquote>{% endif %}
