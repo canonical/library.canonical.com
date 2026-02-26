@@ -1073,6 +1073,18 @@ def create_copy_template():
         return flask.redirect(DRAFTS_URL)
 
 
+@app.route("/test-500")
+def test_500_error():
+    """Test route to preview the 500 error page."""
+    navigation_data = get_navigation_data()
+    nav = navigation_data.hierarchy
+    message = "This is a test error message for previewing the 500 error page."
+    return (
+        flask.render_template("500.html", message=message, navigation=nav),
+        500,
+    )
+
+
 @app.route("/clear-cache/")
 @app.route("/clear-cache/<path:path>")
 def clear_cache_doc(path=None):
@@ -1184,12 +1196,24 @@ def document(path=None):
             flask.abort(404, description=err)
 
     # Parse the document content from Google Drive
-    soup = get_or_parse_document(
-        get_google_drive_instance(),
-        target_document["id"],
-        navigation_data.doc_reference_dict,
-        target_document["name"],
-    )
+    try:
+        soup = get_or_parse_document(
+            get_google_drive_instance(),
+            target_document["id"],
+            navigation_data.doc_reference_dict,
+            target_document["name"],
+        )
+    except Exception as e:
+        # Show 500 error page with specific error message
+        return (
+            flask.render_template(
+                "500.html",
+                message=str(e),
+                navigation=navigation_data.hierarchy,
+            ),
+            500,
+        )
+
     # Attach metadata and headings map to the target document for rendering
     target_document["metadata"] = soup.metadata
     target_document["headings_map"] = soup.headings_map
