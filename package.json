@@ -20,11 +20,11 @@
     "format-prettier": "prettier -w 'static/js/**/*.{js,jsx,ts,tsx}' 'static/sass/**/*.scss'"
   },
   "dependencies": {
-    "@canonical/cookie-policy": "3.4.0",
-    "@canonical/global-nav": "3.2.4",
+    "@canonical/cookie-policy": "3.9.0",
+    "@canonical/global-nav": "3.8.0",
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
-    "vanilla-framework": "4.14.0"
+    "vanilla-framework": "4.44.0"
   },
   "devDependencies": {
     "@babel/core": "7.26.0",
