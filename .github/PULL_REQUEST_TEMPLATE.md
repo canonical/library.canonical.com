@@ -7,8 +7,14 @@
 - Check out this feature branch
 - Run the site using the command `./run serve`
 - View the site locally in your web browser at: http://0.0.0.0:8051/
-- Run through the following [QA steps](https://canonical-web-and-design.github.io/practices/workflow/qa-steps.html)
-- [List additional steps to QA the new features or prove the bug has been resolved]
+- Please check the following basic functionalities work correctly:
+    - Library displays docs correctly
+    - Library search works correctly and displays a list of results
+    - Library displays code correctly -> Check /about-the-library/tests-and-issues-(for-development-purpose)/code-formatting
+    - Library displays list and tables correctly -> Check /about-the-library/tests-and-issues-(for-development-purpose)/table-and-list-examples
+    - Library soft roots work correctly 
+
+Soft roots are when a folder is selected and the side navigation hides all but the current selected folder and its children. An example of this is the Documentation folder on the Library side navigation.
 
 
 ## Issue / Card
