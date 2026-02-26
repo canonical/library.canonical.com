@@ -1078,7 +1078,11 @@ def test_500_error():
     """Test route to preview the 500 error page."""
     navigation_data = get_navigation_data()
     nav = navigation_data.hierarchy
-    return flask.render_template("500.html", message="This is a test error message", navigation=nav), 500
+    message = "This is a test error message for previewing the 500 error page."
+    return (
+        flask.render_template("500.html", message=message, navigation=nav),
+        500,
+    )
 
 
 @app.route("/clear-cache/")
@@ -1201,12 +1205,15 @@ def document(path=None):
         )
     except Exception as e:
         # Show 500 error page with specific error message
-        return flask.render_template(
-            "500.html",
-            message=str(e),
-            navigation=navigation_data.hierarchy
-        ), 500
-    
+        return (
+            flask.render_template(
+                "500.html",
+                message=str(e),
+                navigation=navigation_data.hierarchy,
+            ),
+            500,
+        )
+
     # Attach metadata and headings map to the target document for rendering
     target_document["metadata"] = soup.metadata
     target_document["headings_map"] = soup.headings_map
