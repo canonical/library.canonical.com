@@ -22,13 +22,13 @@
   "dependencies": {
     "@canonical/cookie-policy": "3.4.0",
     "@canonical/global-nav": "3.2.4",
-    "autoprefixer": "10.4.20",
-    "postcss": "8.4.49",
+    "autoprefixer": "10.4.27",
+    "postcss": "8.5.6",
     "vanilla-framework": "4.14.0"
   },
   "devDependencies": {
-    "@babel/core": "7.26.0",
-    "@babel/preset-env": "7.26.0",
+    "@babel/core": "7.29.0",
+    "@babel/preset-env": "7.29.0",
     "babel-loader": "9.2.1",
     "concurrently": "7.6.0",
     "postcss-cli": "10.1.0",
