@@ -1223,7 +1223,14 @@ def document(path=None):
     # Attach metadata and headings map to the target document for rendering
     target_document["metadata"] = soup.metadata
     target_document["headings_map"] = soup.headings_map
-
+    page_title = None
+    h1_tag = soup.html.select_one("h1")
+    if h1_tag:
+        page_title = h1_tag.get_text(strip=True)
+    elif soup.metadata.get("title"):
+        page_title = soup.metadata.get("title")
+    else:
+        page_title = target_document["name"]
     # Render the main template with navigation and document content
     return flask.render_template(
         "index.html",
@@ -1231,6 +1238,7 @@ def document(path=None):
         html=soup.html,
         root_name=ROOT,
         document=target_document,
+        page_title=page_title,
     )
 
 
