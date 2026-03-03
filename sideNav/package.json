@@ -19,7 +19,7 @@
     "sass": "^1.80.4",
     "sass-loader": "^16.0.2",
     "vanilla-framework": "4.45.0",
-    "webpack": "^5.95.0"
+    "webpack": "^5.104.1"
   },
   "devDependencies": {
     "@eslint/js": "9.17.0",
