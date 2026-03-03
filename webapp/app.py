@@ -1192,8 +1192,14 @@ def document(path=None):
             path = new_path
             return flask.redirect("/" + path)
         else:
-            err = "Error, document does not exist."
-            flask.abort(404, description=err)
+            # Show 404 error page with navigation
+            return (
+                flask.render_template(
+                    "404.html",
+                    navigation=navigation_data.hierarchy,
+                ),
+                404,
+            )
 
     # Parse the document content from Google Drive
     try:
