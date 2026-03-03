@@ -2,15 +2,43 @@
 
 {% block title %}404: Page not found{% endblock %}
 
-{% block meta_description %}Sorry, we can't find the page you're looking for.{% endblock %}
+{% block meta_description %}Something&rsquo;s gone wrong.{% endblock %}
 
 {% block content %}
-<div class="p-strip is-deep">
-  <div class="row">
-    <div class="col-6 col-start-large-4">
-      <h1>404: Page not found</h1>
-      <p>Sorry, we can't find the page you're looking for.</p>
-      <p>If you think this is an error on our site, please <a href="https://github.com/canonical/library.canonical.com/issues/new" >file a bug</a>.</p>
+<div class="l-site" style="min-width: 100%;">
+  <div class="l-docs">
+
+    <aside class="l-docs__sidebar">
+      {% include "_partial/_side-navigation.html" %}
+    </aside> 
+    
+    <div class="l-docs__title u-fixed-width">
+      <div class="l-docs__main-search">
+        <form action="/search" class="p-search-box">
+          <label class="u-off-screen" for="search">Search</label>
+          <input 
+            type="search" 
+            class="p-search-box__input" 
+            name="q" 
+            placeholder="Search our sites" 
+            required="" 
+            aria-label="Search our sites" 
+            style="border-top-color: transparent; background-color: #eaeaea;"
+            value="{{ query|e }}"
+          />
+          <button type="reset" class="p-search-box__reset">
+            <i class="p-icon--close"></i>
+          </button>
+          <button type="submit" class="p-search-box__button">
+            <i class="p-icon--search"></i>
+          </button>
+        </form>
+      </div>
+      <div class="col-6 col-start-large-4">
+        <h1>404: Page not found</h1>
+        <p>Sorry, we can't find the page you're looking for.</p>
+        <p>If you think this is an error on our site, please <a href="https://github.com/canonical/library.canonical.com/issues/new" >file a bug</a>.</p>
+    </div>
     </div>
   </div>
 </div>
