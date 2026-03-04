@@ -1610,11 +1610,7 @@ def analytics_opensearch_upload():
             )
             if not create_resp.ok:
                 return (
-                    jsonify(
-                        {
-                            "error": "Failed to create index"
-                        }
-                    ),
+                    jsonify({"error": "Failed to create index"}),
                     500,
                 )
             print(
