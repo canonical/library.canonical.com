@@ -1612,7 +1612,7 @@ def analytics_opensearch_upload():
                 return (
                     jsonify(
                         {
-                            "error": f"Failed to create index"
+                            "error": "Failed to create index"
                         }
                     ),
                     500,
