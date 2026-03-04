@@ -155,7 +155,8 @@ def ensure_analytics_table():
                 db.create_all()
             else:
                 print(
-                    "[db] Analytics table missing, DB is read-only; skipping create_all()",
+                    "[db] Analytics table missing",
+                    "DB is read-only; skipping create_all()",
                     flush=True,
                 )
     except Exception as e:
@@ -1611,7 +1612,7 @@ def analytics_opensearch_upload():
                 return (
                     jsonify(
                         {
-                            "error": f"Failed to create index: {create_resp.text[:500]}"
+                            "error": f"Failed to create index"
                         }
                     ),
                     500,
