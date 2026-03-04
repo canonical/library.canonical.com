@@ -20,3 +20,5 @@ psycopg2-binary==2.9.9
 flask_sqlalchemy==3.1.1
 Pysocks==1.7.1
 openpyxl==3.1.2
+talisker[gunicorn]==0.22.0
+gunicorn==23.0.0
