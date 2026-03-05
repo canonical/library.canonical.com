@@ -33,7 +33,7 @@ from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 from webapp.db import db
 from webapp.utils.make_snippet import render_snippet
-from webapp.models import Document
+from webapp.models import Document, Analytics
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
@@ -140,6 +140,29 @@ def ensure_documents_columns():
         print(f"[db] ensure columns failed: {e}", flush=True)
 
 
+def ensure_analytics_table():
+    """Create Analytics table if missing and DB is writable."""
+    try:
+        with app.app_context():
+            insp = inspect(db.engine)
+            if "Analytics" in insp.get_table_names():
+                return
+            if db_can_write():
+                print(
+                    "[db] Creating Analytics table via create_all()",
+                    flush=True,
+                )
+                db.create_all()
+            else:
+                print(
+                    "[db] Analytics table missing",
+                    "DB is read-only; skipping create_all()",
+                    flush=True,
+                )
+    except Exception as e:
+        print(f"[db] ensure Analytics table failed: {e}", flush=True)
+
+
 if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     print("\n\nUsing PostgreSQL database\n\n", flush=True)
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
@@ -148,6 +171,7 @@ if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
     db.init_app(app)
     ensure_documents_table()
     ensure_documents_columns()
+    ensure_analytics_table()
     # Only for Local testing
     # with app.app_context():
     #     db.create_all()
@@ -1322,6 +1346,124 @@ def clear_all_views():
 
 
 # =========================
+# GA Routes
+# =========================
+@app.route("/analytics/upload", methods=["GET", "POST"])
+def analytics_upload():
+    """
+    Upload and upsert analytics data from an Excel file.
+    The file is always read from /static/assets/GA-analytics-doc.xlsx
+    """
+    navigation_data = get_navigation_data()
+
+    if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+        return (
+            flask.render_template(
+                "500.html",
+                message="Database not configured",
+                navigation=navigation_data.hierarchy,
+            ),
+            503,
+        )
+
+    from openpyxl import load_workbook
+
+    # Always use the default path
+    file_path = os.path.join(
+        app.static_folder, "assets", "GA-analytics-doc.xlsx"
+    )
+
+    if not os.path.exists(file_path):
+        return (
+            flask.render_template(
+                "404.html",
+                message=f"Analytics file not found: {file_path}",
+                navigation=navigation_data.hierarchy,
+            ),
+            404,
+        )
+
+    try:
+        # Load the workbook
+        wb = load_workbook(file_path, read_only=True)
+        ws = wb.active
+
+        updated = 0
+        created = 0
+        errors = 0
+        error_details = []
+
+        # Read rows, skipping header (first row)
+        rows = list(ws.iter_rows(min_row=2, values_only=True))
+
+        for idx, row in enumerate(rows, start=2):
+            try:
+                if not row or not row[0]:  # Skip empty rows
+                    continue
+
+                path = str(row[0]).strip() if row[0] else None
+                views = int(row[1]) if row[1] is not None else 0
+                sessions = int(row[2]) if row[2] is not None else 0
+                engaged_sessions = int(row[3]) if row[3] is not None else 0
+
+                if not path:
+                    continue
+
+                # Upsert: check if record exists
+                existing = Analytics.query.filter_by(path=path).first()
+
+                if existing:
+                    existing.views = views
+                    existing.sessions = sessions
+                    existing.engaged_sessions = engaged_sessions
+                    updated += 1
+                else:
+                    new_record = Analytics(
+                        path=path,
+                        views=views,
+                        sessions=sessions,
+                        engaged_sessions=engaged_sessions,
+                    )
+                    db.session.add(new_record)
+                    created += 1
+
+            except Exception as e:
+                errors += 1
+                error_details.append(f"Row {idx}: {str(e)}")
+                continue
+
+        # Commit all changes
+        db.session.commit()
+        wb.close()
+
+        result = {
+            "success": True,
+            "created": created,
+            "updated": updated,
+            "errors": errors,
+            "total_processed": created + updated,
+        }
+
+        if error_details:
+            result["error_details"] = error_details[
+                :10
+            ]  # Limit to first 10 errors
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return (
+            flask.render_template(
+                "500.html",
+                message=f"Failed to process analytics file: {str(e)}",
+                navigation=navigation_data.hierarchy,
+            ),
+            500,
+        )
+
+
+# =========================
 # Open Search Routes
 # =========================
 @app.route("/opensearch/bulk/run", methods=["GET", "POST"])
@@ -1399,6 +1541,130 @@ def opensearch_bulk_run():
         )
         if body.get("errors") is True:
             # include first error item for quick debug
+            for it in body.get("items", []):
+                op = next(iter(it))
+                if it[op].get("error"):
+                    summary["first_error"] = it[op]["error"]
+                    break
+    except ValueError:
+        summary["text"] = resp.text[:1000]
+
+    return jsonify(summary), resp.status_code
+
+
+@app.route("/analytics/opensearch/upload", methods=["GET", "POST"])
+def analytics_opensearch_upload():
+    """
+    Upload all Analytics table records to OpenSearch.
+    Creates a separate 'library-analytics' index.
+    """
+    # Require DB
+    if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+        return jsonify({"error": "DB not configured"}), 503
+
+    base_url = os.getenv("OPENSEARCH_URL")
+    username = os.getenv("OPENSEARCH_USERNAME")
+    password = os.getenv("OPENSEARCH_PASSWORD")
+    tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+    index_name = request.args.get("index") or "library-analytics"
+
+    if not base_url or not username or not password:
+        return (
+            jsonify({"error": "Missing OPENSEARCH_URL/USERNAME/PASSWORD"}),
+            400,
+        )
+
+    # HTTPS client with CA from env
+    try:
+        http = _requests_session_with_env_ca(tls_ca) if tls_ca else requests
+    except Exception as e:
+        return jsonify({"error": f"Invalid OPENSEARCH_TLS_CA: {e}"}), 400
+
+    # Ensure the analytics index exists with proper mappings
+    try:
+        # Check if index exists
+        resp = http.head(
+            f"{base_url.rstrip('/')}/{index_name}",
+            auth=(username, password),
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            # Create index with mappings for Analytics schema
+            settings = {
+                "settings": {"number_of_shards": 1, "number_of_replicas": 1},
+                "mappings": {
+                    "properties": {
+                        "path": {"type": "keyword"},
+                        "views": {"type": "integer"},
+                        "sessions": {"type": "integer"},
+                        "engaged_sessions": {"type": "integer"},
+                    }
+                },
+            }
+            create_resp = http.put(
+                f"{base_url.rstrip('/')}/{index_name}",
+                auth=(username, password),
+                headers={"Content-Type": "application/json"},
+                json=settings,
+                timeout=20,
+            )
+            if not create_resp.ok:
+                return (
+                    jsonify({"error": "Failed to create index"}),
+                    500,
+                )
+            print(
+                f"[analytics-opensearch] Created index '{index_name}'",
+                flush=True,
+            )
+    except Exception as e:
+        return jsonify({"error": f"Failed to ensure index: {str(e)}"}), 500
+
+    # Build NDJSON payload for bulk upload
+    def ndjson_iter():
+        for analytics in db.session.query(Analytics).yield_per(1000):
+            # Use analytics ID as OpenSearch document ID
+            action = {
+                "index": {"_index": index_name, "_id": str(analytics.id)}
+            }
+            yield json.dumps(action, ensure_ascii=False) + "\n"
+            source = {
+                "path": analytics.path,
+                "views": analytics.views,
+                "sessions": analytics.sessions,
+                "engaged_sessions": analytics.engaged_sessions,
+            }
+            yield json.dumps(source, ensure_ascii=False) + "\n"
+
+    # Send to OpenSearch bulk endpoint
+    try:
+        resp = http.post(
+            f"{base_url.rstrip('/')}/_bulk",
+            data=ndjson_iter(),
+            headers={"Content-Type": "application/x-ndjson"},
+            auth=(username, password),
+            timeout=300,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+    # Parse response and return summary
+    summary = {"status": resp.status_code, "index": index_name}
+    try:
+        body = resp.json()
+        summary.update(
+            {
+                "errors": body.get("errors"),
+                "took": body.get("took"),
+                "items_count": (
+                    len(body.get("items", []))
+                    if isinstance(body.get("items"), list)
+                    else None
+                ),
+            }
+        )
+        if body.get("errors") is True:
+            # Include first error item for debugging
             for it in body.get("items", []):
                 op = next(iter(it))
                 if it[op].get("error"):

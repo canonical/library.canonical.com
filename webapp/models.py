@@ -19,3 +19,16 @@ class Document(db.Model):
 
     def __repr__(self):
         return f"<Document google_drive_id={self.google_drive_id}>"
+
+
+class Analytics(db.Model):
+    __tablename__ = "Analytics"
+
+    id = db.Column(db.Integer, primary_key=True)
+    path = db.Column(db.String, unique=True, nullable=False, index=True)
+    views = db.Column(db.Integer, nullable=True, default=0)
+    sessions = db.Column(db.Integer, nullable=True, default=0)
+    engaged_sessions = db.Column(db.Integer, nullable=True, default=0)
+
+    def __repr__(self):
+        return f"<Analytics path={self.path} views={self.views}>"
