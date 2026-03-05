@@ -36,7 +36,7 @@
 </p>
 {% if document["metadata"]["review_date"] %}
   <p class="p-table-of-contents__item u-no-padding" style="margin-bottom: 1rem;">
-    Latest review: {{ document["metadata"]["review_date"] }}, by {{ document["metadata"]["authors"]| join(", ") or "Unknown" }}
+    Latest review: {{ document["metadata"]["review_date"] }}, by {{ document["metadata"]["authors"] or "Unknown" }}
   </p>
 {% endif %}
 {% if document["metadata"]["page_status"] %}
