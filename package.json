@@ -20,7 +20,7 @@
     "format-prettier": "prettier -w 'static/js/**/*.{js,jsx,ts,tsx}' 'static/sass/**/*.scss'"
   },
   "dependencies": {
-    "@canonical/cookie-policy": "3.9.0",
+    "@canonical/cookie-policy": "3.10.0",
     "@canonical/global-nav": "3.8.0",
     "autoprefixer": "10.4.27",
     "postcss": "8.5.8",
