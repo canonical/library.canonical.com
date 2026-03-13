@@ -22,4 +22,5 @@ Pysocks==1.7.1
 openpyxl==3.1.2
 talisker[gunicorn]==0.22.0
 gunicorn==23.0.0
+sentry-sdk[flask]==2.18.0
 typing_extensions>=4.1.0
