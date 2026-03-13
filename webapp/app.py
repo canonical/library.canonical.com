@@ -859,7 +859,7 @@ def init_scheduler(app):
 # Route Definitions
 # =========================
 @app.route("/sentry-test")
-def hello_world():
+def sentry_test():
     1/0  # raises an error
     return "<p>Hello, World!</p>"
 
