@@ -67,13 +67,13 @@ app = FlaskBase(
 # Initialize the App SSO
 init_sso(app)
 
-# Initialize Sentry if DSN is provided
-sentry_dsn = os.getenv("SENTRY_DSN")
-if sentry_dsn:
+# Initialize Sentry SDK (separate from talisker's raven client)
+# Use SENTRY_DSN_SDK to avoid conflict with talisker's SENTRY_DSN
+sentry_dsn_sdk = os.getenv("SENTRY_DSN_SDK")
+if sentry_dsn_sdk:
     sentry_sdk.init(
-        dsn=sentry_dsn,
+        dsn=sentry_dsn_sdk,
         send_default_pii=True,
-        enable_logs=True,
     )
 # Initialize the connection to DB
 def db_can_write() -> bool:
