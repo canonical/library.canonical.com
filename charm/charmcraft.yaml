@@ -92,10 +92,3 @@ config:
     OPENSEARCH_TLS_CA:
       type: string
       default: ""
-
-parts:
-  charm:
-    charm-binary-python-packages:
-      - pydantic
-      - pydantic-core
-      - jsonschema
