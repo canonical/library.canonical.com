@@ -19,6 +19,7 @@ from flask import jsonify, request, g, session, has_request_context
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import inspect, text
 from requests.adapters import HTTPAdapter
+import sentry_sdk
 
 # import talisker
 from canonicalwebteam.flask_base.app import FlaskBase
@@ -65,6 +66,15 @@ app = FlaskBase(
 )
 # Initialize the App SSO
 init_sso(app)
+
+# Initialize Sentry SDK (separate from talisker's raven client)
+# Use SENTRY_DSN_SDK to avoid conflict with talisker's SENTRY_DSN
+sentry_dsn_sdk = os.getenv("SENTRY_DSN_SDK")
+if sentry_dsn_sdk:
+    sentry_sdk.init(
+        dsn=sentry_dsn_sdk,
+        send_default_pii=True,
+    )
 
 
 # Initialize the connection to DB
@@ -850,6 +860,12 @@ def init_scheduler(app):
 # =========================
 # Route Definitions
 # =========================
+@app.route("/sentry-test")
+def sentry_test():
+    1 / 0  # raises an error
+    return "<p>Hello, World!</p>"
+
+
 @app.route("/refresh-navigation")
 def refresh_navigation():
     """

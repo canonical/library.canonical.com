@@ -101,3 +101,6 @@ config:
     OPENSEARCH_TLS_CA:
       type: string
       default: ""
+    SENTRY_DSN_SDK:
+      type: string
+      default: ""
