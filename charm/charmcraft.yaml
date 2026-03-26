@@ -93,9 +93,7 @@ config:
       type: string
       default: ""
 
-parts:
-  charm:
-    charm-binary-python-packages:
-      - pydantic
-      - pydantic-core
-      - jsonschema
+# Build packages needed to compile pydantic 2.x from source
+build-packages:
+  - cargo
+  - rustc
