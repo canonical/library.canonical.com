@@ -26,7 +26,7 @@ parts:
     charm-python-packages: []
     build-environment:
       - PIP_NO_BINARY=
-      - PIP_ONLY_BINARY=:all:
+      - "PIP_ONLY_BINARY=:all:"
       - PIP_PREFER_BINARY=1
 
 # Uncomment the integrations used by your application
