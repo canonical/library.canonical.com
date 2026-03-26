@@ -142,6 +142,12 @@ jobs:
         run: |
           sudo snap install --classic charmcraft
 
+      - name: Install Rust (required for pydantic 2.x build)
+        if: steps.charm-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cargo rustc
+
       - name: Pack charm
         if: steps.charm-cache.outputs.cache-hit != 'true'
         id: charmcraft-pack

@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@canonical/react-components": "^3.0.0",
+    "@canonical/react-components": "^4.0.0",
     "@emotion/styled": "11.14.1",
     "@mui/icons-material": "7.3.8",
     "classnames": "^2.5.1",
@@ -18,7 +18,7 @@
     "react-dom": "18.3.1",
     "sass": "^1.80.4",
     "sass-loader": "^16.0.2",
-    "vanilla-framework": "4.45.0",
+    "vanilla-framework": "4.46.0",
     "webpack": "^5.104.1"
   },
   "devDependencies": {
@@ -32,6 +32,6 @@
     "globals": "17.4.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.56.1",
-    "vite": "^5.4.21"
+    "vite": "^7.3.1"
   }
 }
