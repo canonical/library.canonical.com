@@ -75,6 +75,8 @@ if sentry_dsn_sdk:
         dsn=sentry_dsn_sdk,
         send_default_pii=True,
     )
+
+
 # Initialize the connection to DB
 def db_can_write() -> bool:
     try:
@@ -860,8 +862,9 @@ def init_scheduler(app):
 # =========================
 @app.route("/sentry-test")
 def sentry_test():
-    1/0  # raises an error
+    1 / 0  # raises an error
     return "<p>Hello, World!</p>"
+
 
 @app.route("/refresh-navigation")
 def refresh_navigation():
