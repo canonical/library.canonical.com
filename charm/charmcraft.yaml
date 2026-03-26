@@ -20,15 +20,6 @@ description: |
 extensions:
   - flask-framework
 
-parts:
-  charm:
-    # ensure we do not force source builds in CI; wheels are more reliable
-    charm-python-packages: []
-    build-environment:
-      - PIP_NO_BINARY=
-      - "PIP_ONLY_BINARY=:all:"
-      - PIP_PREFER_BINARY=1
-
 # Uncomment the integrations used by your application
 # Integrations set to "optional: false" will block the charm
 # until the applications are integrated.
