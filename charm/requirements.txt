@@ -1,6 +1,6 @@
 ops==2.16.1
 paas-charm>=1.0,<2
-pydantic==1.8.2
+pydantic==1.10.13
 cosl==0.0.54
 jsonschema==3.2.0
 email-validator==1.1.3
