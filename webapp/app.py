@@ -67,6 +67,15 @@ app = FlaskBase(
 # Initialize the App SSO
 init_sso(app)
 
+# Initialize Sentry SDK (separate from talisker's raven client)
+# Use SENTRY_DSN_SDK to avoid conflict with talisker's SENTRY_DSN
+sentry_dsn_sdk = os.getenv("SENTRY_DSN_SDK")
+if sentry_dsn_sdk:
+    sentry_sdk.init(
+        dsn=sentry_dsn_sdk,
+        send_default_pii=True,
+    )
+
 
 # Initialize the connection to DB
 def db_can_write() -> bool:
@@ -918,8 +927,10 @@ def search_drive():
 
             # Get configurable popularity weight from env (default 0.15)
             # Set to 0 to disable popularity scoring completely
-            popularity_weight = float(os.getenv("OPENSEARCH_POPULARITY_WEIGHT", "0.001"))
-            
+            popularity_weight = float(
+                os.getenv("OPENSEARCH_POPULARITY_WEIGHT", "0.001")
+            )
+
             # Build query: use function_score only if popularity_weight > 0
             if popularity_weight > 0:
                 # Use function_score to boost results by popularity
@@ -953,7 +964,7 @@ def search_drive():
                         "default_operator": operator,
                     }
                 }
-            
+
             body = {
                 "query": query_clause,
                 "_source": {
@@ -1954,7 +1965,7 @@ def opensearch_sync_all(
             .outerjoin(Analytics, Document.path == Analytics.path)
             .yield_per(1000)
         )
-        
+
         for doc, analytics in query:
             action = {
                 "index": {"_index": target_index, "_id": doc.google_drive_id}
@@ -1970,7 +1981,9 @@ def opensearch_sync_all(
                 # Add analytics fields (default to 0 if no analytics data)
                 "views": analytics.views if analytics else 0,
                 "sessions": analytics.sessions if analytics else 0,
-                "engaged_sessions": analytics.engaged_sessions if analytics else 0,
+                "engaged_sessions": (
+                    analytics.engaged_sessions if analytics else 0
+                ),
             }
             if hasattr(doc, "doc_metadata") and doc.doc_metadata is not None:
                 source["doc_metadata"] = doc.doc_metadata
