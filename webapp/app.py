@@ -948,7 +948,7 @@ def search_drive():
                                     "field": "views",
                                     "factor": popularity_weight,
                                     "modifier": "log1p",  # log(1 + views)
-                                    "missing": 0,  # default 
+                                    "missing": 0,  # default
                                 }
                             }
                         ],
