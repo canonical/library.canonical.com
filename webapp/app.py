@@ -1103,7 +1103,9 @@ def create_copy_template():
     Route to create a copy of the template document for the library.
     """
     google_drive = get_google_drive_instance()
-    name = flask.session.get("openid").get("fullname")
+    # Support both new 'user' and legacy 'openid' session keys
+    user_data = flask.session.get("user") or flask.session.get("openid", {})
+    name = user_data.get("name") or user_data.get("fullname", "Unknown User")
     file_id = google_drive.create_copy_template(name)
     if file_id:
         return flask.redirect(
