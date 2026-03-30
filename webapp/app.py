@@ -942,7 +942,7 @@ def search_drive():
                             }
                         ],
                         "score_mode": "sum",
-                        "boost_mode": "multiply",  # multiply text score by popularity boost
+                        "boost_mode": "sum",  # add popularity boost to text score
                     }
                 }
             else:
