@@ -948,12 +948,12 @@ def search_drive():
                                     "field": "views",
                                     "factor": popularity_weight,
                                     "modifier": "log1p",  # log(1 + views)
-                                    "missing": 0,  # default for docs without analytics
+                                    "missing": 0,  # default 
                                 }
                             }
                         ],
                         "score_mode": "sum",
-                        "boost_mode": "sum",  # add popularity boost to text score
+                        "boost_mode": "sum",  # add popularity to text score
                     }
                 }
             else:
