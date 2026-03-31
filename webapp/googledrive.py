@@ -283,3 +283,115 @@ class GoogleDrive:
             print(f"{err}\n {error}", flush=True)
             # abort(500, description=err)
             return None
+
+    def get_changes_last_week(self):
+        """
+        Get all changes from the last week in the shared drive.
+        Returns a list of changed file IDs.
+        """
+        try:
+            # Get the start page token from a week ago
+            one_week_ago = datetime.utcnow() - timedelta(days=7)
+            
+            # Get initial page token
+            tokens = self.service.changes().getStartPageToken().execute()
+            next_page_token = tokens.get("startPageToken")
+            
+            items = []
+            try:
+                while next_page_token:
+                    results = (
+                        self.service.changes()
+                        .list(
+                            driveId=TARGET_DRIVE,
+                            supportsAllDrives=True,
+                            includeItemsFromAllDrives=True,
+                            includeCorpusRemovals=True,
+                            includeRemoved=True,
+                            pageSize=1000,
+                            pageToken=next_page_token,
+                            restrictToMyDrive=False,
+                            spaces="drive",
+                            includePermissionsForView="published",
+                            includeLabels=True,
+                        )
+                        .execute()
+                    )
+                    items.extend(results.get("changes", []))
+                    next_page_token = results.get("nextPageToken", None)
+            except Exception as error:
+                print(f"Error fetching changes: {error}", flush=True)
+                return []
+
+            # Filter changes from the last week
+            recent_changes = []
+            for item in items:
+                try:
+                    change_time = datetime.strptime(
+                        item["time"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                    )
+                    if change_time > one_week_ago:
+                        recent_changes.append(item)
+                except (KeyError, ValueError) as e:
+                    print(f"Error parsing change time: {e}", flush=True)
+                    continue
+
+            # Extract unique file IDs that were modified (not removed)
+            modified_files = []
+            for change in recent_changes:
+                if not change.get("removed", False) and "file" in change:
+                    file_info = change["file"]
+                    # Only include Google Docs (not folders)
+                    if file_info.get("mimeType") == "application/vnd.google-apps.document":
+                        modified_files.append({
+                            "id": file_info["id"],
+                            "name": file_info.get("name", "Unknown"),
+                            "modifiedTime": change.get("time"),
+                            "owners": file_info.get("owners", [])
+                        })
+
+            # Remove duplicates by file ID
+            seen = set()
+            unique_files = []
+            for file in modified_files:
+                if file["id"] not in seen:
+                    seen.add(file["id"])
+                    unique_files.append(file)
+
+            return unique_files
+
+        except Exception as error:
+            err = "Error fetching last week's changes."
+            print(f"{err}\n {error}", flush=True)
+            return []
+
+    def get_document_comments(self, document_id):
+        """
+        Get all comments for a specific document.
+        Returns a list of comments with their resolved status.
+        """
+        try:
+            results = (
+                self.service.comments()
+                .list(
+                    fileId=document_id,
+                    fields="comments(id,content,resolved,author,createdTime,replies)",
+                    includeDeleted=False,
+                )
+                .execute()
+            )
+            
+            comments = results.get("comments", [])
+            return comments
+
+        except Exception as error:
+            print(f"Error fetching comments for {document_id}: {error}", flush=True)
+            return []
+
+    def get_unresolved_comments_count(self, document_id):
+        """
+        Get the count of unresolved comments for a specific document.
+        """
+        comments = self.get_document_comments(document_id)
+        unresolved_count = sum(1 for comment in comments if not comment.get("resolved", False))
+        return unresolved_count
