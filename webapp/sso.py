@@ -3,7 +3,6 @@ from urllib.parse import quote_plus, urlencode
 import flask
 import socket
 from authlib.integrations.flask_client import OAuth
-from functools import wraps
 
 # OIDC Configuration
 OIDC_ISSUER = os.getenv("OIDC_ISSUER", "https://login.ubuntu.com")
@@ -17,12 +16,44 @@ for key, value in os.environ.items():
         # Set environment variable without the 'FLASK_' prefix
         os.environ[key[6:]] = value
 
+# Global OAuth instance
+oauth = OAuth()
+
+
+def check_team_membership(user_info):
+    """
+    Check if user is a member of the required team.
+    This depends on the OIDC provider's implementation.
+    For login.ubuntu.com, teams might be in 'groups' or a custom claim.
+    """
+    # Check if teams/groups are in the user info
+    teams = user_info.get('teams', [])
+    groups = user_info.get('groups', [])
+    
+    # Combine teams and groups
+    all_memberships = teams + groups
+    
+    # Check if required team is in the memberships
+    if REQUIRED_TEAM:
+        # Support both team name and team slug formats
+        for membership in all_memberships:
+            if isinstance(membership, str):
+                if REQUIRED_TEAM in membership or membership in REQUIRED_TEAM:
+                    return True
+            elif isinstance(membership, dict):
+                if membership.get('name') == REQUIRED_TEAM or membership.get('slug') == REQUIRED_TEAM:
+                    return True
+        return False
+    
+    # If no required team specified, allow access
+    return True
+
 
 def init_sso(app):
     """Initialize OIDC authentication with Authlib"""
     
-    # Initialize OAuth
-    oauth = OAuth(app)
+    # Initialize OAuth with app
+    oauth.init_app(app)
     
     # Register the OIDC provider
     oauth.register(
@@ -35,41 +66,13 @@ def init_sso(app):
         }
     )
 
-    def check_team_membership(user_info):
-        """
-        Check if user is a member of the required team.
-        This depends on the OIDC provider's implementation.
-        For login.ubuntu.com, teams might be in 'groups' or a custom claim.
-        """
-        # Check if teams/groups are in the user info
-        teams = user_info.get('teams', [])
-        groups = user_info.get('groups', [])
-        
-        # Combine teams and groups
-        all_memberships = teams + groups
-        
-        # Check if required team is in the memberships
-        if REQUIRED_TEAM:
-            # Support both team name and team slug formats
-            for membership in all_memberships:
-                if isinstance(membership, str):
-                    if REQUIRED_TEAM in membership or membership in REQUIRED_TEAM:
-                        return True
-                elif isinstance(membership, dict):
-                    if membership.get('name') == REQUIRED_TEAM or membership.get('slug') == REQUIRED_TEAM:
-                        return True
-            return False
-        
-        # If no required team specified, allow access
-        return True
-
     @app.route("/login")
     def login():
         """Initiate OIDC login flow"""
         print("Login handler called", flush=True)
         
         # If already logged in, redirect to next URL
-        if "user" in flask.session:
+        if "user" in flask.session or "openid" in flask.session:
             return flask.redirect(flask.request.args.get("next", "/"))
         
         # Build the callback URL
@@ -139,7 +142,7 @@ def init_sso(app):
         logout_url = os.getenv("OIDC_LOGOUT_URL")
         if logout_url:
             # Build the post-logout redirect URI
-            post_logout_redirect_uri = flask.url_for("index", _external=True)
+            post_logout_redirect_uri = flask.url_for("document", path=None, _external=True)
             return flask.redirect(
                 f"{logout_url}?{urlencode({'post_logout_redirect_uri': post_logout_redirect_uri})}"
             )
