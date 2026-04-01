@@ -78,7 +78,8 @@ class NotificationService:
                 "id": doc["id"],
                 "name": doc["name"],
                 "unresolved_count": doc["unresolved_count"],
-                "url": f"https://docs.google.com/document/d/{doc['id']}/edit"
+                "url": f"https://docs.google.com/document/d/{doc['id']}/edit",
+                "path": doc.get("path", ""),
             }
             if not owners:
                 # No valid owner email found — bucket under sentinel

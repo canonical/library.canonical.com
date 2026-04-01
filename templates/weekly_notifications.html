@@ -87,6 +87,11 @@
                                   <i class="p-icon--external-link" style="margin-left: 0.25rem; height: 0.875rem; width: 0.875rem;"></i>
                                 </a>
                               </h4>
+                              {% if doc.path %}
+                              <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.25rem; font-size: 0.8rem;">
+                                <a href="{{ doc.path }}" style="color: #666;">{{ doc.path }}</a>
+                              </p>
+                              {% endif %}
                               <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.5rem; font-size: 0.875rem;">
                                 <span style="display: inline-block; padding: 0.25rem 0.5rem; background-color: #E95420; color: white; border-radius: 3px; font-weight: bold;">
                                   {{ doc.unresolved_count }} unresolved
@@ -130,6 +135,11 @@
                                   <i class="p-icon--external-link" style="margin-left: 0.25rem; height: 0.875rem; width: 0.875rem;"></i>
                                 </a>
                               </h4>
+                              {% if doc.path %}
+                              <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.25rem; font-size: 0.8rem;">
+                                <a href="{{ doc.path }}" style="color: #666;">{{ doc.path }}</a>
+                              </p>
+                              {% endif %}
                               <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.5rem; font-size: 0.875rem;">
                                 <span style="display: inline-block; padding: 0.25rem 0.5rem; background-color: #E95420; color: white; border-radius: 3px; font-weight: bold;">
                                   {{ doc.unresolved_count }} unresolved

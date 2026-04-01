@@ -31,6 +31,7 @@ class Parser:
         else:
             # Fetch from Google Drive
             self.html = self.get_html(google_drive)
+            print(self.html.prettify(), flush=True)  # Print the first 1000 chars of the HTML for debugging
             self.process_html(doc_name)
 
     def get_html(self, google_drive: GoogleDrive):

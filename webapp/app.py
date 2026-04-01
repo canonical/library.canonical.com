@@ -1557,18 +1557,51 @@ def send_weekly_comment_notifications():
                     if "POSTGRESQL_DB_CONNECT_STRING" in os.environ
                     else None
                 )
-                raw_owner = (db_doc.owner or "") if db_doc else ""
-                owner_parts = [p.strip() for p in raw_owner.split(",") if p.strip()]
-                owners = [{"emailAddress": p} for p in owner_parts if "@" in p]
+                # Prefer the denormalized owner column; fall back to the
+                # raw JSON metadata if the column is NULL (older rows).
+                raw_owner = ""
+                if db_doc:
+                    raw_owner = db_doc.owner or ""
+                    if raw_owner == "" and db_doc.doc_metadata:
+                        md = db_doc.doc_metadata or {}
+                        owners_meta = (
+                            md.get("owner")
+                            or md.get("owner(s)")
+                            or md.get("author(s)")
+                            or md.get("authors")
+                        )
+                        if isinstance(owners_meta, list):
+                            raw_owner = ", ".join(o for o in owners_meta if o)
+                        elif isinstance(owners_meta, str):
+                            raw_owner = owners_meta
+                _PLACEHOLDERS = {"person", "tbd", "n/a", "none", "unknown"}
+                # Split concatenated names on camelCase boundaries and keep
+                # only the first name from each segment.
+                owner_parts = [
+                    re.split(r'(?<=[a-z])(?=[A-Z][a-z])', p.strip())[0].strip()
+                    for p in raw_owner.split(",") if p.strip()
+                ]
+                # For the send route, only keep actual email addresses.
+                owners = [
+                    {"emailAddress": p}
+                    for p in owner_parts
+                    if "@" in p and p.lower() not in _PLACEHOLDERS
+                ]
 
                 documents_with_comments.append({
                     "id": doc_id,
                     "name": doc["name"],
                     "owners": owners,
-                    "unresolved_count": unresolved_count
+                    "unresolved_count": unresolved_count,
+                    "url": f"https://docs.google.com/document/d/{doc_id}/edit",
+                    "modifiedTime": doc.get("modifiedTime", ""),
+                    "path": db_doc.path if db_doc else "",
                 })
                 print(f"  - {doc['name']}: {unresolved_count} unresolved comments", flush=True)
         
+        # Filter out documents with no known path
+        documents_with_comments = [d for d in documents_with_comments if d.get("path")]
+
         print(f"Found {len(documents_with_comments)} documents with unresolved comments", flush=True)
         
         if not documents_with_comments:
@@ -1675,9 +1708,13 @@ def view_weekly_comment_notifications():
                     "owners": owners,
                     "unresolved_count": unresolved_count,
                     "url": f"https://docs.google.com/document/d/{doc_id}/edit",
-                    "modifiedTime": doc.get("modifiedTime", "")
+                    "modifiedTime": doc.get("modifiedTime", ""),
+                    "path": db_doc.path if db_doc else ""
                 })
         
+        # Filter out documents with no known path
+        documents_with_comments = [d for d in documents_with_comments if d.get("path")]
+
         # Group documents by owner
         owner_docs = notification_service.group_documents_by_owner(documents_with_comments)
         
