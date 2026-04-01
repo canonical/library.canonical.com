@@ -3,6 +3,7 @@
 # =========================
 import os
 import glob
+import re
 from datetime import datetime, timedelta
 import copy
 import flask
@@ -1654,7 +1655,14 @@ def view_weekly_comment_notifications():
                 # The @-filter is only used by the send route where actual
                 # email addresses are required.
                 _PLACEHOLDERS = {"person", "tbd", "n/a", "none", "unknown"}
-                owner_parts = [p.strip() for p in raw_owner.split(",") if p.strip()]
+                # When names are concatenated without separators
+                # (e.g. "Daniele ProcidaAngel Fernandez Gambin"), split on the
+                # camelCase boundary between a lowercase and an uppercase+lowercase
+                # pair and keep only the first name.
+                owner_parts = [
+                    re.split(r'(?<=[a-z])(?=[A-Z][a-z])', p.strip())[0].strip()
+                    for p in raw_owner.split(",") if p.strip()
+                ]
                 owners = [
                     {"emailAddress": p}
                     for p in owner_parts

@@ -218,14 +218,15 @@ class NotificationService:
         
         # Send email to each owner (skip the no-owner sentinel bucket)
         for owner_email, documents in owner_docs.items():
+            print(f"Processing owner: {owner_email} with {len(documents)} document(s)", flush=True)
             if owner_email == "__no_owner__":
                 continue
             subject = f"Library: {len(documents)} document(s) with unresolved comments"
             body_html = self.generate_email_html(owner_email, documents)
-            
-            if self.send_email(owner_email, subject, body_html):
-                stats["emails_sent"] += 1
-            else:
-                stats["emails_failed"] += 1
+            if(owner_email == 'nicolas.bello@canonical.com'):
+                if self.send_email(owner_email, subject, body_html):
+                    stats["emails_sent"] += 1
+                else:
+                    stats["emails_failed"] += 1
         
         return stats
