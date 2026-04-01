@@ -5,6 +5,7 @@ from flask import abort
 
 from apiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 from webapp.settings import SERVICE_ACCOUNT_INFO
 
@@ -219,11 +220,106 @@ class GoogleDrive:
                 print(f"{err}\n", flush=True)
                 abort(404, description=err)
 
+        except HttpError as error:
+            details = error.error_details or []
+            reasons = [d.get("reason") for d in details if isinstance(d, dict)]
+            if "exportSizeLimitExceeded" in reasons:
+                logger.warning(
+                    "File %s too large for Drive export API, "
+                    "falling back to Docs API.",
+                    document_id,
+                )
+                return self._fetch_document_via_docs_api(document_id)
+            skip_reasons = {"fileNotExportable", "internalError"}
+            if skip_reasons.intersection(reasons):
+                raise ValueError(
+                    f"File {document_id} cannot be exported: {', '.join(reasons)}"
+                ) from error
+            err = "Error retrieving HTML or caching document."
+            print(f"{err} | Exception: {error}", flush=True)
+            abort(500, description=error)
         except Exception as error:
             err = "Error retrieving HTML or caching document."
             print(f"{err} | Exception: {error}", flush=True)
-            print(f"{err}\n {error}", flush=True)
             abort(500, description=error)
+
+    def _build_docs_service(self):
+        scopes = ["https://www.googleapis.com/auth/drive"]
+        credentials = service_account.Credentials.from_service_account_info(
+            SERVICE_ACCOUNT_INFO, scopes=scopes
+        )
+        return build("docs", "v1", credentials=credentials, cache_discovery=False)
+
+    def _docs_api_to_html(self, document):
+        """Convert a Google Docs API document JSON to a minimal HTML string."""
+
+        def text_run_to_html(text_run):
+            text = text_run.get("content", "")
+            if text == "\n":
+                return ""
+            style = text_run.get("textStyle", {})
+            if style.get("bold"):
+                text = f"<strong>{text}</strong>"
+            if style.get("italic"):
+                text = f"<em>{text}</em>"
+            if style.get("underline"):
+                text = f"<u>{text}</u>"
+            return text
+
+        def paragraph_to_html(paragraph):
+            heading_map = {
+                "HEADING_1": "h1",
+                "HEADING_2": "h2",
+                "HEADING_3": "h3",
+                "HEADING_4": "h4",
+                "HEADING_5": "h5",
+                "HEADING_6": "h6",
+            }
+            style_type = (
+                paragraph.get("paragraphStyle", {})
+                .get("namedStyleType", "NORMAL_TEXT")
+            )
+            tag = heading_map.get(style_type, "p")
+            inner = "".join(
+                text_run_to_html(elem["textRun"])
+                for elem in paragraph.get("elements", [])
+                if "textRun" in elem
+            )
+            if not inner.strip():
+                return ""
+            return f"<{tag}>{inner}</{tag}>"
+
+        parts = []
+        for block in document.get("body", {}).get("content", []):
+            if "paragraph" in block:
+                html = paragraph_to_html(block["paragraph"])
+                if html:
+                    parts.append(html)
+            elif "table" in block:
+                rows = []
+                for row in block["table"].get("tableRows", []):
+                    cells = []
+                    for cell in row.get("tableCells", []):
+                        cell_html = "".join(
+                            paragraph_to_html(cb["paragraph"])
+                            for cb in cell.get("content", [])
+                            if "paragraph" in cb
+                        )
+                        cells.append(f"<td>{cell_html}</td>")
+                    rows.append(f"<tr>{''.join(cells)}</tr>")
+                parts.append(f"<table>{''.join(rows)}</table>")
+
+        body = "".join(parts)
+        return f'<html><body class="doc-content">{body}</body></html>'
+
+    def _fetch_document_via_docs_api(self, document_id):
+        docs_service = self._build_docs_service()
+        document = (
+            docs_service.documents()
+            .get(documentId=document_id)
+            .execute()
+        )
+        return self._docs_api_to_html(document)
 
     def fetch_spreadsheet(self, document_id):
         print("Fetching spreadsheet", document_id, flush=True)

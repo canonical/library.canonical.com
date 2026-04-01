@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from typing import Optional
-from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
 from webapp.models import Document
 from webapp.db import db
 
@@ -108,8 +108,26 @@ def get_or_parse_document(
                 doc_metadata=md,
                 headings_map=parser.headings_map,
             )
-            db.session.add(new_doc)
-            db.session.commit()
+            try:
+                db.session.add(new_doc)
+                db.session.commit()
+            except IntegrityError:
+                # Path already exists (different google_drive_id); update it.
+                db.session.rollback()
+                existing_by_path = (
+                    db.session.query(Document).filter_by(path=path).first()
+                )
+                if existing_by_path:
+                    existing_by_path.google_drive_id = doc_id
+                    existing_by_path.date_planned_review = dpr
+                    existing_by_path.doc_type = doc_type
+                    existing_by_path.owner = owner
+                    existing_by_path.full_html = str(parser.html)
+                    existing_by_path.doc_metadata = md
+                    existing_by_path.headings_map = parser.headings_map
+                    db.session.commit()
+                    new_doc = existing_by_path
+                    print(f"[update] merged duplicate path {path}", flush=True)
             print("Document saved to DB successfully", flush=True)
             try:
                 # Import here to avoid circular import at module load time
