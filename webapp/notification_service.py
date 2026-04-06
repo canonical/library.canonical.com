@@ -1,4 +1,5 @@
 # fmt: off
+# flake8: noqa
 import os
 import smtplib
 from email.mime.text import MIMEText

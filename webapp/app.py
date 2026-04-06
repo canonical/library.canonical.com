@@ -1612,13 +1612,16 @@ def send_weekly_comment_notifications():
 
                 documents_with_comments.append(
                     {
-                    "id": doc_id,
-                    "name": doc["name"],
-                    "owners": owners,
-                    "unresolved_count": unresolved_count,
-                    "url": f"https://docs.google.com/document/d/{doc_id}/edit",
-                    "modifiedTime": doc.get("modifiedTime", ""),
-                    "path": db_doc.path if db_doc else "",
+                        "id": doc_id,
+                        "name": doc["name"],
+                        "owners": owners,
+                        "unresolved_count": unresolved_count,
+                        "url": (
+                            "https://docs.google.com/document/d/"
+                            f"{doc_id}/edit"
+                        ),
+                        "modifiedTime": doc.get("modifiedTime", ""),
+                        "path": db_doc.path if db_doc else "",
                     }
                 )
 
@@ -1644,7 +1647,10 @@ def send_weekly_comment_notifications():
         stats = notification_service.send_weekly_comment_notifications(
             documents_with_comments
         )
-        msg = f"Sent {stats['emails_sent']} emails to {stats['total_owners']} owners"
+        msg = (
+            f"Sent {stats['emails_sent']} notification(s)"
+            f" to {stats['total_owners']} owner(s)"
+        )
 
         return flask.jsonify(
             {
@@ -1740,13 +1746,16 @@ def view_weekly_comment_notifications():
 
                 documents_with_comments.append(
                     {
-                    "id": doc_id,
-                    "name": doc["name"],
-                    "owners": owners,
-                    "unresolved_count": unresolved_count,
-                    "url": f"https://docs.google.com/document/d/{doc_id}/edit",
-                    "modifiedTime": doc.get("modifiedTime", ""),
-                    "path": db_doc.path if db_doc else "",
+                        "id": doc_id,
+                        "name": doc["name"],
+                        "owners": owners,
+                        "unresolved_count": unresolved_count,
+                        "url": (
+                            "https://docs.google.com/document/d/"
+                            f"{doc_id}/edit"
+                        ),
+                        "modifiedTime": doc.get("modifiedTime", ""),
+                        "path": db_doc.path if db_doc else "",
                     }
                 )
 
