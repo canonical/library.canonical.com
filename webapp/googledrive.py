@@ -233,7 +233,7 @@ class GoogleDrive:
             skip_reasons = {"fileNotExportable", "internalError"}
             if skip_reasons.intersection(reasons):
                 raise ValueError(
-                    f"File {document_id} cannot be exported: {', '.join(reasons)}"
+                    f"File {document_id} cant export: {', '.join(reasons)}"
                 ) from error
             err = "Error retrieving HTML or caching document."
             print(f"{err} | Exception: {error}", flush=True)
@@ -336,7 +336,7 @@ class GoogleDrive:
                 _, done = downloader.next_chunk()
             csv = file.getvalue().decode("utf-8")
             print("Download complete", flush=True)
-            print("CSV content:", csv[:100], flush=True) 
+            print("CSV content:", csv[:100], flush=True)
             if csv:
                 return csv
             else:
