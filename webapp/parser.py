@@ -4,6 +4,7 @@ from urllib.parse import unquote
 from bs4 import BeautifulSoup, NavigableString
 
 from webapp.googledrive import GoogleDrive
+from webapp import owner_registry
 
 from webapp.utils.entity_to_char import entity_to_char
 
@@ -31,7 +32,6 @@ class Parser:
         else:
             # Fetch from Google Drive
             self.html = self.get_html(google_drive)
-            print(self.html.prettify(), flush=True)  # Print the first 1000 chars of the HTML for debugging
             self.process_html(doc_name)
 
     def get_html(self, google_drive: GoogleDrive):
@@ -314,6 +314,14 @@ class Parser:
                             col = columns[icol]
                             value = col.get_text(strip=True)
                             if page[icol] == "owner(s)":
+                                for a in col.find_all(
+                                    "a",
+                                    href=lambda h: h and h.startswith("mailto:"),
+                                ):
+                                    owner_registry.register(
+                                        a.get_text(strip=True),
+                                        a["href"][len("mailto:"):],
+                                    )
                                 if "," in value:
                                     value = value.split(",")
                                 else:
@@ -380,6 +388,14 @@ class Parser:
                                 col = columns[icol]
                                 value = col.get_text(strip=True)
                                 if first_row[icol] == "author(s)":
+                                    for a in col.find_all(
+                                        "a",
+                                        href=lambda h: h and h.startswith("mailto:"),
+                                    ):
+                                        owner_registry.register(
+                                            a.get_text(strip=True),
+                                            a["href"][len("mailto:"):],
+                                        )
                                     if "," in value:
                                         value = value.split(",")
                                     else:

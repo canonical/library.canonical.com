@@ -37,6 +37,7 @@ from webapp.db import db
 from webapp.utils.make_snippet import render_snippet
 from webapp.models import Document, Analytics
 from webapp.notification_service import NotificationService
+from webapp import owner_registry
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
@@ -1581,12 +1582,18 @@ def send_weekly_comment_notifications():
                     re.split(r'(?<=[a-z])(?=[A-Z][a-z])', p.strip())[0].strip()
                     for p in raw_owner.split(",") if p.strip()
                 ]
-                # For the send route, only keep actual email addresses.
-                owners = [
-                    {"emailAddress": p}
-                    for p in owner_parts
-                    if "@" in p and p.lower() not in _PLACEHOLDERS
-                ]
+                # For the send route, resolve name→email via registry;
+                # only keep entries that end up with an actual email address.
+                owners = []
+                for p in owner_parts:
+                    if p.lower() in _PLACEHOLDERS:
+                        continue
+                    if "@" in p:
+                        owners.append({"name": p, "emailAddress": p})
+                    else:
+                        email = owner_registry.lookup(p)
+                        if email:
+                            owners.append({"name": p, "emailAddress": email})
 
                 documents_with_comments.append({
                     "id": doc_id,
@@ -1696,11 +1703,17 @@ def view_weekly_comment_notifications():
                     re.split(r'(?<=[a-z])(?=[A-Z][a-z])', p.strip())[0].strip()
                     for p in raw_owner.split(",") if p.strip()
                 ]
-                owners = [
-                    {"emailAddress": p}
-                    for p in owner_parts
-                    if p.lower() not in _PLACEHOLDERS
-                ]
+                # For the view route, resolve name→email via registry;
+                # fall back to the name itself for display when no email found.
+                owners = []
+                for p in owner_parts:
+                    if p.lower() in _PLACEHOLDERS:
+                        continue
+                    if "@" in p:
+                        owners.append({"name": p, "emailAddress": p})
+                    else:
+                        email = owner_registry.lookup(p)
+                        owners.append({"name": p, "emailAddress": email or ""})
 
                 documents_with_comments.append({
                     "id": doc_id,
@@ -1716,7 +1729,7 @@ def view_weekly_comment_notifications():
         documents_with_comments = [d for d in documents_with_comments if d.get("path")]
 
         # Group documents by owner
-        owner_docs = notification_service.group_documents_by_owner(documents_with_comments)
+        owner_docs, owner_names = notification_service.group_documents_by_owner(documents_with_comments)
         
         # Calculate statistics
         total_comments = sum(doc["unresolved_count"] for doc in documents_with_comments)
@@ -1732,6 +1745,7 @@ def view_weekly_comment_notifications():
         return flask.render_template(
             "weekly_notifications.html",
             owner_docs=owner_docs,
+            owner_names=owner_names,
             stats=stats,
             navigation=navigation_data.hierarchy,
             doc_reference_dict=navigation_data.doc_reference_dict,

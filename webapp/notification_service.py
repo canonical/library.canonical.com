@@ -71,6 +71,7 @@ class NotificationService:
             Dict mapping owner email to list of documents they own
         """
         owner_docs = defaultdict(list)
+        owner_names = {}  # email -> display name
         
         for doc in documents_with_comments:
             owners = doc.get("owners", [])
@@ -91,10 +92,14 @@ class NotificationService:
                 owner_email = owner.get("emailAddress")
                 if owner_email:
                     owner_docs[owner_email].append(doc_entry)
+                    # Store name keyed by email; prefer a real name over the email itself
+                    owner_name = owner.get("name") or owner_email
+                    if owner_email not in owner_names:
+                        owner_names[owner_email] = owner_name
         
-        return dict(owner_docs)
+        return dict(owner_docs), owner_names
 
-    def generate_email_html(self, owner_email, documents):
+    def generate_email_html(self, owner_email, documents, owner_name=None):
         """
         Generate HTML email body for an owner with their documents that have comments.
         """
@@ -146,10 +151,10 @@ class NotificationService:
                 .button {{
                     display: inline-block;
                     padding: 10px 20px;
-                    background-color: #E95420;
-                    color: white;
+                    background-color: white;
+                    color: #E95420;
                     text-decoration: none;
-                    border-radius: 3px;
+                    border: 2px solid #E95420;
                     margin-top: 10px;
                 }}
                 .footer {{
@@ -164,10 +169,10 @@ class NotificationService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h2>📝 Library Documents - Unresolved Comments</h2>
+                    <h2>Library documents with unresolved comments</h2>
                 </div>
                 <div class="content">
-                    <p>Hi there,</p>
+                    <p>Hi {owner_name},</p>
                     <p>You have <strong>{doc_count}</strong> document(s) in the Canonical Library with a total of <strong class="comment-count">{total_comments}</strong> unresolved comment(s) that need your attention.</p>
                     
                     <h3>Documents with Unresolved Comments:</h3>
@@ -179,7 +184,7 @@ class NotificationService:
                     <div class="document">
                         <div class="document-name">{doc['name']}</div>
                         <div><span class="comment-count">{doc['unresolved_count']}</span> unresolved comment(s)</div>
-                        <a href="{doc['url']}" class="button">Review Comments</a>
+                        <a href="{doc['url']}" style="display:inline-block;padding:10px 20px;background-color:white;color:#E95420;text-decoration:none;border:2px solid #E95420;margin-top:10px;">Review Comments</a>
                     </div>
             """
         
@@ -207,7 +212,7 @@ class NotificationService:
             Dict with statistics about emails sent
         """
         # Group documents by owner
-        owner_docs = self.group_documents_by_owner(documents_with_comments)
+        owner_docs, owner_names = self.group_documents_by_owner(documents_with_comments)
         
         stats = {
             "total_owners": sum(1 for k in owner_docs if k != "__no_owner__"),
@@ -222,8 +227,9 @@ class NotificationService:
             print(f"Processing owner: {owner_email} with {len(documents)} document(s)", flush=True)
             if owner_email == "__no_owner__":
                 continue
+            owner_name = owner_names.get(owner_email)
             subject = f"Library: {len(documents)} document(s) with unresolved comments"
-            body_html = self.generate_email_html(owner_email, documents)
+            body_html = self.generate_email_html(owner_email, documents, owner_name=owner_name)
             if(owner_email == 'nicolas.bello@canonical.com'):
                 if self.send_email(owner_email, subject, body_html):
                     stats["emails_sent"] += 1
