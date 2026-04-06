@@ -834,31 +834,54 @@ def init_scheduler(app):
             try:
                 google_drive = get_google_drive_instance()
                 notification_service = NotificationService()
-                
-                print("[weekly notifications] Starting comment check...", flush=True)
+
+                print(
+                    "[weekly notifications] Starting comment check...",
+                    flush=True,
+                )
                 modified_docs = google_drive.get_changes_last_week()
-                print(f"[weekly notifications] Found {len(modified_docs)} modified documents", flush=True)
-                
+                print(
+                    f"[weekly notifications] Found {len(modified_docs)} modified documents",
+                    flush=True,
+                )
+
                 documents_with_comments = []
                 for doc in modified_docs:
                     doc_id = doc["id"]
-                    unresolved_count = google_drive.get_unresolved_comments_count(doc_id)
-                    
+                    unresolved_count = (
+                        google_drive.get_unresolved_comments_count(doc_id)
+                    )
+
                     if unresolved_count > 0:
-                        documents_with_comments.append({
-                            "id": doc_id,
-                            "name": doc["name"],
-                            "owners": doc.get("owners", []),
-                            "unresolved_count": unresolved_count
-                        })
-                
+                        documents_with_comments.append(
+                            {
+                                "id": doc_id,
+                                "name": doc["name"],
+                                "owners": doc.get("owners", []),
+                                "unresolved_count": unresolved_count,
+                            }
+                        )
+
                 if documents_with_comments:
-                    print(f"[weekly notifications] Found {len(documents_with_comments)} documents with comments", flush=True)
-                    stats = notification_service.send_weekly_comment_notifications(documents_with_comments)
-                    print(f"[weekly notifications] Sent {stats['emails_sent']} emails to {stats['total_owners']} owners", flush=True)
+                    print(
+                        f"[weekly notifications] Found {len(documents_with_comments)} documents with comments",
+                        flush=True,
+                    )
+                    stats = (
+                        notification_service.send_weekly_comment_notifications(
+                            documents_with_comments
+                        )
+                    )
+                    print(
+                        f"[weekly notifications] Sent {stats['emails_sent']} emails to {stats['total_owners']} owners",
+                        flush=True,
+                    )
                 else:
-                    print("[weekly notifications] No documents with unresolved comments", flush=True)
-                    
+                    print(
+                        "[weekly notifications] No documents with unresolved comments",
+                        flush=True,
+                    )
+
             except Exception as e:
                 print(f"[weekly notifications] error: {e}", flush=True)
 
@@ -1539,18 +1562,20 @@ def send_weekly_comment_notifications():
     try:
         google_drive = get_google_drive_instance()
         notification_service = NotificationService()
-        
+
         # Get documents modified in the last week
         print("Fetching documents modified in last week...", flush=True)
         modified_docs = google_drive.get_changes_last_week()
         print(f"Found {len(modified_docs)} modified documents", flush=True)
-        
+
         # Check each document for unresolved comments
         documents_with_comments = []
         for doc in modified_docs:
             doc_id = doc["id"]
-            unresolved_count = google_drive.get_unresolved_comments_count(doc_id)
-            
+            unresolved_count = google_drive.get_unresolved_comments_count(
+                doc_id
+            )
+
             if unresolved_count > 0:
                 # Resolve owner from DB
                 db_doc = (
@@ -1579,8 +1604,9 @@ def send_weekly_comment_notifications():
                 # Split concatenated names on camelCase boundaries and keep
                 # only the first name from each segment.
                 owner_parts = [
-                    re.split(r'(?<=[a-z])(?=[A-Z][a-z])', p.strip())[0].strip()
-                    for p in raw_owner.split(",") if p.strip()
+                    re.split(r"(?<=[a-z])(?=[A-Z][a-z])", p.strip())[0].strip()
+                    for p in raw_owner.split(",")
+                    if p.strip()
                 ]
                 # For the send route, resolve name→email via registry;
                 # only keep entries that end up with an actual email address.
@@ -1595,55 +1621,68 @@ def send_weekly_comment_notifications():
                         if email:
                             owners.append({"name": p, "emailAddress": email})
 
-                documents_with_comments.append({
-                    "id": doc_id,
-                    "name": doc["name"],
-                    "owners": owners,
-                    "unresolved_count": unresolved_count,
-                    "url": f"https://docs.google.com/document/d/{doc_id}/edit",
-                    "modifiedTime": doc.get("modifiedTime", ""),
-                    "path": db_doc.path if db_doc else "",
-                })
-                print(f"  - {doc['name']}: {unresolved_count} unresolved comments", flush=True)
-        
-        # Filter out documents with no known path
-        documents_with_comments = [d for d in documents_with_comments if d.get("path")]
+                documents_with_comments.append(
+                    {
+                        "id": doc_id,
+                        "name": doc["name"],
+                        "owners": owners,
+                        "unresolved_count": unresolved_count,
+                        "url": f"https://docs.google.com/document/d/{doc_id}/edit",
+                        "modifiedTime": doc.get("modifiedTime", ""),
+                        "path": db_doc.path if db_doc else "",
+                    }
+                )
+                print(
+                    f"  - {doc['name']}: {unresolved_count} unresolved comments",
+                    flush=True,
+                )
 
-        print(f"Found {len(documents_with_comments)} documents with unresolved comments", flush=True)
-        
+        # Filter out documents with no known path
+        documents_with_comments = [
+            d for d in documents_with_comments if d.get("path")
+        ]
+
+        print(
+            f"Found {len(documents_with_comments)} documents with unresolved comments",
+            flush=True,
+        )
+
         if not documents_with_comments:
-            return flask.jsonify({
+            return flask.jsonify(
+                {
+                    "status": "success",
+                    "message": "No documents with unresolved comments found",
+                    "stats": {
+                        "total_modified": len(modified_docs),
+                        "with_comments": 0,
+                        "emails_sent": 0,
+                    },
+                }
+            )
+
+        # Send notifications
+        stats = notification_service.send_weekly_comment_notifications(
+            documents_with_comments
+        )
+
+        return flask.jsonify(
+            {
                 "status": "success",
-                "message": "No documents with unresolved comments found",
+                "message": f"Sent {stats['emails_sent']} notification(s) to {stats['total_owners']} owner(s)",
                 "stats": {
                     "total_modified": len(modified_docs),
-                    "with_comments": 0,
-                    "emails_sent": 0
-                }
-            })
-        
-        # Send notifications
-        stats = notification_service.send_weekly_comment_notifications(documents_with_comments)
-        
-        return flask.jsonify({
-            "status": "success",
-            "message": f"Sent {stats['emails_sent']} notification(s) to {stats['total_owners']} owner(s)",
-            "stats": {
-                "total_modified": len(modified_docs),
-                "with_comments": len(documents_with_comments),
-                "total_owners": stats["total_owners"],
-                "emails_sent": stats["emails_sent"],
-                "emails_failed": stats["emails_failed"],
-                "total_comments": stats["total_comments"]
+                    "with_comments": len(documents_with_comments),
+                    "total_owners": stats["total_owners"],
+                    "emails_sent": stats["emails_sent"],
+                    "emails_failed": stats["emails_failed"],
+                    "total_comments": stats["total_comments"],
+                },
             }
-        })
-        
+        )
+
     except Exception as e:
         print(f"Error in weekly comment notifications: {e}", flush=True)
-        return flask.jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+        return flask.jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/notifications/weekly-comments-view")
@@ -1656,16 +1695,18 @@ def view_weekly_comment_notifications():
         google_drive = get_google_drive_instance()
         notification_service = NotificationService()
         navigation_data = get_navigation_data()
-        
+
         # Get documents modified in the last week
         modified_docs = google_drive.get_changes_last_week()
-        
+
         # Check each document for unresolved comments
         documents_with_comments = []
         for doc in modified_docs:
             doc_id = doc["id"]
-            unresolved_count = google_drive.get_unresolved_comments_count(doc_id)
-            
+            unresolved_count = google_drive.get_unresolved_comments_count(
+                doc_id
+            )
+
             if unresolved_count > 0:
                 # Resolve owner from DB (Shared Drive ownership is the drive,
                 # not a person, so Drive's owners field is always empty)
@@ -1700,8 +1741,9 @@ def view_weekly_comment_notifications():
                 # camelCase boundary between a lowercase and an uppercase+lowercase
                 # pair and keep only the first name.
                 owner_parts = [
-                    re.split(r'(?<=[a-z])(?=[A-Z][a-z])', p.strip())[0].strip()
-                    for p in raw_owner.split(",") if p.strip()
+                    re.split(r"(?<=[a-z])(?=[A-Z][a-z])", p.strip())[0].strip()
+                    for p in raw_owner.split(",")
+                    if p.strip()
                 ]
                 # For the view route, resolve name→email via registry;
                 # fall back to the name itself for display when no email found.
@@ -1715,33 +1757,43 @@ def view_weekly_comment_notifications():
                         email = owner_registry.lookup(p)
                         owners.append({"name": p, "emailAddress": email or ""})
 
-                documents_with_comments.append({
-                    "id": doc_id,
-                    "name": doc["name"],
-                    "owners": owners,
-                    "unresolved_count": unresolved_count,
-                    "url": f"https://docs.google.com/document/d/{doc_id}/edit",
-                    "modifiedTime": doc.get("modifiedTime", ""),
-                    "path": db_doc.path if db_doc else ""
-                })
-        
+                documents_with_comments.append(
+                    {
+                        "id": doc_id,
+                        "name": doc["name"],
+                        "owners": owners,
+                        "unresolved_count": unresolved_count,
+                        "url": f"https://docs.google.com/document/d/{doc_id}/edit",
+                        "modifiedTime": doc.get("modifiedTime", ""),
+                        "path": db_doc.path if db_doc else "",
+                    }
+                )
+
         # Filter out documents with no known path
-        documents_with_comments = [d for d in documents_with_comments if d.get("path")]
+        documents_with_comments = [
+            d for d in documents_with_comments if d.get("path")
+        ]
 
         # Group documents by owner
-        owner_docs, owner_names = notification_service.group_documents_by_owner(documents_with_comments)
-        
+        owner_docs, owner_names = (
+            notification_service.group_documents_by_owner(
+                documents_with_comments
+            )
+        )
+
         # Calculate statistics
-        total_comments = sum(doc["unresolved_count"] for doc in documents_with_comments)
-        
+        total_comments = sum(
+            doc["unresolved_count"] for doc in documents_with_comments
+        )
+
         stats = {
             "total_modified": len(modified_docs),
             "with_comments": len(documents_with_comments),
             "total_owners": sum(1 for k in owner_docs if k != "__no_owner__"),
             "total_comments": total_comments,
-            "docs_without_owner": len(owner_docs.get("__no_owner__", []))
+            "docs_without_owner": len(owner_docs.get("__no_owner__", [])),
         }
-        
+
         return flask.render_template(
             "weekly_notifications.html",
             owner_docs=owner_docs,
@@ -1750,19 +1802,24 @@ def view_weekly_comment_notifications():
             navigation=navigation_data.hierarchy,
             doc_reference_dict=navigation_data.doc_reference_dict,
         )
-        
+
     except Exception as e:
-        print(f"Error displaying weekly comment notifications: {e}", flush=True)
+        print(
+            f"Error displaying weekly comment notifications: {e}", flush=True
+        )
         try:
             navigation_data = get_navigation_data()
             nav = navigation_data.hierarchy
         except Exception:
             nav = None
-        return flask.render_template(
-            "500.html",
-            message=f"Error loading weekly notifications: {str(e)}",
-            navigation=nav,
-        ), 500
+        return (
+            flask.render_template(
+                "500.html",
+                message=f"Error loading weekly notifications: {str(e)}",
+                navigation=nav,
+            ),
+            500,
+        )
 
 
 # =========================

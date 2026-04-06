@@ -248,7 +248,9 @@ class GoogleDrive:
         credentials = service_account.Credentials.from_service_account_info(
             SERVICE_ACCOUNT_INFO, scopes=scopes
         )
-        return build("docs", "v1", credentials=credentials, cache_discovery=False)
+        return build(
+            "docs", "v1", credentials=credentials, cache_discovery=False
+        )
 
     def _docs_api_to_html(self, document):
         """Convert a Google Docs API document JSON to a minimal HTML string."""
@@ -275,9 +277,8 @@ class GoogleDrive:
                 "HEADING_5": "h5",
                 "HEADING_6": "h6",
             }
-            style_type = (
-                paragraph.get("paragraphStyle", {})
-                .get("namedStyleType", "NORMAL_TEXT")
+            style_type = paragraph.get("paragraphStyle", {}).get(
+                "namedStyleType", "NORMAL_TEXT"
             )
             tag = heading_map.get(style_type, "p")
             inner = "".join(
@@ -315,9 +316,7 @@ class GoogleDrive:
     def _fetch_document_via_docs_api(self, document_id):
         docs_service = self._build_docs_service()
         document = (
-            docs_service.documents()
-            .get(documentId=document_id)
-            .execute()
+            docs_service.documents().get(documentId=document_id).execute()
         )
         return self._docs_api_to_html(document)
 
@@ -388,11 +387,11 @@ class GoogleDrive:
         try:
             # Get the start page token from a week ago
             one_week_ago = datetime.utcnow() - timedelta(days=7)
-            
+
             # Get initial page token
             tokens = self.service.changes().getStartPageToken().execute()
             next_page_token = tokens.get("startPageToken")
-            
+
             items = []
             try:
                 while next_page_token:
@@ -438,13 +437,18 @@ class GoogleDrive:
                 if not change.get("removed", False) and "file" in change:
                     file_info = change["file"]
                     # Only include Google Docs (not folders)
-                    if file_info.get("mimeType") == "application/vnd.google-apps.document":
-                        modified_files.append({
-                            "id": file_info["id"],
-                            "name": file_info.get("name", "Unknown"),
-                            "modifiedTime": change.get("time"),
-                            "owners": file_info.get("owners", [])
-                        })
+                    if (
+                        file_info.get("mimeType")
+                        == "application/vnd.google-apps.document"
+                    ):
+                        modified_files.append(
+                            {
+                                "id": file_info["id"],
+                                "name": file_info.get("name", "Unknown"),
+                                "modifiedTime": change.get("time"),
+                                "owners": file_info.get("owners", []),
+                            }
+                        )
 
             # Remove duplicates by file ID
             seen = set()
@@ -476,12 +480,15 @@ class GoogleDrive:
                 )
                 .execute()
             )
-            
+
             comments = results.get("comments", [])
             return comments
 
         except Exception as error:
-            print(f"Error fetching comments for {document_id}: {error}", flush=True)
+            print(
+                f"Error fetching comments for {document_id}: {error}",
+                flush=True,
+            )
             return []
 
     def get_unresolved_comments_count(self, document_id):
@@ -489,5 +496,7 @@ class GoogleDrive:
         Get the count of unresolved comments for a specific document.
         """
         comments = self.get_document_comments(document_id)
-        unresolved_count = sum(1 for comment in comments if not comment.get("resolved", False))
+        unresolved_count = sum(
+            1 for comment in comments if not comment.get("resolved", False)
+        )
         return unresolved_count
