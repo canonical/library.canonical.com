@@ -336,7 +336,7 @@ class GoogleDrive:
                 _, done = downloader.next_chunk()
             csv = file.getvalue().decode("utf-8")
             print("Download complete", flush=True)
-            print("CSV content:", csv[:100], flush=True)  # Log first 100 chars
+            print("CSV content:", csv[:100], flush=True) 
             if csv:
                 return csv
             else:
@@ -470,12 +470,13 @@ class GoogleDrive:
         Get all comments for a specific document.
         Returns a list of comments with their resolved status.
         """
+        fields = "comments(id,content,resolved,author,createdTime,replies)"
         try:
             results = (
                 self.service.comments()
                 .list(
                     fileId=document_id,
-                    fields="comments(id,content,resolved,author,createdTime,replies)",
+                    fields=fields,
                     includeDeleted=False,
                 )
                 .execute()

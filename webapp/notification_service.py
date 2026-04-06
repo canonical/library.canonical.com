@@ -1,3 +1,4 @@
+# fmt: off
 import os
 import smtplib
 from email.mime.text import MIMEText
@@ -195,10 +196,10 @@ class NotificationService:
             """
 
         html += f"""
-                    <div class="footer">
-                        <p>This is an automated notification from the Canonical Library system.</p>
-                        <p>Generated on {datetime.now().strftime("%B %d, %Y at %H:%M UTC")}</p>
-                    </div>
+                <div class="footer">
+                    <p>This is an automated notification from the Canonical Library system.</p>
+                    <p>Generated on {datetime.now().strftime("%B %d, %Y at %H:%M UTC")}</p>
+                </div>
                 </div>
             </div>
         </body>
@@ -235,13 +236,13 @@ class NotificationService:
         # Send email to each owner (skip the no-owner sentinel bucket)
         for owner_email, documents in owner_docs.items():
             print(
-                f"Processing owner: {owner_email} with {len(documents)} document(s)",
+                f"Processing:{owner_email} with {len(documents)} document(s)",
                 flush=True,
             )
             if owner_email == "__no_owner__":
                 continue
             owner_name = owner_names.get(owner_email)
-            subject = f"Library: {len(documents)} document(s) with unresolved comments"
+            subject = f"Library: {len(documents)} document(s) with comments"
             body_html = self.generate_email_html(
                 owner_email, documents, owner_name=owner_name
             )
