@@ -70,7 +70,9 @@ class Parser:
 
         for ol in ol_elements:
             # get the level of nesting from the class name
-            numeric_suffix = ol["class"][0][len("lst-kix") :][-1]  # noqa: E203
+            numeric_suffix = ol["class"][0][len("lst-kix") :][
+                -1
+            ]  # noqa: E203
             # check if it is the start of a new list
             if "start" in ol["class"]:
                 # if its top level add the counter class
@@ -125,7 +127,9 @@ class Parser:
                             ul["class"].append("start")
 
             # get the level of nesting from the class name
-            numeric_suffix = ul["class"][0][len("lst-kix") :][-1]  # noqa: E203
+            numeric_suffix = ul["class"][0][len("lst-kix") :][
+                -1
+            ]  # noqa: E203
             # check if it is the start of a new list
             if "start" in ul["class"]:
                 if (
@@ -263,7 +267,9 @@ class Parser:
                 and hasattr(next_sibling, "text")
                 and "\uec02" in next_sibling.text
             ):
-                next_sibling.string = next_sibling.text.replace("\uec02", "")
+                next_sibling.string = next_sibling.text.replace(
+                    "\uec02", ""
+                )
 
     def remove_ids_from_tags(self, tag):
         if tag.has_attr("id"):
@@ -316,11 +322,12 @@ class Parser:
                             if page[icol] == "owner(s)":
                                 for a in col.find_all(
                                     "a",
-                                    href=lambda h: h and h.startswith("mailto:"),
+                                    href=lambda h: h
+                                    and h.startswith("mailto:"),
                                 ):
                                     owner_registry.register(
                                         a.get_text(strip=True),
-                                        a["href"][len("mailto:"):],
+                                        a["href"][len("mailto:") :],
                                     )
                                 if "," in value:
                                     value = value.split(",")
@@ -366,7 +373,9 @@ class Parser:
                             ):
                                 reviewer_dict["name"] = current_row[i]
                             else:
-                                reviewer_dict[reviewers[i]] = current_row[i]
+                                reviewer_dict[reviewers[i]] = current_row[
+                                    i
+                                ]
 
                         self.metadata["reviewer(s)"].append(reviewer_dict)
             else:
@@ -390,11 +399,12 @@ class Parser:
                                 if first_row[icol] == "author(s)":
                                     for a in col.find_all(
                                         "a",
-                                        href=lambda h: h and h.startswith("mailto:"),
+                                        href=lambda h: h
+                                        and h.startswith("mailto:"),
                                     ):
                                         owner_registry.register(
                                             a.get_text(strip=True),
-                                            a["href"][len("mailto:"):],
+                                            a["href"][len("mailto:") :],
                                         )
                                     if "," in value:
                                         value = value.split(",")
@@ -422,10 +432,12 @@ class Parser:
                                 if third_row[i] == "reviewer(s)":
                                     reviewer_dict["name"] = current_row[i]
                                 else:
-                                    reviewer_dict[third_row[i]] = current_row[
-                                        i
-                                    ]
-                            self.metadata["reviewer(s)"].append(reviewer_dict)
+                                    reviewer_dict[third_row[i]] = (
+                                        current_row[i]
+                                    )
+                            self.metadata["reviewer(s)"].append(
+                                reviewer_dict
+                            )
                     else:
                         key = (
                             columns[0]
@@ -447,7 +459,9 @@ class Parser:
         )
         if len(button_sets) > 0:
             for create_doc_button in button_sets:
-                link_tag = self.html.new_tag("a", href="/create-copy-template")
+                link_tag = self.html.new_tag(
+                    "a", href="/create-copy-template"
+                )
                 new_tag = self.html.new_tag(
                     "button", **{"class": "p-button--positive"}
                 )
@@ -492,7 +506,9 @@ class Parser:
             if not tag.contents:
                 return True
             else:
-                return all(self.tag_is_empty(child) for child in tag.contents)
+                return all(
+                    self.tag_is_empty(child) for child in tag.contents
+                )
         return False
 
     def insert_chip_under_title(self):
