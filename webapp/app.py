@@ -1049,14 +1049,48 @@ def search_drive():
                 flush=True,
             )
 
-            # Use POST with full_html and get highlights
-            body = {
-                "query": {
+            # Get configurable popularity weight from env (default 0.15)
+            # Set to 0 to disable popularity scoring completely
+            popularity_weight = float(
+                os.getenv("OPENSEARCH_POPULARITY_WEIGHT", "0.001")
+            )
+
+            # Build query: use function_score only if popularity_weight > 0
+            if popularity_weight > 0:
+                # Use function_score to boost results by popularity
+                query_clause = {
+                    "function_score": {
+                        "query": {
+                            "query_string": {
+                                "query": q if q else "*",
+                                "default_operator": operator,
+                            }
+                        },
+                        "functions": [
+                            {
+                                "field_value_factor": {
+                                    "field": "views",
+                                    "factor": popularity_weight,
+                                    "modifier": "log1p",  # log(1 + views)
+                                    "missing": 0,  # default
+                                }
+                            }
+                        ],
+                        "score_mode": "sum",
+                        "boost_mode": "sum",  # add popularity to text score
+                    }
+                }
+            else:
+                # Popularity disabled: use plain query_string
+                query_clause = {
                     "query_string": {
                         "query": q if q else "*",
                         "default_operator": operator,
                     }
-                },
+                }
+
+            body = {
+                "query": query_clause,
                 "_source": {
                     "includes": [
                         "path",
@@ -1064,6 +1098,7 @@ def search_drive():
                         "type",
                         "doc_metadata",
                         "full_html",
+                        "views",  # Include for debugging
                     ]
                 },
                 "size": size,
@@ -2302,6 +2337,9 @@ def opensearch_sync_all(
                     "doc_metadata": {"type": "object", "enabled": True},
                     "headings_map": {"type": "object", "enabled": True},
                     "full_html": {"type": "text"},
+                    "views": {"type": "integer"},
+                    "sessions": {"type": "integer"},
+                    "engaged_sessions": {"type": "integer"},
                 }
             },
         }
@@ -2318,7 +2356,14 @@ def opensearch_sync_all(
         def fmt_date(d):
             return d.strftime("%d-%m-%Y") if d else None
 
-        for doc in db.session.query(Document).yield_per(1000):
+        # LEFT JOIN with Analytics to include popularity metrics
+        query = (
+            db.session.query(Document, Analytics)
+            .outerjoin(Analytics, Document.path == Analytics.path)
+            .yield_per(1000)
+        )
+
+        for doc, analytics in query:
             action = {
                 "index": {"_index": target_index, "_id": doc.google_drive_id}
             }
@@ -2330,6 +2375,12 @@ def opensearch_sync_all(
                 "owner": doc.owner,
                 "full_html": doc.full_html,
                 "path": doc.path,
+                # Add analytics fields (default to 0 if no analytics data)
+                "views": analytics.views if analytics else 0,
+                "sessions": analytics.sessions if analytics else 0,
+                "engaged_sessions": (
+                    analytics.engaged_sessions if analytics else 0
+                ),
             }
             if hasattr(doc, "doc_metadata") and doc.doc_metadata is not None:
                 source["doc_metadata"] = doc.doc_metadata
@@ -2500,6 +2551,9 @@ def opensearch_index_document(
                         "doc_metadata": {"type": "object", "enabled": True},
                         "headings_map": {"type": "object", "enabled": True},
                         "full_html": {"type": "text"},
+                        "views": {"type": "integer"},
+                        "sessions": {"type": "integer"},
+                        "engaged_sessions": {"type": "integer"},
                     }
                 },
             }
@@ -2527,6 +2581,9 @@ def opensearch_index_document(
     def fmt_date(d):
         return d.strftime("%d-%m-%Y") if d else None
 
+    # Fetch analytics for this document
+    analytics = db.session.query(Analytics).filter_by(path=doc.path).first()
+
     source = {
         "google_drive_ID": doc.google_drive_id,
         "date_planned_review": fmt_date(doc.date_planned_review),
@@ -2534,6 +2591,10 @@ def opensearch_index_document(
         "owner": doc.owner,
         "full_html": doc.full_html,
         "path": doc.path,
+        # Add analytics fields
+        "views": analytics.views if analytics else 0,
+        "sessions": analytics.sessions if analytics else 0,
+        "engaged_sessions": analytics.engaged_sessions if analytics else 0,
     }
     if hasattr(doc, "doc_metadata") and doc.doc_metadata is not None:
         source["doc_metadata"] = doc.doc_metadata
