@@ -830,6 +830,13 @@ def init_scheduler(app):
         Check for documents with unresolved comments from the last week
         and send notification emails to owners.
         """
+        if not os.getenv("SMTP_USER") or not os.getenv("SMTP_PASSWORD"):
+            print(
+                "[weekly notifications] skipping: SMTP_USER and/or"
+                " SMTP_PASSWORD not set",
+                flush=True,
+            )
+            return
         with app.app_context():
             try:
                 google_drive = get_google_drive_instance()
@@ -837,6 +844,7 @@ def init_scheduler(app):
 
                 modified_docs = google_drive.get_changes_last_week()
 
+                _PLACEHOLDERS = {"person", "tbd", "n/a", "none", "unknown"}
                 documents_with_comments = []
                 for doc in modified_docs:
                     doc_id = doc["id"]
@@ -845,14 +853,71 @@ def init_scheduler(app):
                     )
 
                     if unresolved_count > 0:
+                        # Resolve owner from DB
+                        db_doc = (
+                            Document.query.filter_by(
+                                google_drive_id=doc_id
+                            ).first()
+                            if "POSTGRESQL_DB_CONNECT_STRING" in os.environ
+                            else None
+                        )
+                        raw_owner = ""
+                        if db_doc:
+                            raw_owner = db_doc.owner or ""
+                            if raw_owner == "" and db_doc.doc_metadata:
+                                md = db_doc.doc_metadata or {}
+                                owners_meta = (
+                                    md.get("owner")
+                                    or md.get("owner(s)")
+                                    or md.get("author(s)")
+                                    or md.get("authors")
+                                )
+                                if isinstance(owners_meta, list):
+                                    raw_owner = ", ".join(
+                                        o for o in owners_meta if o
+                                    )
+                                elif isinstance(owners_meta, str):
+                                    raw_owner = owners_meta
+
+                        owner_parts = [
+                            re.split(r"(?<=[a-z])(?=[A-Z][a-z])", p.strip())[
+                                0
+                            ].strip()
+                            for p in raw_owner.split(",")
+                            if p.strip()
+                        ]
+                        owners = []
+                        for p in owner_parts:
+                            if p.lower() in _PLACEHOLDERS:
+                                continue
+                            if "@" in p:
+                                owners.append({"name": p, "emailAddress": p})
+                            else:
+                                email = owner_registry.lookup(p)
+                                if email:
+                                    owners.append(
+                                        {"name": p, "emailAddress": email}
+                                    )
+
                         documents_with_comments.append(
                             {
                                 "id": doc_id,
                                 "name": doc["name"],
-                                "owners": doc.get("owners", []),
+                                "owners": owners,
                                 "unresolved_count": unresolved_count,
+                                "url": (
+                                    "https://docs.google.com/document/d/"
+                                    f"{doc_id}/edit"
+                                ),
+                                "modifiedTime": doc.get("modifiedTime", ""),
+                                "path": db_doc.path if db_doc else "",
                             }
                         )
+
+                # Filter out documents with no known path
+                documents_with_comments = [
+                    d for d in documents_with_comments if d.get("path")
+                ]
 
                 if documents_with_comments:
                     stats = (
@@ -860,11 +925,11 @@ def init_scheduler(app):
                             documents_with_comments
                         )
                     )
-                    msg = f"Sent {stats['emails_sent']} emails"
-                    print(
-                        msg,
-                        flush=True,
+                    msg = (
+                        f"[weekly notifications] Sent {stats['emails_sent']}"
+                        f" emails to {stats['total_owners']} owner(s)"
                     )
+                    print(msg, flush=True)
                 else:
                     print(
                         "[weekly notifications] No documents with comments",
@@ -876,7 +941,7 @@ def init_scheduler(app):
 
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_task)  # Run once
+    scheduler.add_job(scheduled_task)
     scheduler.add_job(update_db_all_documents)  # Run on load # Run on load
     scheduler.add_job(scheduled_task, "interval", minutes=5)
     # Delay initial cache status/warm by 5 minutes to allow assets to be built
@@ -901,17 +966,16 @@ def init_scheduler(app):
         check_status_cache, trigger="cron", day_of_week="sun", hour=7, minute=0
     )
     scheduler.add_job(
-        sync_open_search, trigger="cron", day_of_week="sun", hour=7, minute=0
+        sync_open_search, trigger="cron", day_of_week="sun", hour=7, minute=30
     )
-    # Weekly comment notifications every Monday at 09:00
-    # scheduler.add_job(
-    #     weekly_comment_notifications,
-    #     trigger="cron",
-    #     day_of_week="mon",
-    #     hour=9,
-    #     minute=0,
-    # )
-    # Optionally re-run ingest every N hours (kept)
+    # Weekly comment notifications every Monday at 9:00 am
+    scheduler.add_job(
+        weekly_comment_notifications,
+        trigger="cron",
+        day_of_week="mon",
+        hour=9,
+        minute=0,
+    )
     scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
     scheduler.start()
     return scheduler

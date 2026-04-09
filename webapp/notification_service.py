@@ -247,10 +247,9 @@ class NotificationService:
             body_html = self.generate_email_html(
                 owner_email, documents, owner_name=owner_name
             )
-            if owner_email == "nicolas.bello@canonical.com":
-                if self.send_email(owner_email, subject, body_html):
-                    stats["emails_sent"] += 1
-                else:
-                    stats["emails_failed"] += 1
+            if self.send_email(owner_email, subject, body_html):
+                stats["emails_sent"] += 1
+            else:
+                stats["emails_failed"] += 1  
 
         return stats
