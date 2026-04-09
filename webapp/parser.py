@@ -4,6 +4,7 @@ from urllib.parse import unquote
 from bs4 import BeautifulSoup, NavigableString
 
 from webapp.googledrive import GoogleDrive
+from webapp import owner_registry
 
 from webapp.utils.entity_to_char import entity_to_char
 
@@ -313,6 +314,15 @@ class Parser:
                             col = columns[icol]
                             value = col.get_text(strip=True)
                             if page[icol] == "owner(s)":
+                                for a in col.find_all(
+                                    "a",
+                                    href=lambda h: h
+                                    and h.startswith("mailto:"),
+                                ):
+                                    owner_registry.register(
+                                        a.get_text(strip=True),
+                                        a["href"][len("mailto:") :],
+                                    )
                                 if "," in value:
                                     value = value.split(",")
                                 else:
@@ -379,6 +389,15 @@ class Parser:
                                 col = columns[icol]
                                 value = col.get_text(strip=True)
                                 if first_row[icol] == "author(s)":
+                                    for a in col.find_all(
+                                        "a",
+                                        href=lambda h: h
+                                        and h.startswith("mailto:"),
+                                    ):
+                                        owner_registry.register(
+                                            a.get_text(strip=True),
+                                            a["href"][len("mailto:") :],
+                                        )
                                     if "," in value:
                                         value = value.split(",")
                                     else:

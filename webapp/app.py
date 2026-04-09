@@ -3,6 +3,7 @@
 # =========================
 import os
 import glob
+import re
 from datetime import datetime, timedelta
 import copy
 import flask
@@ -35,6 +36,8 @@ from flask_caching import Cache
 from webapp.db import db
 from webapp.utils.make_snippet import render_snippet
 from webapp.models import Document, Analytics
+from webapp.notification_service import NotificationService
+from webapp import owner_registry
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
@@ -822,9 +825,123 @@ def init_scheduler(app):
             except Exception as e:
                 print(f"[opensearch sync] fatal error: {e}", flush=True)
 
+    def weekly_comment_notifications():
+        """
+        Check for documents with unresolved comments from the last week
+        and send notification emails to owners.
+        """
+        if not os.getenv("SMTP_USER") or not os.getenv("SMTP_PASSWORD"):
+            print(
+                "[weekly notifications] skipping: SMTP_USER and/or"
+                " SMTP_PASSWORD not set",
+                flush=True,
+            )
+            return
+        with app.app_context():
+            try:
+                google_drive = get_google_drive_instance()
+                notification_service = NotificationService()
+
+                modified_docs = google_drive.get_changes_last_week()
+
+                _PLACEHOLDERS = {"person", "tbd", "n/a", "none", "unknown"}
+                documents_with_comments = []
+                for doc in modified_docs:
+                    doc_id = doc["id"]
+                    unresolved_count = (
+                        google_drive.get_unresolved_comments_count(doc_id)
+                    )
+
+                    if unresolved_count > 0:
+                        # Resolve owner from DB
+                        db_doc = (
+                            Document.query.filter_by(
+                                google_drive_id=doc_id
+                            ).first()
+                            if "POSTGRESQL_DB_CONNECT_STRING" in os.environ
+                            else None
+                        )
+                        raw_owner = ""
+                        if db_doc:
+                            raw_owner = db_doc.owner or ""
+                            if raw_owner == "" and db_doc.doc_metadata:
+                                md = db_doc.doc_metadata or {}
+                                owners_meta = (
+                                    md.get("owner")
+                                    or md.get("owner(s)")
+                                    or md.get("author(s)")
+                                    or md.get("authors")
+                                )
+                                if isinstance(owners_meta, list):
+                                    raw_owner = ", ".join(
+                                        o for o in owners_meta if o
+                                    )
+                                elif isinstance(owners_meta, str):
+                                    raw_owner = owners_meta
+
+                        owner_parts = [
+                            re.split(r"(?<=[a-z])(?=[A-Z][a-z])", p.strip())[
+                                0
+                            ].strip()
+                            for p in raw_owner.split(",")
+                            if p.strip()
+                        ]
+                        owners = []
+                        for p in owner_parts:
+                            if p.lower() in _PLACEHOLDERS:
+                                continue
+                            if "@" in p:
+                                owners.append({"name": p, "emailAddress": p})
+                            else:
+                                email = owner_registry.lookup(p)
+                                if email:
+                                    owners.append(
+                                        {"name": p, "emailAddress": email}
+                                    )
+
+                        documents_with_comments.append(
+                            {
+                                "id": doc_id,
+                                "name": doc["name"],
+                                "owners": owners,
+                                "unresolved_count": unresolved_count,
+                                "url": (
+                                    "https://docs.google.com/document/d/"
+                                    f"{doc_id}/edit"
+                                ),
+                                "modifiedTime": doc.get("modifiedTime", ""),
+                                "path": db_doc.path if db_doc else "",
+                            }
+                        )
+
+                # Filter out documents with no known path
+                documents_with_comments = [
+                    d for d in documents_with_comments if d.get("path")
+                ]
+
+                if documents_with_comments:
+                    stats = (
+                        notification_service.send_weekly_comment_notifications(
+                            documents_with_comments
+                        )
+                    )
+                    msg = (
+                        f"[weekly notifications] Sent {stats['emails_sent']}"
+                        f" emails to {stats['total_owners']} owner(s)"
+                    )
+                    print(msg, flush=True)
+                else:
+                    print(
+                        "[weekly notifications] No documents with comments",
+                        flush=True,
+                    )
+
+            except Exception as e:
+                print(f"[weekly notifications] error: {e}", flush=True)
+
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_task)  # Run once
+    scheduler.add_job(scheduled_task)
     scheduler.add_job(update_db_all_documents)  # Run on load # Run on load
     scheduler.add_job(scheduled_task, "interval", minutes=5)
     # Delay initial cache status/warm by 5 minutes to allow assets to be built
@@ -849,9 +966,16 @@ def init_scheduler(app):
         check_status_cache, trigger="cron", day_of_week="sun", hour=7, minute=0
     )
     scheduler.add_job(
-        sync_open_search, trigger="cron", day_of_week="sun", hour=7, minute=0
+        sync_open_search, trigger="cron", day_of_week="sun", hour=7, minute=30
     )
-    # Optionally re-run ingest every N hours (kept)
+    # Weekly comment notifications every Monday at 9:00 am
+    scheduler.add_job(
+        weekly_comment_notifications,
+        trigger="cron",
+        day_of_week="mon",
+        hour=9,
+        minute=0,
+    )
     scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
     scheduler.start()
     return scheduler
@@ -1509,6 +1633,279 @@ def analytics_upload():
                 "500.html",
                 message=f"Failed to process analytics file: {str(e)}",
                 navigation=navigation_data.hierarchy,
+            ),
+            500,
+        )
+
+
+# =========================
+# Notification Routes
+# =========================
+@app.route("/notifications/weekly-comments", methods=["GET", "POST"])
+def send_weekly_comment_notifications():
+    """
+    Check for documents modified in the last week with unresolved comments
+    and send notification emails to document owners.
+    """
+    try:
+        google_drive = get_google_drive_instance()
+        notification_service = NotificationService()
+
+        # Get documents modified in the last week
+        print("Fetching documents modified in last week...", flush=True)
+        modified_docs = google_drive.get_changes_last_week()
+        print(f"Found {len(modified_docs)} modified documents", flush=True)
+
+        # Check each document for unresolved comments
+        documents_with_comments = []
+        for doc in modified_docs:
+            doc_id = doc["id"]
+            unresolved_count = google_drive.get_unresolved_comments_count(
+                doc_id
+            )
+
+            if unresolved_count > 0:
+                # Resolve owner from DB
+                db_doc = (
+                    Document.query.filter_by(google_drive_id=doc_id).first()
+                    if "POSTGRESQL_DB_CONNECT_STRING" in os.environ
+                    else None
+                )
+                # Prefer the denormalized owner column; fall back to the
+                # raw JSON metadata if the column is NULL (older rows).
+                raw_owner = ""
+                if db_doc:
+                    raw_owner = db_doc.owner or ""
+                    if raw_owner == "" and db_doc.doc_metadata:
+                        md = db_doc.doc_metadata or {}
+                        owners_meta = (
+                            md.get("owner")
+                            or md.get("owner(s)")
+                            or md.get("author(s)")
+                            or md.get("authors")
+                        )
+                        if isinstance(owners_meta, list):
+                            raw_owner = ", ".join(o for o in owners_meta if o)
+                        elif isinstance(owners_meta, str):
+                            raw_owner = owners_meta
+                _PLACEHOLDERS = {"person", "tbd", "n/a", "none", "unknown"}
+                # Split concatenated names on camelCase boundaries and keep
+                # only the first name from each segment.
+                owner_parts = [
+                    re.split(r"(?<=[a-z])(?=[A-Z][a-z])", p.strip())[0].strip()
+                    for p in raw_owner.split(",")
+                    if p.strip()
+                ]
+                # For the send route, resolve name→email via registry;
+                # only keep entries that end up with an actual email address.
+                owners = []
+                for p in owner_parts:
+                    if p.lower() in _PLACEHOLDERS:
+                        continue
+                    if "@" in p:
+                        owners.append({"name": p, "emailAddress": p})
+                    else:
+                        email = owner_registry.lookup(p)
+                        if email:
+                            owners.append({"name": p, "emailAddress": email})
+
+                documents_with_comments.append(
+                    {
+                        "id": doc_id,
+                        "name": doc["name"],
+                        "owners": owners,
+                        "unresolved_count": unresolved_count,
+                        "url": (
+                            "https://docs.google.com/document/d/"
+                            f"{doc_id}/edit"
+                        ),
+                        "modifiedTime": doc.get("modifiedTime", ""),
+                        "path": db_doc.path if db_doc else "",
+                    }
+                )
+
+        # Filter out documents with no known path
+        documents_with_comments = [
+            d for d in documents_with_comments if d.get("path")
+        ]
+
+        if not documents_with_comments:
+            return flask.jsonify(
+                {
+                    "status": "success",
+                    "message": "No documents with unresolved comments found",
+                    "stats": {
+                        "total_modified": len(modified_docs),
+                        "with_comments": 0,
+                        "emails_sent": 0,
+                    },
+                }
+            )
+
+        # Send notifications
+        stats = notification_service.send_weekly_comment_notifications(
+            documents_with_comments
+        )
+        msg = (
+            f"Sent {stats['emails_sent']} notification(s)"
+            f" to {stats['total_owners']} owner(s)"
+        )
+
+        return flask.jsonify(
+            {
+                "status": "success",
+                "message": msg,
+                "stats": {
+                    "total_modified": len(modified_docs),
+                    "with_comments": len(documents_with_comments),
+                    "total_owners": stats["total_owners"],
+                    "emails_sent": stats["emails_sent"],
+                    "emails_failed": stats["emails_failed"],
+                    "total_comments": stats["total_comments"],
+                },
+            }
+        )
+
+    except Exception as e:
+        print(f"Error in weekly comment notifications: {e}", flush=True)
+        return flask.jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/notifications/weekly-comments-view")
+def view_weekly_comment_notifications():
+    """
+    Display the documents modified in the last week with unresolved comments,
+    grouped by owner.
+    """
+    try:
+        google_drive = get_google_drive_instance()
+        notification_service = NotificationService()
+        navigation_data = get_navigation_data()
+
+        # Get documents modified in the last week
+        modified_docs = google_drive.get_changes_last_week()
+
+        # Check each document for unresolved comments
+        documents_with_comments = []
+        for doc in modified_docs:
+            doc_id = doc["id"]
+            unresolved_count = google_drive.get_unresolved_comments_count(
+                doc_id
+            )
+
+            if unresolved_count > 0:
+                # Resolve owner from DB (Shared Drive ownership is the drive,
+                # not a person, so Drive's owners field is always empty)
+                db_doc = (
+                    Document.query.filter_by(google_drive_id=doc_id).first()
+                    if "POSTGRESQL_DB_CONNECT_STRING" in os.environ
+                    else None
+                )
+                # Prefer the denormalized owner column; fall back to the
+                # raw JSON metadata if the column is NULL (older rows).
+                raw_owner = ""
+                if db_doc:
+                    raw_owner = db_doc.owner or ""
+                    if raw_owner == "" and db_doc.doc_metadata:
+                        md = db_doc.doc_metadata or {}
+                        owners_meta = (
+                            md.get("owner")
+                            or md.get("owner(s)")
+                            or md.get("author(s)")
+                            or md.get("authors")
+                        )
+                        if isinstance(owners_meta, list):
+                            raw_owner = ", ".join(o for o in owners_meta if o)
+                        elif isinstance(owners_meta, str):
+                            raw_owner = owners_meta
+                # Include any non-placeholder value (name or email).
+                # The @-filter is only used by the send route where actual
+                # email addresses are required.
+                _PLACEHOLDERS = {"person", "tbd", "n/a", "none", "unknown"}
+                # When names are concatenated without separators
+                # (e.g. "Daniele ProcidaAngel Fernandez Gambin"), split on the
+                # camelCase boundary between a lower and upper case
+                # pair and keep only the first name.
+                owner_parts = [
+                    re.split(r"(?<=[a-z])(?=[A-Z][a-z])", p.strip())[0].strip()
+                    for p in raw_owner.split(",")
+                    if p.strip()
+                ]
+                # For the view route, resolve name→email via registry;
+                # fall back to the name itself for display when no email found.
+                owners = []
+                for p in owner_parts:
+                    if p.lower() in _PLACEHOLDERS:
+                        continue
+                    if "@" in p:
+                        owners.append({"name": p, "emailAddress": p})
+                    else:
+                        email = owner_registry.lookup(p)
+                        owners.append({"name": p, "emailAddress": email or ""})
+
+                documents_with_comments.append(
+                    {
+                        "id": doc_id,
+                        "name": doc["name"],
+                        "owners": owners,
+                        "unresolved_count": unresolved_count,
+                        "url": (
+                            "https://docs.google.com/document/d/"
+                            f"{doc_id}/edit"
+                        ),
+                        "modifiedTime": doc.get("modifiedTime", ""),
+                        "path": db_doc.path if db_doc else "",
+                    }
+                )
+
+        # Filter out documents with no known path
+        documents_with_comments = [
+            d for d in documents_with_comments if d.get("path")
+        ]
+
+        # Group documents by owner
+        owner_docs, owner_names = (
+            notification_service.group_documents_by_owner(
+                documents_with_comments
+            )
+        )
+
+        # Calculate statistics
+        total_comments = sum(
+            doc["unresolved_count"] for doc in documents_with_comments
+        )
+
+        stats = {
+            "total_modified": len(modified_docs),
+            "with_comments": len(documents_with_comments),
+            "total_owners": sum(1 for k in owner_docs if k != "__no_owner__"),
+            "total_comments": total_comments,
+            "docs_without_owner": len(owner_docs.get("__no_owner__", [])),
+        }
+
+        return flask.render_template(
+            "weekly_notifications.html",
+            owner_docs=owner_docs,
+            owner_names=owner_names,
+            stats=stats,
+            navigation=navigation_data.hierarchy,
+            doc_reference_dict=navigation_data.doc_reference_dict,
+        )
+
+    except Exception as e:
+        print(
+            f"Error displaying weekly comment notifications: {e}", flush=True
+        )
+        try:
+            navigation_data = get_navigation_data()
+            nav = navigation_data.hierarchy
+        except Exception:
+            nav = None
+        return (
+            flask.render_template(
+                "500.html",
+                message=f"Error loading weekly notifications: {str(e)}",
+                navigation=nav,
             ),
             500,
         )

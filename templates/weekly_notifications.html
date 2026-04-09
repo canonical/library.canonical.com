@@ -1,0 +1,249 @@
+{% extends 'base_layout.html' %}
+{% block title %}Weekly Comment Notifications | Canonical Reference Library{% endblock %}
+{% block description %}View documents with unresolved comments from the last week{% endblock %}
+{% block content %}
+<div class="l-site" style="min-width: 100%;">
+  <div class="l-docs">
+
+    <aside class="l-docs__sidebar">
+      {% include "_partial/_side-navigation.html" %}
+    </aside> 
+    
+    <div class="l-docs__title u-fixed-width">
+      <div class="p-strip is-shallow">
+        <div class="u-fixed-width">
+          <h1>📝 Weekly Comment Notifications</h1>
+          <p class="p-heading--4">Documents modified in the last 7 days with unresolved comments</p>
+        </div>
+      </div>
+
+      <div class="p-strip is-shallow" style="padding-top: 1rem;">
+        <div class="u-fixed-width">
+          <!-- Statistics Summary -->
+          <div class="row">
+            <div class="col-3">
+              <div class="p-card" style="padding: 1rem;">
+                <h3 class="u-no-margin--bottom">{{ stats.total_modified }}</h3>
+                <p class="u-text--muted u-no-margin--bottom">Documents Modified</p>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-card" style="padding: 1rem;">
+                <h3 class="u-no-margin--bottom" style="color: #E95420;">{{ stats.with_comments }}</h3>
+                <p class="u-text--muted u-no-margin--bottom">With Unresolved Comments</p>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-card" style="padding: 1rem;">
+                <h3 class="u-no-margin--bottom">{{ stats.total_owners }}</h3>
+                <p class="u-text--muted u-no-margin--bottom">Document Owners</p>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-card" style="padding: 1rem;">
+                <h3 class="u-no-margin--bottom" style="color: #E95420;">{{ stats.total_comments }}</h3>
+                <p class="u-text--muted u-no-margin--bottom">Total Unresolved Comments</p>
+              </div>
+            </div>
+          </div>
+          {% if stats.docs_without_owner > 0 %}
+          <div class="row" style="margin-top: 1rem;">
+            <div class="col-3">
+              <div class="p-card" style="padding: 1rem; border-left: 4px solid #F99B11;">
+                <h3 class="u-no-margin--bottom" style="color: #F99B11;">{{ stats.docs_without_owner }}</h3>
+                <p class="u-text--muted u-no-margin--bottom">Without Owner</p>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if owner_docs %}
+            <!-- Documents grouped by owner -->
+            <div style="margin-top: 2rem;">
+              <h2>Documents by Owner</h2>
+              
+              {% for owner_email, documents in owner_docs.items() %}
+                {% if owner_email == "__no_owner__" %}
+                <div class="p-card" style="margin-bottom: 2rem; border-left: 4px solid #F99B11;">
+                  <div style="padding: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #DEDEDE;">
+                      <div>
+                        <h3 class="u-no-margin--bottom" style="color: #F99B11;">⚠ Documents Without Owner</h3>
+                        <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.25rem;">
+                          {{ documents|length }} document{% if documents|length != 1 %}s{% endif %} · 
+                          {{ documents|sum(attribute='unresolved_count') }} unresolved comment{% if documents|sum(attribute='unresolved_count') != 1 %}s{% endif %} ·
+                          No valid owner email found in the database
+                        </p>
+                      </div>
+                    </div>
+                    <div style="display: grid; gap: 1rem;">
+                      {% for doc in documents %}
+                        <div class="p-card--highlighted" style="padding: 1rem; background-color: #fff8ec;">
+                          <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                              <h4 class="u-no-margin--bottom">
+                                <a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer" style="color: #333;">
+                                  {{ doc.name }}
+                                  <i class="p-icon--external-link" style="margin-left: 0.25rem; height: 0.875rem; width: 0.875rem;"></i>
+                                </a>
+                              </h4>
+                              {% if doc.path %}
+                              <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.25rem; font-size: 0.8rem;">
+                                <a href="{{ doc.path }}" style="color: #666;">{{ doc.path }}</a>
+                              </p>
+                              {% endif %}
+                              <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.5rem; font-size: 0.875rem;">
+                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background-color: #E95420; color: white; border-radius: 3px; font-weight: bold;">
+                                  {{ doc.unresolved_count }} unresolved
+                                </span>
+                              </p>
+                            </div>
+                            <div>
+                              <a href="{{ doc.url }}" class="p-button--positive" target="_blank" rel="noopener noreferrer" style="white-space: nowrap;">
+                                Review Comments
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+                {% else %}
+                <div class="p-card" style="margin-bottom: 2rem; border-left: 4px solid #E95420;">
+                  <div style="padding: 1.5rem;">
+                    <!-- Owner Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #DEDEDE;">
+                      <div>
+                        <h3 class="u-no-margin--bottom">{{ owner_email }}</h3>
+                        <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.25rem;">
+                          {{ documents|length }} document{% if documents|length != 1 %}s{% endif %} · 
+                          {{ documents|sum(attribute='unresolved_count') }} unresolved comment{% if documents|sum(attribute='unresolved_count') != 1 %}s{% endif %}
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Document List -->
+                    <div style="display: grid; gap: 1rem;">
+                      {% for doc in documents %}
+                        <div class="p-card--highlighted" style="padding: 1rem; background-color: #f7f7f7;">
+                          <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                              <h4 class="u-no-margin--bottom">
+                                <a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer" style="color: #333;">
+                                  {{ doc.name }}
+                                  <i class="p-icon--external-link" style="margin-left: 0.25rem; height: 0.875rem; width: 0.875rem;"></i>
+                                </a>
+                              </h4>
+                              {% if doc.path %}
+                              <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.25rem; font-size: 0.8rem;">
+                                <a href="{{ doc.path }}" style="color: #666;">{{ doc.path }}</a>
+                              </p>
+                              {% endif %}
+                              <p class="u-text--muted u-no-margin--bottom" style="margin-top: 0.5rem; font-size: 0.875rem;">
+                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background-color: #E95420; color: white; border-radius: 3px; font-weight: bold;">
+                                  {{ doc.unresolved_count }} unresolved
+                                </span>
+                              </p>
+                            </div>
+                            <div>
+                              <a href="{{ doc.url }}" class="p-button--positive" target="_blank" rel="noopener noreferrer" style="white-space: nowrap;">
+                                Review Comments
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+
+          {% else %}
+            <!-- No documents message -->
+            <div class="p-notification--positive" style="margin-top: 2rem;">
+              <div class="p-notification__content">
+                <h3 class="p-notification__title">All Clear! 🎉</h3>
+                <p class="p-notification__message">
+                  No documents were found with unresolved comments in the last week. Great job keeping everything up to date!
+                </p>
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Info Box -->
+          <div class="p-notification" style="margin-top: 2rem;">
+            <div class="p-notification__content">
+              <h3 class="p-notification__title">About This Report</h3>
+              <p class="p-notification__message">
+                This page shows all documents that were modified in the last 7 days and have unresolved comments.
+                The same information is automatically sent via email to document owners every Monday at 09:00 UTC.
+              </p>
+              <p class="p-notification__message u-no-margin--bottom">
+                <strong>Refresh this page</strong> to see the latest data from Google Drive.
+              </p>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #DEDEDE;">
+            <div style="display: flex; gap: 1rem;">
+              <a href="/" class="p-button">
+                <i class="p-icon--chevron-left"></i> Back to Library
+              </a>
+              <form action="/notifications/weekly-comments" method="POST" style="display: inline;">
+                <button type="submit" class="p-button--neutral">
+                  <i class="p-icon--send"></i> Send Email Notifications Now
+                </button>
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  /* Custom styles for this page */
+  .p-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  }
+  
+  .p-card--highlighted {
+    border: 1px solid #DEDEDE;
+    box-shadow: none;
+  }
+  
+  .p-icon--external-link {
+    display: inline-block;
+    vertical-align: middle;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .row {
+      flex-direction: column;
+    }
+    
+    .col-3 {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    
+    .p-card > div {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .p-button {
+      width: 100%;
+    }
+  }
+</style>
+
+{% endblock %}

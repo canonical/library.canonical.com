@@ -95,3 +95,16 @@ config:
     SENTRY_DSN_SDK:
       type: string
       default: ""
+    SMTP_HOST:
+      type: string
+      default: "smtp.gmail.com"
+    SMTP_PORT:
+      type: int
+      default: 587 
+    SMTP_USER:
+      type: string
+      default: ""
+    SMTP_PASSWORD:
+      type: string
+      default: ""
+      
