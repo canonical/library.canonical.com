@@ -34,10 +34,11 @@ class GoogleDrive:
             SERVICE_ACCOUNT_INFO, scopes=scopes
         )
         authorized_http = AuthorizedHttp(
-            credentials, http=httplib2.Http(timeout=30)
+            credentials, http=httplib2.Http(timeout=20)
         )
         self.service = build(
-            "drive", "v3", http=authorized_http, cache_discovery=False
+            "drive", "v3", http=authorized_http, cache_discovery=False,
+            static_discovery=True,
         )
         self.cache = cache
 

@@ -748,7 +748,7 @@ def init_scheduler(app):
             print("DB not configured; skipping update job", flush=True)
             return
 
-        workers = int(os.getenv("INGEST_WORKERS", "10"))
+        workers = int(os.getenv("INGEST_WORKERS", "5"))
 
         with app.app_context():
             try:
@@ -1665,7 +1665,7 @@ def send_weekly_comment_notifications():
 
         # Check each document for unresolved comments
         documents_with_comments = []
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             doc_counts = list(executor.map(_fetch_count, modified_docs))
 
         for doc, unresolved_count in doc_counts:
@@ -1800,7 +1800,7 @@ def view_weekly_comment_notifications():
 
         # Check each document for unresolved comments
         documents_with_comments = []
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             doc_counts = list(executor.map(_fetch_count, modified_docs))
 
         for doc, unresolved_count in doc_counts:
