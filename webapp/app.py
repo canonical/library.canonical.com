@@ -1656,14 +1656,20 @@ def send_weekly_comment_notifications():
         modified_docs = google_drive.get_changes_last_week()
         print(f"Found {len(modified_docs)} modified documents", flush=True)
 
+        # Fetch unresolved comment counts in parallel (one API call per doc).
+        # Each thread gets its own GoogleDrive instance because httplib2 is
+        # not thread-safe.
+        def _fetch_count(doc):
+            gd = GoogleDrive(cache)
+            return doc, gd.get_unresolved_comments_count(doc["id"])
+
         # Check each document for unresolved comments
         documents_with_comments = []
-        for doc in modified_docs:
-            doc_id = doc["id"]
-            unresolved_count = google_drive.get_unresolved_comments_count(
-                doc_id
-            )
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            doc_counts = list(executor.map(_fetch_count, modified_docs))
 
+        for doc, unresolved_count in doc_counts:
+            doc_id = doc["id"]
             if unresolved_count > 0:
                 # Resolve owner from DB
                 db_doc = (
@@ -1785,14 +1791,20 @@ def view_weekly_comment_notifications():
         # Get documents modified in the last week
         modified_docs = google_drive.get_changes_last_week()
 
+        # Fetch unresolved comment counts in parallel (one API call per doc).
+        # Each thread gets its own GoogleDrive instance because httplib2 is
+        # not thread-safe.
+        def _fetch_count(doc):
+            gd = GoogleDrive(cache)
+            return doc, gd.get_unresolved_comments_count(doc["id"])
+
         # Check each document for unresolved comments
         documents_with_comments = []
-        for doc in modified_docs:
-            doc_id = doc["id"]
-            unresolved_count = google_drive.get_unresolved_comments_count(
-                doc_id
-            )
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            doc_counts = list(executor.map(_fetch_count, modified_docs))
 
+        for doc, unresolved_count in doc_counts:
+            doc_id = doc["id"]
             if unresolved_count > 0:
                 # Resolve owner from DB (Shared Drive ownership is the drive,
                 # not a person, so Drive's owners field is always empty)
