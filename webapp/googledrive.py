@@ -3,7 +3,9 @@ import os
 
 from flask import abort
 
+import httplib2
 from apiclient.http import MediaIoBaseDownload
+from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
@@ -31,8 +33,11 @@ class GoogleDrive:
         credentials = service_account.Credentials.from_service_account_info(
             SERVICE_ACCOUNT_INFO, scopes=scopes
         )
+        authorized_http = AuthorizedHttp(
+            credentials, http=httplib2.Http(timeout=30)
+        )
         self.service = build(
-            "drive", "v3", credentials=credentials, cache_discovery=False
+            "drive", "v3", http=authorized_http, cache_discovery=False
         )
         self.cache = cache
 
@@ -98,7 +103,11 @@ class GoogleDrive:
         except Exception as error:
             err = "Error fetching document list."
             print(f"{err}\n {error}", flush=True)
-            abort(500, description=err)
+            cached = self.cache.get("docDic")
+            if cached:
+                print("Falling back to cached document list.", flush=True)
+                return list(cached.values())
+            return []
         for item in items:
             if item["id"] == URL_DOC:
                 items.remove(item)

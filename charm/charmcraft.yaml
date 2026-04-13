@@ -107,4 +107,10 @@ config:
     SMTP_PASSWORD:
       type: string
       default: ""
+    TEST_EMAIL:
+      type: string
+      default: "true"
+    OPENSEARCH_POPULARITY_WEIGHT:
+      type: float
+      default: 0.01
       
