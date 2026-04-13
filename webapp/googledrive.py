@@ -103,6 +103,10 @@ class GoogleDrive:
         except Exception as error:
             err = "Error fetching document list."
             print(f"{err}\n {error}", flush=True)
+            cached = self.cache.get("docDic")
+            if cached:
+                print("Falling back to cached document list.", flush=True)
+                return list(cached.values())
             return []
         for item in items:
             if item["id"] == URL_DOC:
