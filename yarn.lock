@@ -3153,10 +3153,10 @@ vanilla-framework@4.35.0:
   resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.35.0.tgz#b01bbb525ad3211690c9f10580ca2e00a37a8ab1"
   integrity sha512-vF8M9vsXiOpJEonFXiTVhY0rXOzNtoWpkhBcCVpyPb4+oHBx0/FaNcX5GAiQpfdT6Q/AAeRYyWwRUDObq6R8uw==
 
-vanilla-framework@4.46.0:
-  version "4.46.0"
-  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.46.0.tgz#0d255c1f57c621ceea1d3a9309832ade383c98ff"
-  integrity sha512-CaDd8QOeCmz6KhawYe3mPpNDP7KS/BxaYUq5/DwPmBU/pLQAvAkvUwizsW4b0+ua0eCgiVx0ILamfcd/V3/dyw==
+vanilla-framework@4.49.0:
+  version "4.49.0"
+  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.49.0.tgz#bdd926b7c50f85a74a55d21135eac84b9a7cb4f7"
+  integrity sha512-Ux2lYB/u4HCfmrTu0YepMkQhrKDqjHgp+epRFfDiJQKc+xI/HIQYZSm/1tjs5E70/P1gKShosxIr5C4DYHM1aw==
 
 verbalize@^0.1.2:
   version "0.1.2"
