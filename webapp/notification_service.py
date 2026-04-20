@@ -3,6 +3,7 @@
 import os
 import socket as _socket
 import smtplib
+from urllib.parse import urlsplit
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from collections import defaultdict
@@ -24,21 +25,28 @@ class NotificationService:
     def _get_proxy(self):
         """
         Return (host, port) from HTTP_PROXY / HTTPS_PROXY env vars, or None.
+        Handles credentials (user:pass@host), IPv6 literals, and validates port.
         """
+        proxy_url = None
         for key in ("HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy"):
             proxy_url = os.getenv(key)
             if proxy_url:
                 break
-        else:
+        if not proxy_url:
             return None
         proxy_url = proxy_url.strip()
-        if "://" in proxy_url:
-            proxy_url = proxy_url.split("://", 1)[1]
-        proxy_url = proxy_url.split("/")[0]
-        if ":" in proxy_url:
-            host, port = proxy_url.rsplit(":", 1)
-            return host.strip(), int(port)
-        return proxy_url.strip(), 3128
+        # urlsplit requires a scheme to parse host/port correctly
+        if "://" not in proxy_url:
+            proxy_url = "http://" + proxy_url
+        parsed = urlsplit(proxy_url)
+        host = parsed.hostname
+        if not host:
+            return None
+        try:
+            port = int(parsed.port) if parsed.port is not None else 3128
+        except (ValueError, TypeError):
+            return None
+        return host, port
 
     def _open_tunnel(self):
         """
@@ -69,7 +77,7 @@ class NotificationService:
             if not chunk:
                 raise OSError("Proxy closed connection during CONNECT")
             resp += chunk
-        first_line = resp.split(b"\r\n")[0].decode()
+        first_line = resp.split(b"\r\n")[0].decode(errors="replace")
         status = first_line.split(" ", 2)
         if len(status) < 2 or status[1] != "200":
             sock.close()
