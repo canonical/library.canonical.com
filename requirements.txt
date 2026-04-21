@@ -1,3 +1,4 @@
+flask
 canonicalwebteam.flask-base==2.1.0
 canonicalwebteam.image-template==1.9.0
 google-api-python-client==2.191.0
