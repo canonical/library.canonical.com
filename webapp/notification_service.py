@@ -1,7 +1,9 @@
 # fmt: off
 # flake8: noqa
 import os
+import socket as _socket
 import smtplib
+from urllib.parse import urlsplit
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from collections import defaultdict
@@ -20,9 +22,74 @@ class NotificationService:
         self.smtp_password = os.getenv("SMTP_PASSWORD")
         self.email_from = os.getenv("EMAIL_FROM", self.smtp_user)
 
+    def _get_proxy(self):
+        """
+        Return (host, port) from HTTP_PROXY / HTTPS_PROXY env vars, or None.
+        Handles credentials (user:pass@host), IPv6 literals, and validates port.
+        """
+        proxy_url = None
+        for key in ("HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy"):
+            proxy_url = os.getenv(key)
+            if proxy_url:
+                break
+        if not proxy_url:
+            return None
+        proxy_url = proxy_url.strip()
+        # urlsplit requires a scheme to parse host/port correctly
+        if "://" not in proxy_url:
+            proxy_url = "http://" + proxy_url
+        parsed = urlsplit(proxy_url)
+        host = parsed.hostname
+        if not host:
+            return None
+        try:
+            port = int(parsed.port) if parsed.port is not None else 3128
+        except (ValueError, TypeError):
+            return None
+        return host, port
+
+    def _open_tunnel(self):
+        """
+        Open an HTTP CONNECT tunnel through the Squid proxy to the SMTP host.
+        Returns a connected plain socket, or None if no proxy is configured.
+        Raises OSError if the proxy rejects the CONNECT request.
+        """
+        proxy = self._get_proxy()
+        if proxy is None:
+            return None
+        proxy_host, proxy_port = proxy
+        print(
+            f"[smtp] CONNECT tunnel via {proxy_host}:{proxy_port}"
+            f" -> {self.smtp_host}:{self.smtp_port}",
+            flush=True,
+        )
+        sock = _socket.create_connection((proxy_host, proxy_port), timeout=30)
+        connect_req = (
+            f"CONNECT {self.smtp_host}:{self.smtp_port} HTTP/1.1\r\n"
+            f"Host: {self.smtp_host}:{self.smtp_port}\r\n"
+            "\r\n"
+        )
+        sock.sendall(connect_req.encode())
+        # Read until end of response headers
+        resp = b""
+        while b"\r\n\r\n" not in resp:
+            chunk = sock.recv(4096)
+            if not chunk:
+                raise OSError("Proxy closed connection during CONNECT")
+            resp += chunk
+        first_line = resp.split(b"\r\n")[0].decode(errors="replace")
+        status = first_line.split(" ", 2)
+        if len(status) < 2 or status[1] != "200":
+            sock.close()
+            raise OSError(f"Proxy CONNECT failed: {first_line}")
+        print("[smtp] CONNECT tunnel established", flush=True)
+        return sock
+
     def send_email(self, to_email, subject, body_html):
         """
-        Send an email using SMTP configuration.
+        Send an email using SMTP.  When an HTTP proxy is detected the
+        connection is made via an HTTP CONNECT tunnel so that raw TCP to
+        port 587/465 is never opened directly from the pod.
         """
         if not self.smtp_user or not self.smtp_password:
             print(
@@ -36,22 +103,33 @@ class NotificationService:
             msg["Subject"] = subject
             msg["From"] = self.email_from
             msg["To"] = to_email
+            msg.attach(MIMEText(body_html, "html"))
 
-            # Attach HTML body
-            html_part = MIMEText(body_html, "html")
-            msg.attach(html_part)
+            tunnel_sock = self._open_tunnel()
 
-            # Connect to SMTP server and send
+            # When a proxy tunnel is available, build a thin smtplib subclass
+            # that returns the pre-connected socket instead of dialling
+            # directly, so the proxy carries the SMTP traffic.
+            if tunnel_sock is not None:
+                if self.smtp_port == 465:
+                    class _SMTP(smtplib.SMTP_SSL):
+                        def _get_socket(self, host, port, timeout):
+                            return self.context.wrap_socket(
+                                tunnel_sock, server_hostname=host
+                            )
+                else:
+                    class _SMTP(smtplib.SMTP):
+                        def _get_socket(self, host, port, timeout):
+                            return tunnel_sock
+            else:
+                _SMTP = smtplib.SMTP_SSL if self.smtp_port == 465 else smtplib.SMTP
+
             if self.smtp_port == 465:
-                # Use SSL
-                with smtplib.SMTP_SSL(
-                    self.smtp_host, self.smtp_port
-                ) as server:
+                with _SMTP(self.smtp_host, self.smtp_port) as server:
                     server.login(self.smtp_user, self.smtp_password)
                     server.send_message(msg)
             else:
-                # Use STARTTLS (port 587)
-                with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                with _SMTP(self.smtp_host, self.smtp_port) as server:
                     server.starttls()
                     server.login(self.smtp_user, self.smtp_password)
                     server.send_message(msg)
