@@ -136,25 +136,12 @@ class NavigationBuilder:
         current = hierarchy
         for parent_slug in parent_slugs:
             if parent_slug not in current:
-                print(
-                    f"[remove_folder] parent '{parent_slug}' not found in hierarchy",
-                    flush=True,
-                )
                 return hierarchy
             current = current[parent_slug]["children"]
 
         # Delete the target folder
         if folder_slug in current:
-            print(
-                f"[remove_folder] Removing '{current[folder_slug]['name']}'",
-                flush=True,
-            )
             del current[folder_slug]
-        else:
-            print(
-                f"[remove_folder] '{folder_slug}' not found under '{'/'.join(parent_slugs)}'",
-                flush=True,
-            )
 
         return hierarchy
 
