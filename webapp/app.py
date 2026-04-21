@@ -55,6 +55,9 @@ URL_DOC = os.getenv("URL_FILE", "16mTPcMn9hxjgra62ArjL6sTg75iKiqsdN99vtmrlyLg")
 DRAFTS_URL = (
     "https://drive.google.com/drive/folders/1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua"
 )
+HIDE_FOLDER = os.getenv("HIDE_FOLDER", "true").lower() == "true"
+
+print("HIDE_FOLDER:", HIDE_FOLDER)
 
 # =========================
 # App and Extension Initialization
@@ -504,6 +507,7 @@ def get_navigation_data():
                     nav_data["temp_hierarchy"],
                     nav_data["file_list"],
                     nav_data["hierarchy"],
+                    hide_folder=HIDE_FOLDER,
                 )
     return g.navigation_data
 
@@ -513,12 +517,13 @@ def construct_navigation_data():
     Construct the navigation data  using the NavigationBuilder and cache it.
     """
     google_drive = get_google_drive_instance()
-    data = NavigationBuilder(google_drive, ROOT)
+    data = NavigationBuilder(google_drive, ROOT, hide_folder=HIDE_FOLDER)
     nav_data = {
         "doc_reference_dict": data.doc_reference_dict,
         "temp_hierarchy": data.temp_hierarchy,
         "file_list": data.file_list,
         "hierarchy": data.hierarchy,
+        "hide_folder": HIDE_FOLDER,
     }
     cache.set("navigation", nav_data)
     if has_request_context():
@@ -574,7 +579,7 @@ def process_changes(changes, navigation_data, google_drive):
     locations from Google Drive. If a document's location
     has changed, update the URLs in the redirects file.
     """
-    new_nav = NavigationBuilder(google_drive, ROOT)
+    new_nav = NavigationBuilder(google_drive, ROOT, hide_folder=HIDE_FOLDER)
     for change in changes:
         if change["removed"]:
             print("REMOVED")
@@ -2652,7 +2657,7 @@ def initialized():
         initialized_executed = True
         with app.app_context():
             gdrive_instance = get_google_drive_instance()
-            nav_changes = NavigationBuilder(gdrive_instance, ROOT)
+            nav_changes = NavigationBuilder(gdrive_instance, ROOT, hide_folder=HIDE_FOLDER)
             get_list_of_urls()
             init_scheduler(app)
 

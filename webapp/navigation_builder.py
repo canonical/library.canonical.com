@@ -6,6 +6,8 @@ from webapp.utils.process_leading_number import (
     remove_leading_number,
 )
 
+EXCLUDED_FOLDER_SLUG = "about-the-library/tests-and-issues-(for-development-purpose)"
+
 
 class NavigationBuilder:
     def __init__(
@@ -17,14 +19,16 @@ class NavigationBuilder:
         temp_hierarchy=None,
         file_list=None,
         hierarchy=None,
+        hide_folder=False,
     ):
+        print("\n\n\n hide_folder value in NavigationBuilder:", hide_folder, "\n\n\n", flush=True)
         if not cache:
             self.root_folder = root_folder.lower()
             self.doc_reference_dict = {}
             self.temp_hierarchy = {}
             self.file_list = self.get_file_list_copy(google_drive)
             self.initialize_reference_dict()
-            self.hierarchy = self.create_hierarchy(self.file_list)
+            self.hierarchy = self.create_hierarchy(self.file_list, hide_folder=hide_folder)
             self.doc_reference_dict = self.update_references_dict(
                 self.hierarchy
             )
@@ -34,7 +38,7 @@ class NavigationBuilder:
             self.doc_reference_dict = doc_reference_dict
             self.temp_hierarchy = temp_hierarchy
             self.file_list = file_list
-            self.hierarchy = hierarchy
+            self.hierarchy = self.remove_folder(hierarchy) if hide_folder else hierarchy
             self.save_urls_to_file()
 
     def get_file_list_copy(self, google_drive: GoogleDrive):
@@ -117,8 +121,30 @@ class NavigationBuilder:
                 doc_reference_dict[doc["id"]] = doc
 
         return doc_reference_dict
+    
+    def remove_folder(self, hierarchy):
+        parts = EXCLUDED_FOLDER_SLUG.split("/")
+        folder_slug = parts[-1]
+        parent_slugs = parts[:-1]
 
-    def create_hierarchy(self, doc_objects):
+        # Navigate to the parent
+        current = hierarchy
+        for parent_slug in parent_slugs:
+            if parent_slug not in current:
+                print(f"[remove_folder] parent '{parent_slug}' not found in hierarchy", flush=True)
+                return hierarchy
+            current = current[parent_slug]["children"]
+
+        # Delete the target folder
+        if folder_slug in current:
+            print(f"[remove_folder] Removing '{current[folder_slug]['name']}'", flush=True)
+            del current[folder_slug]
+        else:
+            print(f"[remove_folder] '{folder_slug}' not found under '{'/'.join(parent_slugs)}'", flush=True)
+
+        return hierarchy
+
+    def create_hierarchy(self, doc_objects, hide_folder):
         """
         A function that initialises each document with the appropriate data
         for building the navigation
@@ -139,7 +165,10 @@ class NavigationBuilder:
 
         self.add_path_context(self.temp_hierarchy)
 
-        return self.temp_hierarchy[self.root_folder]["children"]
+        if hide_folder:
+            return self.remove_folder(self.temp_hierarchy[self.root_folder]["children"])
+        else:
+            return self.temp_hierarchy[self.root_folder]["children"]
 
     def insert_based_on_position(self, parent_obj, doc):
         """
