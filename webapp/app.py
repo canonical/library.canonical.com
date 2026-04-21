@@ -1209,7 +1209,9 @@ def search_drive():
 
     filtered_results = []
     for result in search_results:
-        if "/tests-and-issues-(for-development-purpose)" not in result.get("full_path", ""):
+        if "/tests-and-issues-(for-development-purpose)" not in result.get(
+            "full_path", ""
+        ):
             filtered_results.append(result)
     search_results = filtered_results
 
@@ -2661,7 +2663,9 @@ def initialized():
         initialized_executed = True
         with app.app_context():
             gdrive_instance = get_google_drive_instance()
-            nav_changes = NavigationBuilder(gdrive_instance, ROOT, hide_folder=HIDE_FOLDER)
+            nav_changes = NavigationBuilder(
+                gdrive_instance, ROOT, hide_folder=HIDE_FOLDER
+            )
             get_list_of_urls()
             init_scheduler(app)
 
