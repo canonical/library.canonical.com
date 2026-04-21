@@ -57,8 +57,6 @@ DRAFTS_URL = (
 )
 HIDE_FOLDER = os.getenv("HIDE_FOLDER", "true").lower() == "true"
 
-print("HIDE_FOLDER:", HIDE_FOLDER)
-
 # =========================
 # App and Extension Initialization
 # =========================

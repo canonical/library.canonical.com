@@ -21,7 +21,6 @@ class NavigationBuilder:
         hierarchy=None,
         hide_folder=False,
     ):
-        print("\n\n\n hide_folder value in NavigationBuilder:", hide_folder, "\n\n\n", flush=True)
         if not cache:
             self.root_folder = root_folder.lower()
             self.doc_reference_dict = {}
