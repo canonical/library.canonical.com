@@ -54,3 +54,47 @@ class GoggleSheet:
             print(f"{err}\n {error}", flush=True)
             abort(500, description=err)
         return self.old_url, self.new_url
+
+    @staticmethod
+    def fetch_analytics_data(sheet_id, sheet_tab="Sheet1", start_row=16):
+        """
+        Fetch analytics data from a Google Sheet.
+        
+        Args:
+            sheet_id: The Google Sheet ID
+            sheet_tab: The tab/sheet name (default: "Sheet1")
+            start_row: The row number where data starts (default: 16)
+            
+        Returns:
+            List of rows from the sheet (including header row at start_row)
+            
+        Raises:
+            Exception: If there's an error fetching the data
+        """
+        try:
+            # Initialize Sheets API client
+            scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+            credentials = service_account.Credentials.from_service_account_info(
+                SERVICE_ACCOUNT_INFO, scopes=scopes
+            )
+            sheets_service = build(
+                "sheets", "v4", credentials=credentials, cache_discovery=False
+            )
+
+            # Fetch data starting from the specified row
+            # Columns: A=pagePath, B=views, C=sessions, D=engagedSessions
+            range_name = f"{sheet_tab}!A{start_row}:D"
+            result_data = (
+                sheets_service.spreadsheets()
+                .values()
+                .get(spreadsheetId=sheet_id, range=range_name)
+                .execute()
+            )
+            
+            rows = result_data.get("values", [])
+            return rows
+            
+        except Exception as error:
+            err = "Error fetching analytics data from spreadsheet."
+            print(f"{err}\n {error}", flush=True)
+            abort(500, description=err)
