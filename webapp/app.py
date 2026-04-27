@@ -1771,7 +1771,7 @@ def clear_all_views():
 def analytics_upload():
     """
     Upload and upsert analytics data from a Google Sheet.
-    Reads from the spreadsheet ID and tab name specified in environment variables:
+    Reads from the spreadsheet ID and tab name specified in env variables:
     - ANALYTICS_SHEET_ID: The Google Sheet ID
     - ANALYTICS_SHEET_TAB: The tab/sheet name (default: "Sheet1")
     """
@@ -1796,7 +1796,7 @@ def analytics_upload():
         return (
             flask.render_template(
                 "500.html",
-                message="ANALYTICS_SHEET_ID environment variable not configured",
+                message="ANALYTICS_SHEET_ID env variable not configured",
                 navigation=navigation_data.hierarchy,
             ),
             503,
