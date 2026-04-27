@@ -38,6 +38,7 @@ from webapp.utils.make_snippet import render_snippet
 from webapp.models import Document, Analytics
 from webapp.notification_service import NotificationService
 from webapp import owner_registry
+from webapp.link_validator import validate_and_report
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
@@ -942,6 +943,26 @@ def init_scheduler(app):
             except Exception as e:
                 print(f"[weekly notifications] error: {e}", flush=True)
 
+    def weekly_link_validation():
+        """
+        Run weekly link validation and send email report.
+        Checks all internal and external links across the site.
+        """
+        if not os.getenv("SMTP_USER") or not os.getenv("SMTP_PASSWORD"):
+            print(
+                "[link validation] skipping: SMTP_USER and/or"
+                " SMTP_PASSWORD not set",
+                flush=True,
+            )
+            return
+        
+        try:
+            # Get base URL from environment or use default
+            base_url = os.getenv("BASE_URL", "http://localhost:8051")
+            validate_and_report(app, base_url=base_url)
+        except Exception as e:
+            print(f"[link validation] error: {e}", flush=True)
+
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)
@@ -979,6 +1000,14 @@ def init_scheduler(app):
         hour=9,
         minute=0,
     )
+    # # Weekly link validation every Monday at 10:00 am
+    # scheduler.add_job(
+    #     weekly_link_validation,
+    #     trigger="cron",
+    #     day_of_week="mon",
+    #     hour=10,
+    #     minute=0,
+    # )
     scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
     scheduler.start()
     return scheduler
@@ -1247,6 +1276,26 @@ def update_url_list():
     get_list_of_urls()
     print("\n\n URL list updated via /update-url-list \n\n")
     return flask.redirect("/")
+
+
+@app.route("/validate-links")
+def validate_links_manual():
+    """
+    Manually trigger link validation and send email report.
+    Useful for testing the link validation system.
+    """
+    try:
+        base_url = os.getenv("BASE_URL", "http://localhost:8051")
+        validate_and_report(app, base_url=base_url)
+        return flask.jsonify({
+            "status": "success",
+            "message": "Link validation started. You will receive an email report when complete."
+        })
+    except Exception as e:
+        return flask.jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 
 @app.route("/changes")
