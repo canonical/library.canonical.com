@@ -166,6 +166,16 @@ class NavigationBuilder:
 
         self.add_path_context(self.temp_hierarchy)
 
+        # Ensure root folder exists in hierarchy
+        if self.root_folder not in self.temp_hierarchy:
+            from flask import abort
+            abort(
+                503,
+                description=f"Root folder '{self.root_folder}' not found in "
+                "Google Drive. Please check your ROOT_FOLDER environment "
+                "variable or Google Drive permissions.",
+            )
+
         if hide_folder:
             return self.remove_folder(
                 self.temp_hierarchy[self.root_folder]["children"]
