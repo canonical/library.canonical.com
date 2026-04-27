@@ -116,4 +116,13 @@ config:
     HIDE_FOLDER:
       type: boolean
       default: false
+    ANALYTICS_SHEET_ID:
+      type: string
+      default: ""
+    ANALYTICS_SHEET_TAB:
+      type: string
+      default: "Sheet1"
+    ANALYTICS_START_ROW:
+      type: int
+      default: 16
       
