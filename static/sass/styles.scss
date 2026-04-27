@@ -8,9 +8,6 @@
 @include vf-p-icons;
 @include vf-p-icon-submit-bug;
 
-// Import custom cookie styles
-@import "cookie_styles";
-
 $increase-font-size-on-larger-screens: false;
 // Override vanilla styles
 body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {

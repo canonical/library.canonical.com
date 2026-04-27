@@ -1290,7 +1290,7 @@ def validate_links_manual():
         return flask.jsonify(
             {
                 "status": "success",
-                "message": "Link validation started. You will receive an email report when complete.",
+                "message": "Link validation started.",
             }
         )
     except Exception as e:
