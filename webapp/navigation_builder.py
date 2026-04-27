@@ -169,6 +169,7 @@ class NavigationBuilder:
         # Ensure root folder exists in hierarchy
         if self.root_folder not in self.temp_hierarchy:
             from flask import abort
+
             abort(
                 503,
                 description=f"Root folder '{self.root_folder}' not found in "
