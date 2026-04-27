@@ -108,7 +108,10 @@ class GoogleDrive:
                 print("Falling back to cached document list.", flush=True)
                 return list(cached.values())
             # No cache available and API failed - abort with 503
-            abort(503, description="Google Drive API unavailable and no cached data")
+            abort(
+                503,
+                description="Google Drive API unavailable and no cached data",
+            )
         for item in items:
             if item["id"] == URL_DOC:
                 items.remove(item)

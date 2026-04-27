@@ -1156,9 +1156,7 @@ def init_scheduler(app):
                     )
 
             except Exception as e:
-                print(
-                    f"[monthly analytics opensearch] error: {e}", flush=True
-                )
+                print(f"[monthly analytics opensearch] error: {e}", flush=True)
 
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
@@ -1807,7 +1805,7 @@ def analytics_upload():
     try:
         # Fetch data from Google Sheet using the spreadsheet module
         rows = GoggleSheet.fetch_analytics_data(sheet_id, sheet_tab, start_row)
-        
+
         if not rows:
             return (
                 flask.render_template(
@@ -1836,7 +1834,9 @@ def analytics_upload():
                 path = str(row[0]).strip() if len(row) > 0 and row[0] else None
                 views = int(row[1]) if len(row) > 1 and row[1] else 0
                 sessions = int(row[2]) if len(row) > 2 and row[2] else 0
-                engaged_sessions = int(row[3]) if len(row) > 3 and row[3] else 0
+                engaged_sessions = (
+                    int(row[3]) if len(row) > 3 and row[3] else 0
+                )
 
                 if not path:
                     continue
