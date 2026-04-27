@@ -942,6 +942,222 @@ def init_scheduler(app):
             except Exception as e:
                 print(f"[weekly notifications] error: {e}", flush=True)
 
+    def monthly_analytics_import():
+        """
+        Import analytics data from Google Sheets to PostgreSQL.
+        Runs monthly on the 2nd of each month.
+        """
+        if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+            print(
+                "[monthly analytics] skipping: DB not configured", flush=True
+            )
+            return
+
+        sheet_id = os.getenv("ANALYTICS_SHEET_ID")
+        if not sheet_id:
+            print(
+                "[monthly analytics] skipping: ANALYTICS_SHEET_ID not set",
+                flush=True,
+            )
+            return
+
+        with app.app_context():
+            try:
+                sheet_tab = os.getenv("ANALYTICS_SHEET_TAB", "Sheet1")
+                start_row = int(os.getenv("ANALYTICS_START_ROW", "16"))
+
+                print(
+                    f"[monthly analytics] Fetching data from sheet {sheet_id}",
+                    flush=True,
+                )
+                rows = GoggleSheet.fetch_analytics_data(
+                    sheet_id, sheet_tab, start_row
+                )
+
+                if not rows:
+                    print("[monthly analytics] No data found", flush=True)
+                    return
+
+                updated = 0
+                created = 0
+                errors = 0
+
+                for idx, row in enumerate(rows[1:], start=2):
+                    try:
+                        if not row or len(row) == 0 or not row[0]:
+                            continue
+
+                        path = (
+                            str(row[0]).strip()
+                            if len(row) > 0 and row[0]
+                            else None
+                        )
+                        views = int(row[1]) if len(row) > 1 and row[1] else 0
+                        sessions = (
+                            int(row[2]) if len(row) > 2 and row[2] else 0
+                        )
+                        engaged_sessions = (
+                            int(row[3]) if len(row) > 3 and row[3] else 0
+                        )
+
+                        if not path:
+                            continue
+
+                        existing = Analytics.query.filter_by(path=path).first()
+
+                        if existing:
+                            existing.views = views
+                            existing.sessions = sessions
+                            existing.engaged_sessions = engaged_sessions
+                            updated += 1
+                        else:
+                            new_record = Analytics(
+                                path=path,
+                                views=views,
+                                sessions=sessions,
+                                engaged_sessions=engaged_sessions,
+                            )
+                            db.session.add(new_record)
+                            created += 1
+
+                    except Exception as e:
+                        errors += 1
+                        print(f"[monthly analytics] Row {idx} error: {e}")
+                        continue
+
+                db.session.commit()
+                print(
+                    f"[monthly analytics] Done: created={created} "
+                    f"updated={updated} errors={errors}",
+                    flush=True,
+                )
+
+            except Exception as e:
+                db.session.rollback()
+                print(f"[monthly analytics] error: {e}", flush=True)
+
+    def monthly_analytics_sync_opensearch():
+        """
+        Sync analytics data from PostgreSQL to OpenSearch.
+        Runs monthly on the 2nd of each month after analytics import.
+        """
+        if "POSTGRESQL_DB_CONNECT_STRING" not in os.environ:
+            print(
+                "[monthly analytics opensearch] skipping: DB not configured",
+                flush=True,
+            )
+            return
+
+        base_url = os.getenv("OPENSEARCH_URL")
+        username = os.getenv("OPENSEARCH_USERNAME")
+        password = os.getenv("OPENSEARCH_PASSWORD")
+
+        if not (base_url and username and password):
+            print(
+                "[monthly analytics opensearch] skipping: OpenSearch not "
+                "configured",
+                flush=True,
+            )
+            return
+
+        with app.app_context():
+            try:
+                tls_ca = os.getenv("OPENSEARCH_TLS_CA")
+                index_name = "library-analytics"
+
+                print(
+                    f"[monthly analytics opensearch] Syncing to {index_name}",
+                    flush=True,
+                )
+
+                http = (
+                    _requests_session_with_env_ca(tls_ca)
+                    if tls_ca
+                    else requests
+                )
+
+                # Ensure the analytics index exists
+                resp = http.head(
+                    f"{base_url.rstrip('/')}/{index_name}",
+                    auth=(username, password),
+                    timeout=10,
+                )
+                if resp.status_code != 200:
+                    settings = {
+                        "settings": {
+                            "number_of_shards": 1,
+                            "number_of_replicas": 1,
+                        },
+                        "mappings": {
+                            "properties": {
+                                "path": {"type": "keyword"},
+                                "views": {"type": "integer"},
+                                "sessions": {"type": "integer"},
+                                "engaged_sessions": {"type": "integer"},
+                            }
+                        },
+                    }
+                    create_resp = http.put(
+                        f"{base_url.rstrip('/')}/{index_name}",
+                        auth=(username, password),
+                        headers={"Content-Type": "application/json"},
+                        json=settings,
+                        timeout=20,
+                    )
+                    if create_resp.ok:
+                        print(
+                            f"[monthly analytics opensearch] Created index "
+                            f"'{index_name}'",
+                            flush=True,
+                        )
+
+                # Build NDJSON payload
+                def ndjson_iter():
+                    for analytics in db.session.query(Analytics).yield_per(
+                        1000
+                    ):
+                        action = {
+                            "index": {
+                                "_index": index_name,
+                                "_id": str(analytics.id),
+                            }
+                        }
+                        yield json.dumps(action, ensure_ascii=False) + "\n"
+                        source = {
+                            "path": analytics.path,
+                            "views": analytics.views,
+                            "sessions": analytics.sessions,
+                            "engaged_sessions": analytics.engaged_sessions,
+                        }
+                        yield json.dumps(source, ensure_ascii=False) + "\n"
+
+                # Bulk upload
+                resp = http.post(
+                    f"{base_url.rstrip('/')}/_bulk",
+                    data=ndjson_iter(),
+                    headers={"Content-Type": "application/x-ndjson"},
+                    auth=(username, password),
+                    timeout=300,
+                )
+
+                if resp.ok:
+                    body = resp.json()
+                    print(
+                        f"[monthly analytics opensearch] Done: "
+                        f"errors={body.get('errors')} "
+                        f"took={body.get('took')}ms",
+                        flush=True,
+                    )
+                else:
+                    print(
+                        f"[monthly analytics opensearch] Failed: "
+                        f"{resp.status_code}",
+                        flush=True,
+                    )
+
+            except Exception as e:
+                print(f"[monthly analytics opensearch] error: {e}", flush=True)
+
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_task)
@@ -980,6 +1196,23 @@ def init_scheduler(app):
         minute=0,
     )
     scheduler.add_job(ingest_all_documents_job, "interval", hours=6)
+    # Monthly analytics import on the 2nd at 2:00 AM
+    scheduler.add_job(
+        monthly_analytics_import,
+        trigger="cron",
+        day=2,
+        hour=2,
+        minute=0,
+    )
+    # Monthly analytics OpenSearch sync on the 2nd at 3:00 AM
+    # (runs after analytics import completes)
+    scheduler.add_job(
+        monthly_analytics_sync_opensearch,
+        trigger="cron",
+        day=2,
+        hour=3,
+        minute=0,
+    )
     scheduler.start()
     return scheduler
 
@@ -1537,8 +1770,10 @@ def clear_all_views():
 @app.route("/analytics/upload", methods=["GET", "POST"])
 def analytics_upload():
     """
-    Upload and upsert analytics data from an Excel file.
-    The file is always read from /static/assets/GA-analytics-doc.xlsx
+    Upload and upsert analytics data from a Google Sheet.
+    Reads from the spreadsheet ID and tab name specified in env variables:
+    - ANALYTICS_SHEET_ID: The Google Sheet ID
+    - ANALYTICS_SHEET_TAB: The tab/sheet name (default: "Sheet1")
     """
     navigation_data = get_navigation_data()
 
@@ -1552,45 +1787,56 @@ def analytics_upload():
             503,
         )
 
-    from openpyxl import load_workbook
+    # Get Google Sheet configuration from environment
+    sheet_id = os.getenv("ANALYTICS_SHEET_ID")
+    sheet_tab = os.getenv("ANALYTICS_SHEET_TAB", "Sheet1")
+    start_row = int(os.getenv("ANALYTICS_START_ROW", "16"))
 
-    # Always use the default path
-    file_path = os.path.join(
-        app.static_folder, "assets", "GA-analytics-doc.xlsx"
-    )
-
-    if not os.path.exists(file_path):
+    if not sheet_id:
         return (
             flask.render_template(
-                "404.html",
-                message=f"Analytics file not found: {file_path}",
+                "500.html",
+                message="ANALYTICS_SHEET_ID env variable not configured",
                 navigation=navigation_data.hierarchy,
             ),
-            404,
+            503,
         )
 
     try:
-        # Load the workbook
-        wb = load_workbook(file_path, read_only=True)
-        ws = wb.active
+        # Fetch data from Google Sheet using the spreadsheet module
+        rows = GoggleSheet.fetch_analytics_data(sheet_id, sheet_tab, start_row)
+
+        if not rows:
+            return (
+                flask.render_template(
+                    "404.html",
+                    message=f"No data found in sheet '{sheet_tab}'",
+                    navigation=navigation_data.hierarchy,
+                ),
+                404,
+            )
 
         updated = 0
         created = 0
         errors = 0
         error_details = []
 
-        # Read rows, skipping header (first row)
-        rows = list(ws.iter_rows(min_row=2, values_only=True))
-
-        for idx, row in enumerate(rows, start=2):
+        # Process rows, skipping header (first row)
+        # Sheet columns: pagePath, screenPageViews, sessions, engagedSessions
+        for idx, row in enumerate(rows[1:], start=2):
             try:
-                if not row or not row[0]:  # Skip empty rows
+                if not row or len(row) == 0 or not row[0]:  # Skip empty rows
                     continue
 
-                path = str(row[0]).strip() if row[0] else None
-                views = int(row[1]) if row[1] is not None else 0
-                sessions = int(row[2]) if row[2] is not None else 0
-                engaged_sessions = int(row[3]) if row[3] is not None else 0
+                # Extract values with safe indexing
+                # Map sheet columns to database fields:
+                # pagePath → path, screenPageViews → views
+                path = str(row[0]).strip() if len(row) > 0 and row[0] else None
+                views = int(row[1]) if len(row) > 1 and row[1] else 0
+                sessions = int(row[2]) if len(row) > 2 and row[2] else 0
+                engaged_sessions = (
+                    int(row[3]) if len(row) > 3 and row[3] else 0
+                )
 
                 if not path:
                     continue
@@ -1620,7 +1866,6 @@ def analytics_upload():
 
         # Commit all changes
         db.session.commit()
-        wb.close()
 
         result = {
             "success": True,
@@ -1628,6 +1873,7 @@ def analytics_upload():
             "updated": updated,
             "errors": errors,
             "total_processed": created + updated,
+            "source": f"Google Sheet: {sheet_id} (tab: {sheet_tab})",
         }
 
         if error_details:
@@ -1642,7 +1888,7 @@ def analytics_upload():
         return (
             flask.render_template(
                 "500.html",
-                message=f"Failed to process analytics file: {str(e)}",
+                message=f"Failed to process analytics data: {str(e)}",
                 navigation=navigation_data.hierarchy,
             ),
             500,
