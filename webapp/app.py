@@ -955,7 +955,7 @@ def init_scheduler(app):
                 flush=True,
             )
             return
-        
+
         try:
             # Get base URL from environment or use default
             base_url = os.getenv("BASE_URL", "http://localhost:8051")
@@ -1287,15 +1287,14 @@ def validate_links_manual():
     try:
         base_url = os.getenv("BASE_URL", "http://localhost:8051")
         validate_and_report(app, base_url=base_url)
-        return flask.jsonify({
-            "status": "success",
-            "message": "Link validation started. You will receive an email report when complete."
-        })
+        return flask.jsonify(
+            {
+                "status": "success",
+                "message": "Link validation started. You will receive an email report when complete.",
+            }
+        )
     except Exception as e:
-        return flask.jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+        return flask.jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/changes")
