@@ -1,8 +1,8 @@
-@import "vanilla-framework";
-@include vanilla;
+// Note: Vanilla Framework is already imported in main styles.css
+// Only import specific mixins/variables needed for this component
+@import "vanilla-framework/scss/settings";
 $font-family_1: $font-base-family;
 $background-color_1:#EBEBEB;
-@include vf-p-icon-chevron;
 
 $increase-font-size-on-larger-screens: false;
 

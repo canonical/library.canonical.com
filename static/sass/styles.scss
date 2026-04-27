@@ -8,14 +8,10 @@
 @include vf-p-icons;
 @include vf-p-icon-submit-bug;
 
-// Import cookie policy
-@import "@canonical/cookie-policy/build/css/cookie-policy";
+// Import custom cookie styles
+@import "cookie_styles";
 
 $increase-font-size-on-larger-screens: false;
-
-.p-modal.cookie-notification-modal {
-  display: block !important;
-}
 // Override vanilla styles
 body p:not([class*="p-heading--"], [class*="p-muted-heading"]) + h1 {
   padding-top: 0.55rem;
