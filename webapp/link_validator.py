@@ -16,9 +16,9 @@ class LinkValidator:
     def __init__(
         self,
         base_url="http://localhost:8051",
-        timeout=100,
+        timeout=20,
         max_workers=10,
-        page_timeout=100,
+        page_timeout=20,
     ):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout  # Timeout for checking external links
