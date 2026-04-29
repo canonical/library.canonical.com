@@ -1158,7 +1158,7 @@ def init_scheduler(app):
 
             except Exception as e:
                 print(f"[monthly analytics opensearch] error: {e}", flush=True)
-  
+
     def weekly_link_validation():
         """
         Run weekly link validation and send email report.
