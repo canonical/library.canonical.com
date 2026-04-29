@@ -470,6 +470,26 @@ class Parser:
             self.remove_trailing_garbage(a_tag, trailing_garbage)
             a_tag["href"] = unquote(a_tag["href"])
 
+            # Check if the link is wrapped in a span
+            parent = a_tag.parent
+            if parent.name == "span":
+                # Get siblings of the span, not the a tag
+                prev_sibling = parent.previous_sibling
+                next_sibling = parent.next_sibling
+            else:
+                # Get siblings of the a tag directly
+                prev_sibling = a_tag.previous_sibling
+                next_sibling = a_tag.next_sibling
+
+            if prev_sibling:
+                prev_text = prev_sibling.text
+                if prev_text and not prev_text[-1].isspace():
+                    prev_sibling.string = prev_text + " "
+            if next_sibling:
+                next_text = next_sibling.text
+                if next_text and not next_text[0].isspace():
+                    next_sibling.string = " " + next_text
+
     def clean_external_links(self, a_tag, external_path):
         if a_tag["href"].startswith(external_path):
             a_tag["href"] = a_tag["href"].replace(external_path, "")

@@ -5,8 +5,9 @@
 ## QA
 
 - Check out this feature branch
-- Run the site using the command `./run serve`
+- Run the site using the command `dotrun`
 - View the site locally in your web browser at: http://0.0.0.0:8051/
+- If the test folder is not displayed go to .env file and change HIDE_FOLDER to false: `HIDE_FOLDER=false`
 - Please check the following basic functionalities work correctly:
     - Library displays docs correctly
     - Library search works correctly and displays a list of results
