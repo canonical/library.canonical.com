@@ -1169,7 +1169,7 @@ def init_scheduler(app):
                 "[link validation] skipping: SMTP_USER and/or"
                 " SMTP_PASSWORD not set",
                 flush=True,
-                )
+            )
         try:
             # Get base URL from environment or use default
             base_url = os.getenv("BASE_URL", "http://localhost:8051")
