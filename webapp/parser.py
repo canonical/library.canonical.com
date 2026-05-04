@@ -211,6 +211,8 @@ class Parser:
                 )
                 tag.string = tag.text.replace(start_symbol, "")
                 parent_tag = tag.parent
+                if parent_tag is None:
+                    continue
                 if parent_tag.name != "pre":
                     parent_tag.name = "pre"
                     # Append the pre tag to the code block and put the code
@@ -232,6 +234,8 @@ class Parser:
                 # If there is no start or end symbol, we are in the middle of
                 # a code block
                 parent_tag = tag.parent
+                if parent_tag is None:
+                    continue
                 if parent_tag.name != "pre":
                     pre_tag = current_code_block.find("pre")
                     pre_tag.append(self.html.new_tag("br"))
@@ -472,6 +476,8 @@ class Parser:
 
             # Check if the link is wrapped in a span
             parent = a_tag.parent
+            if parent is None:
+                continue
             if parent.name == "span":
                 # Get siblings of the span, not the a tag
                 prev_sibling = parent.previous_sibling
@@ -583,8 +589,11 @@ class Parser:
         )
         for comment in comments:
             parent = comment.parent
+            if parent is None:
+                continue
             if parent.name == "sup":
                 parent.decompose()
-            if parent.name == "p":
+            elif parent.name == "p":
                 container = parent.parent
-                container.decompose()
+                if container:
+                    container.decompose()
