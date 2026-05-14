@@ -5,7 +5,7 @@ Folder to PDF script performs a recursive merge of Google Documents within a fol
 ## How It Works
 The script follows a "Depth-First Search" logic to navigate your folders:
 1. In every folder, it identifies the "index" file first (currently set to skip in your configuration).
-2. It gathers all other Google Docs within the current folder level and sorts them alphabetically. (Custom sorting is maintained)
+2. It gathers all other Google Docs within the current folder level and sorts them alphabetically. (Custom numbered sorting is maintained)
 3. It repeats this logic for every subfolder it finds, ensuring the folder structure is mirrored in the document order.
 4. During the merge, it removes the first table (Metadata table) of every document. Because it uses the `copy()` method, your original files remain untouched.
 
@@ -24,13 +24,13 @@ Inside the `processFolderRecursive` function, you can toggle how the "index" fil
 * **To change the trigger name:** Change the string `'index'` to your preferred filename.
 
 ### 3. Output Customization
-* **Page Breaks:** To remove the gap between merged documents, delete `masterBody.appendPageBreak()`.
+* **Page Breaks:** To remove the gap between merged documents, comment out the `masterBody.appendPageBreak()` command with XX.
 * **Output Name:** Modify the string `'Final_Ordered_Document.pdf'` in the `mergeFolderToPdf` function to change the filename.
 
 ---
 
 ## Technical Limitations
-* **MIME Type Restriction:** The script only processes native Google Docs. PDFs or Word files (.docx) stored in the folder will be ignored unless converted to Google Docs fi
+* **MIME Type Restriction:** The script only processes native Google Docs. PDFs or Word files (.docx) stored in the folder will be ignored unless converted to Google Docs files.
 * **Element Compatibility:** The script handles Paragraphs, Tables, List Items, and Inline Images. Specialized elements like Drawings or certain Apps Script gadgets may not transfer.
 
 ---
