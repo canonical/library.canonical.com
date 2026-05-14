@@ -4,7 +4,7 @@ Folder to PDF script performs a recursive merge of Google Documents within a fol
 
 ## How It Works
 The script follows a "Depth-First Search" logic to navigate your folders:
-1. In every folder, it identifies the "index" file first (currently set to skip in your configuration).
+1. In every folder, it identifies the "index" file first (default config excludes the index pages from output).
 2. It gathers all other Google Docs within the current folder level and sorts them alphabetically. (Custom numbered sorting is maintained)
 3. It repeats this logic for every subfolder it finds, ensuring the folder structure is mirrored in the document order.
 4. During the merge, it removes the first table (Metadata table) of every document. Because it uses the `copy()` method, your original files remain untouched.
@@ -15,8 +15,8 @@ The script follows a "Depth-First Search" logic to navigate your folders:
 
 ### 1. Changing Folder Locations
 To point the script to different folders, update these two IDs at the top of the script:
-* **rootFolderId**: The starting point folder ID.
-* **destFolderId**: The folder ID where the final PDF will be saved.
+* **rootFolderId**: The starting point folder ID. (e.g. `1F6fsOwSS98KQOuv87zZaMNiTIWUtMfU9`)
+* **destFolderId**: The folder ID where the final PDF will be saved. (e.g. `1lNbsdR3ikQsZUqd-fsgIB2XyBS22coPd`)
 
 ### 2. Changing the Index Logic
 Inside the `processFolderRecursive` function, you can toggle how the "index" file is handled:
