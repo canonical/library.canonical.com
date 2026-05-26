@@ -8,6 +8,7 @@ The script follows a "Depth-First Search" logic to navigate your folders:
 2. It gathers all other Google Docs within the current folder level and sorts them alphabetically. (Custom numbered sorting is maintained)
 3. It repeats this logic for every subfolder it finds, ensuring the folder structure is mirrored in the document order.
 4. During the merge, it removes the first table (Metadata table) of every document. Because it uses the `copy()` method, your original files remain untouched.
+5. Implements Vanilla styles so that the document maintains the consistent styles throughtout the new document..
 
 ---
 
@@ -24,8 +25,8 @@ Inside the `processFolderRecursive` function, you can toggle how the "index" fil
 * **To change the trigger name:** Change the string `'index'` to your preferred filename.
 
 ### 3. Output Customization
-* **Page Breaks:** To remove the gap between merged documents, comment out the `masterBody.appendPageBreak()` command with XX.
-* **Output Name:** Modify the string `'Final_Ordered_Document.pdf'` in the `mergeFolderToPdf` function to change the filename.
+* **Page Breaks:** To remove the gap between merged documents, comment out the `masterBody.appendPageBreak()` command with //.
+* **Output Name:** Modify the string `'Final_Ordered_Document'` in the `mergeFolderToPdf` function to change the filename.
 
 ---
 
@@ -42,3 +43,4 @@ Inside the `processFolderRecursive` function, you can toggle how the "index" fil
 | mergeFolderToPdf | The main entry point. Handles setup, export, and cleanup of the temporary master file. |
 | processFolderRecursive | The logic engine. Manages the priority of files and dives into subfolders. |
 | appendDocToMaster | The extraction tool. Clones elements from source to master and applies the table-skipping rule. |
+| applyVanillaStyles | This function applies the Vanilla styles used in the library to the doc to maintain the style throughout the whole document. |
