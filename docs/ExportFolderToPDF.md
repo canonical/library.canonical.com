@@ -47,4 +47,4 @@ Inside the `processFolderRecursive` function, you can toggle how the "index" fil
 | processFolderRecursive | The logic engine. Manages the priority of files and dives into subfolders. |
 | appendDocToMaster | The extraction tool. Clones elements from source to master and applies the table-skipping rule. |
 | applyVanillaStyles | This function applies the Vanilla styles used in the library to the doc to maintain the style throughout the whole document. |
-|extractAndIdentifyUrls| This function applies changes to library links that got transform into pdf, so that links show bookmarks withing pdfs. |
+|extractAndIdentifyUrls| This function applies changes to library links that got transformed into pdf, so that links show bookmarks withing pdfs. |
