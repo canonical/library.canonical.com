@@ -9,7 +9,7 @@ The script follows a "Depth-First Search" logic to navigate your folders:
 3. It repeats this logic for every subfolder it finds, ensuring the folder structure is mirrored in the document order.
 4. During the merge, it removes the first table (Metadata table) of every document. Because it uses the `copy()` method, your original files remain untouched.
 5. Implements Vanilla styles so that the document maintains the consistent styles throughtout the new document.
-6. To run access the [script](https://script.google.com/home/projects/12d3AD3fNNel-a_5Alt07IsVBur_NUI_0fOuOx-TaKRy-6L6BF-GZkXPw/edit) and click run after all the configurations have been made. 
+6. To run, access the [script](https://script.google.com/home/projects/12d3AD3fNNel-a_5Alt07IsVBur_NUI_0fOuOx-TaKRy-6L6BF-GZkXPw/edit) and click `Run` (located in the header bar) after all the configurations have been made. 
 
 ---
 
