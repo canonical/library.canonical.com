@@ -212,6 +212,7 @@ cache.init_app(app)
 # =========================
 # Global State Variables
 # =========================
+app_start_time = time.time()
 nav_changes = None
 url_updated = False
 gdrive_instance = None
@@ -1247,6 +1248,55 @@ def init_scheduler(app):
 # =========================
 # Route Definitions
 # =========================
+@app.route("/_status/health")
+def health():
+    """
+    Health check endpoint for monitoring.
+    Returns uptime and PostgreSQL connectivity status.
+    """
+    now = datetime.utcnow()
+    uptime = time.time() - app_start_time
+
+    pg_status = "ok"
+    pg_latency_ms = None
+    pg_timestamp = None
+
+    if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
+        try:
+            t0 = time.perf_counter()
+            with db.engine.connect() as conn:
+                pg_ts = conn.execute(
+                    text("SELECT NOW()")
+                ).scalar()
+            pg_latency_ms = (time.perf_counter() - t0) * 1000
+            pg_timestamp = pg_ts.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+        except Exception as e:
+            pg_status = "error"
+            print(f"[health] pg check failed: {e}", flush=True)
+    else:
+        pg_status = "not_configured"
+
+    overall = "ok" if pg_status in ("ok", "not_configured") else "error"
+
+    payload = {
+        "status": overall,
+        "uptime": uptime,
+        "timestamp": now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+        "pg": pg_status,
+    }
+
+    if pg_status not in ("not_configured",):
+        checks = {"pg": {"status": pg_status}}
+        if pg_latency_ms is not None:
+            checks["pg"]["latencyMs"] = pg_latency_ms
+        if pg_timestamp is not None:
+            checks["pg"]["databaseTimestamp"] = pg_timestamp
+        payload["checks"] = checks
+
+    status_code = 200 if overall == "ok" else 503
+    return jsonify(payload), status_code
+
+
 @app.route("/sentry-test")
 def sentry_test():
     1 / 0  # raises an error
