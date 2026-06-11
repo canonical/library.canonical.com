@@ -1265,9 +1265,7 @@ def health():
         try:
             t0 = time.perf_counter()
             with db.engine.connect() as conn:
-                pg_ts = conn.execute(
-                    text("SELECT NOW()")
-                ).scalar()
+                pg_ts = conn.execute(text("SELECT NOW()")).scalar()
             pg_latency_ms = (time.perf_counter() - t0) * 1000
             pg_timestamp = pg_ts.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
         except Exception as e:
