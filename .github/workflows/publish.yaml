@@ -1,0 +1,15 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    uses: canonical/operator-workflows/.github/workflows/publish_charm.yaml@main
+    permissions:
+      contents: write
+    with:
+      resource-mapping: '{"library-rock": "app-image"}'
+    secrets: inherit
