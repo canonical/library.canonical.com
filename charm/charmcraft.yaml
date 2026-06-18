@@ -125,4 +125,9 @@ config:
     ANALYTICS_START_ROW:
       type: int
       default: 16
-      
+
+resources:
+  flask-app-image:
+    type: oci-image
+    description: OCI image for the Flask application
+
