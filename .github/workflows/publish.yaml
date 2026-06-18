@@ -11,5 +11,6 @@ jobs:
     permissions:
       contents: write
     with:
-      resource-mapping: '{"library-rock": "app-image"}'
+      resource-mapping: '{"library-rock": "flask-app-image"}'
+      integration-test-workflow-file: integration-test.yaml
     secrets: inherit
