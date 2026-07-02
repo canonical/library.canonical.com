@@ -17,19 +17,21 @@ The script follows a "Depth-First Search" logic to navigate your folders:
 
 ### 1. Changing Folder Locations
 To point the script to different folders, update these two IDs at the top of the script:
+* **rootFolderPath**: This is the path of the folder in the library/ (e.g. `library.canonical.com/our-organization`)
 * **rootFolderId**: The starting point folder ID. (e.g. `1F6fsOwSS98KQOuv87zZaMNiTIWUtMfU9`)
 * **destFolderId**: The folder ID where the final PDF will be saved. (e.g. `1lNbsdR3ikQsZUqd-fsgIB2XyBS22coPd`)
-* **rootFolderPath**: This is the path of the folder in the library/ (e.g. `library.canonical.com/our-organization`)
-* **
+Note: This IDs can be found on the folder url in the browser
+
+
 
 ### 2. Changing the Index Logic
-Inside the `processFolderRecursive` function, you can toggle how the "index" file is handled:
-* **To include index files:** Uncomment `appendDocToMaster` and `masterBody.appendPageBreak()` inside Part A.
-* **To change the trigger name:** Change the string `'index'` to your preferred filename.
+Inside the `processFolderRecursive` function, you can toggle how specific files are handled:
+* **To skip files:** You can add extra conditionals within the part 3 where the documents are appended to the new doc. Currently `30-Leave booking guidance` is been excluded
+
 
 ### 3. Output Customization
 * **Page Breaks:** To remove the gap between merged documents, comment out the `masterBody.appendPageBreak()` command with //.
-* **Output Name:** Modify the variable `destinationFolderName` which has a value of `'Final_Ordered_Document'` in the `mergeFolderToPdf` function to change the filename.
+* **Output Name:** Modify the variable `outputFileName` which has a value of `'Final_Ordered_Document'` in the `mergeFolderToPdf` function to change the filename.
 
 ---
 
@@ -44,6 +46,7 @@ Inside the `processFolderRecursive` function, you can toggle how the "index" fil
 | Function | Purpose |
 | :--- | :--- |
 | mergeFolderToPdf | The main entry point. Handles setup, export, and cleanup of the temporary master file. |
+| compareFilesWithIndexFirst | A custom sorting function that prioritise the index file over the rest, and then apply alphanumerical sort. |
 | processFolderRecursive | The logic engine. Manages the priority of files and dives into subfolders. |
 | appendDocToMaster | The extraction tool. Clones elements from source to master and applies the table-skipping rule. |
 | applyVanillaStyles | This function applies the Vanilla styles used in the library to the doc to maintain the style throughout the whole document. |
