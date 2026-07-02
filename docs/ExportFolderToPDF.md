@@ -45,9 +45,9 @@ Inside the `processFolderRecursive` function, you can toggle how specific files 
 
 | Function | Purpose |
 | :--- | :--- |
-| mergeFolderToPdf | The main entry point. Handles setup, export, and cleanup of the temporary master file. |
-| compareFilesWithIndexFirst | A custom sorting function that prioritise the index file over the rest, and then apply alphanumerical sort. |
-| processFolderRecursive | The logic engine. Manages the priority of files and dives into subfolders. |
-| appendDocToMaster | The extraction tool. Clones elements from source to master and applies the table-skipping rule. |
-| applyVanillaStyles | This function applies the Vanilla styles used in the library to the doc to maintain the style throughout the whole document. |
+| `mergeFolderToPdf` | The main entry point. Handles setup, export, and cleanup of the temporary main file. |
+| `compareFilesWithIndexFirst` | A custom sorting function that prioritise the index file over the rest, and then apply alphanumerical sort. |
+| `processFolderRecursive` | The logic engine. Manages the priority of files and dives into subfolders. |
+| `appendDocToMaster` | The extraction tool. Clones elements from source to main document and applies the table-skipping rule. |
+| `applyVanillaStyles` | This function applies the Vanilla styles used in the library to the doc to maintain the style throughout the whole document. |
 |extractAndIdentifyUrls| This function applies changes to library links that got transformed into pdf, so that links show bookmarks withing pdfs. |
