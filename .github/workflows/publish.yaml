@@ -1,0 +1,16 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    uses: canonical/operator-workflows/.github/workflows/publish_charm.yaml@main
+    permissions:
+      contents: write
+    with:
+      resource-mapping: '{"library-rock": "flask-app-image"}'
+      integration-test-workflow-file: integration-test.yaml
+    secrets: inherit
