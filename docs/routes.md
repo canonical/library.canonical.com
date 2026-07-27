@@ -85,7 +85,7 @@ Creates a personal copy of the library document template for the authenticated u
 
 ### `GET /test-500`
 
-Renders the 500 error page with a dummy message for UI preview purposes.
+Renders the 500 error page with a placeholder message for UI preview purposes.
 
 ### `GET /sentry-test`
 

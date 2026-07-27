@@ -14,7 +14,7 @@ The script operates through a **Depth-First Search (DFS)** folder traversal and 
    * The script recursively traverses into subfolders, applying the same index-first alphabetical sorting to folder names.
 
 2. **Document Merging & Content Filtering:**
-   * Every document is appended sequentially into a temporary master document.
+   * Every document is appended sequentially into a temporary primary document.
    * **Metadata Table Removal:** The script automatically skips the **first table** of every source document (typically used for internal document metadata).
    * **Page Breaks:** A page break is inserted after each merged document.
    * **File Exclusion:** Specific files can be bypassed by name (currently set to ignore `"30-Leave booking guidance"`).
@@ -34,7 +34,7 @@ The script operates through a **Depth-First Search (DFS)** folder traversal and 
 
 5. **Export & Cleanup:**
    * The temporary Google Doc is compiled, saved, and converted to a `.pdf` blob.
-   * The PDF is saved to the designated destination folder, and the temporary master Google Doc is moved to the trash.
+   * The PDF is saved to the designated destination folder, and the temporary primary Google Doc is moved to the trash.
 
 ---
 
@@ -52,8 +52,8 @@ Located at the top of the `mergeFolderToPdf` function:
 Inside `processFolderRecursive`, you can customize which files are omitted during compilation:
 ```javascript
 if (file.getName() != "30-Leave booking guidance") {
-  appendDocToMaster(file.getId(), masterBody);
-  masterBody.appendPageBreak();
+  appendDocToPrimary(file.getId(), primaryBody);
+  primaryBody.appendPageBreak();
 }
 ```
 
@@ -73,7 +73,7 @@ if (file.getName() != "30-Leave booking guidance") {
 | :--- | :--- |
 | `mergeFolderToPdf()` | **Main Entry Point.** Controls initial setup, recursive compilation triggers, link optimization, PDF export, and temporary file deletion. |
 | `compareFilesWithIndexFirst(a, b)` | Custom sorting algorithm that forces files or folders named `index` to the top of the processing list, then sorts the rest alphanumerically. |
-| `processFolderRecursive(folder, masterBody)` | Hierarchical folder engine. Sorts files/folders at the current depth, appends files to the master document, and recurses into subdirectories. |
-| `appendDocToMaster(sourceId, masterBody)` | Clones structural elements (Paragraphs, Tables, Lists, Images) from a source Google Doc into the master body while applying table-skipping rules. |
+| `processFolderRecursive(folder, primaryBody)` | Hierarchical folder engine. Sorts files/folders at the current depth, appends files to the primary document, and recurses into subdirectories. |
+| `appendDocToPrimary(sourceId, primaryBody)` | Clones structural elements (Paragraphs, Tables, Lists, Images) from a source Google Doc into the primary body while applying table-skipping rules. |
 | `applyVanillaStyles(element)` | Applies Canonical's Ubuntu typography hierarchy (font family, line spacing, font sizes) to appended text elements. |
 | `extractAndIdentifyUrls(doc, rootFolderPath)` | Indexes the merged document in memory, identifies internal library URLs, and strips hyperlinks for content already contained within the PDF. |
