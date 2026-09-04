@@ -21,10 +21,10 @@
   },
   "dependencies": {
     "@canonical/cookie-policy": "^3.10.0",
-    "@canonical/global-nav": "3.8.0",
+    "@canonical/global-nav": "3.9.0",
     "autoprefixer": "10.4.27",
     "postcss": "8.5.8",
-    "vanilla-framework": "4.50.0"
+    "vanilla-framework": "4.59.0"
   },
   "devDependencies": {
     "@babel/core": "7.29.0",
