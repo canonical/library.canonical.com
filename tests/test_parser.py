@@ -443,6 +443,108 @@ class TestParser(unittest.TestCase):
             " as a direct child of the pre tag",
         )
 
+    def test_ul_with_code_block_separator(self):
+        """
+        Test that UL fragments separated by code blocks are treated as separate lists
+        """
+        # Create first UL fragment
+        ul1 = self.soup.new_tag("ul", **{"class": "lst-kix_abc123_0 start"})
+        li1 = self.soup.new_tag("li")
+        li1.string = "Item 1 from first list"
+        ul1.append(li1)
+        self.soup.body.append(ul1)
+
+        # Create code block separator
+        code_div = self.soup.new_tag("div", **{"class": "p-code-snippet"})
+        pre_tag = self.soup.new_tag("pre")
+        code_tag = self.soup.new_tag("code")
+        code_tag.string = "some code"
+        pre_tag.append(code_tag)
+        code_div.append(pre_tag)
+        self.soup.body.append(code_div)
+
+        # Create second UL fragment (same class, no start)
+        ul2 = self.soup.new_tag("ul", **{"class": "lst-kix_abc123_0"})
+        li2 = self.soup.new_tag("li")
+        li2.string = "Item 2 from second list"
+        ul2.append(li2)
+        self.soup.body.append(ul2)
+
+        # Run the parser method
+        self.parser.parse_nested_bullet_lists()
+
+        # The second UL should now have "start" class added
+        self.assertIn(
+            "start",
+            ul2["class"],
+            "Second UL should have 'start' class when separated by code block",
+        )
+
+    def test_ol_with_code_block_separator(self):
+        """
+        Test that OL fragments separated by code blocks are treated as separate lists
+        """
+        # Create first OL fragment
+        ol1 = self.soup.new_tag("ol", **{"class": "lst-kix_def456_0 start"})
+        li1 = self.soup.new_tag("li")
+        li1.string = "Item 1 from first list"
+        ol1.append(li1)
+        self.soup.body.append(ol1)
+
+        # Create code block separator
+        code_div = self.soup.new_tag("div", **{"class": "p-code-snippet"})
+        pre_tag = self.soup.new_tag("pre")
+        code_tag = self.soup.new_tag("code")
+        code_tag.string = "some code"
+        pre_tag.append(code_tag)
+        code_div.append(pre_tag)
+        self.soup.body.append(code_div)
+
+        # Create second OL fragment (same class, no start)
+        ol2 = self.soup.new_tag("ol", **{"class": "lst-kix_def456_0"})
+        li2 = self.soup.new_tag("li")
+        li2.string = "Item 2 from second list"
+        ol2.append(li2)
+        self.soup.body.append(ol2)
+
+        # Run the parser method
+        self.parser.parse_nested_lists()
+
+        # The second OL should now have "start" class added
+        self.assertIn(
+            "start",
+            ol2["class"],
+            "Second OL should have 'start' class when separated by code block",
+        )
+
+    def test_ul_without_separator_should_merge(self):
+        """
+        Test that UL fragments without separators are still merged
+        """
+        # Create first UL fragment
+        ul1 = self.soup.new_tag("ul", **{"class": "lst-kix_ghi789_0 start"})
+        li1 = self.soup.new_tag("li")
+        li1.string = "Item 1"
+        ul1.append(li1)
+        self.soup.body.append(ul1)
+
+        # Create second UL fragment directly adjacent (no separator)
+        ul2 = self.soup.new_tag("ul", **{"class": "lst-kix_ghi789_0"})
+        li2 = self.soup.new_tag("li")
+        li2.string = "Item 2"
+        ul2.append(li2)
+        self.soup.body.append(ul2)
+
+        # Run the parser method
+        self.parser.parse_nested_bullet_lists()
+
+        # The second UL should NOT have "start" class added
+        self.assertNotIn(
+            "start",
+            ul2["class"],
+            "Second UL should NOT have 'start' class when directly adjacent",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
