@@ -74,7 +74,7 @@ Builds a `requests.Session` that uses a custom CA certificate for HTTPS connecti
 - A single-line PEM string with literal `\n` separators.
 - A base64-encoded PEM or DER certificate.
 
-Returns a `requests.Session` mounted with an `SSLContextAdapter`, or `None` if `raw` is falsy.
+Returns a `requests.Session` mounted with an `SSLContextAdapter`, or `None` if `raw` is false.
 
 Used by OpenSearch routes when `OPENSEARCH_TLS_CA` is set.
 

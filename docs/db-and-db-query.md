@@ -27,6 +27,8 @@ Initialised against the Flask app with `db.init_app(app)` during application sta
 
 ## `webapp/models.py`
 
+This tables show the data structure used by the library. 
+
 ### `Document`
 
 Table name: `Documents`
@@ -91,7 +93,7 @@ Creates the `Analytics` table via `db.create_all()` if it does not exist.
 
 ## `webapp/db_query.py`
 
-### Runtime DB Toggle
+### Runtime DB check and loading
 
 ```python
 USE_DB_ENV = "POSTGRESQL_DB_CONNECT_STRING" in os.environ

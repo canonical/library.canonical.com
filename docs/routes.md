@@ -6,8 +6,7 @@ All HTTP routes are defined in `webapp/app.py` using the `FlaskBase` application
 
 ## General / Document Routes
 
-### `GET /`  
-### `GET /<path:path>`
+### `GET /` + `GET /<path:path>`
 
 The main document renderer. Serves every page of the library site.
 
@@ -25,8 +24,7 @@ The main document renderer. Serves every page of the library site.
 
 Clears the navigation cache entry and the root view cache, then redirects to `/`. Forces the next request to rebuild the navigation tree from Google Drive.
 
-### `GET /clear-cache/`  
-### `GET /clear-cache/<path:path>`
+### `GET /clear-cache/` + `GET /clear-cache/<path:path>`
 
 Clears the cached view for a specific document path and removes the corresponding PostgreSQL row so the document is re-fetched from Google Drive on the next visit.
 
@@ -115,8 +113,7 @@ Returns HTTP 200 on success, 503 on error.
 
 ## Analytics Routes
 
-### `GET /analytics/upload`  
-### `POST /analytics/upload`
+### `GET /analytics/upload` + `POST /analytics/upload`
 
 Reads page analytics data from the Google Sheet configured by:
 
@@ -126,8 +123,7 @@ Reads page analytics data from the Google Sheet configured by:
 
 Upserts `path`, `views`, `sessions`, and `engaged_sessions` into the `Analytics` PostgreSQL table. Returns a JSON summary.
 
-### `GET /analytics/opensearch/upload`  
-### `POST /analytics/opensearch/upload`
+### `GET /analytics/opensearch/upload` + `POST /analytics/opensearch/upload`
 
 Uploads all rows from the `Analytics` PostgreSQL table to the `library-analytics` OpenSearch index. Creates the index with proper mappings if it does not exist. Returns a JSON bulk-operation summary.
 
@@ -135,8 +131,7 @@ Uploads all rows from the `Analytics` PostgreSQL table to the `library-analytics
 
 ## Notification Routes
 
-### `GET /notifications/weekly-comments`  
-### `POST /notifications/weekly-comments`
+### `GET /notifications/weekly-comments` + `POST /notifications/weekly-comments`
 
 Checks all documents modified in the last week for unresolved comments, resolves owner email addresses, and sends notification emails. Returns a JSON summary with email counts.
 
@@ -156,8 +151,7 @@ Manually triggers the link-validation job (`validate_and_report`) against the UR
 
 ## OpenSearch Admin Routes
 
-### `GET /opensearch/bulk/run`  
-### `POST /opensearch/bulk/run`
+### `GET /opensearch/bulk/run` + `POST /opensearch/bulk/run`
 
 Streams all `Document` rows from PostgreSQL to OpenSearch via the `_bulk` API. Requires `OPENSEARCH_URL`, `OPENSEARCH_USERNAME`, and `OPENSEARCH_PASSWORD`.
 

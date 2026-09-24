@@ -51,7 +51,7 @@ Fields fetched per file: `id`, `name`, `mimeType`, `parents`, `owners`, `modifie
 
 ### `get_changes() → list`
 
-Fetches the complete change log for the shared drive since the current page token.
+Fetches the complete change log for the shared drive since the current page token (Token provided by Google Drive API to keep track of the latest change received).
 
 Returns all change objects including removed items (`includeRemoved=True`, `includeCorpusRemovals=True`).
 

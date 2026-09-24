@@ -53,7 +53,7 @@ Runs `opensearch_sync_all()` to perform a full reindex of all PostgreSQL `Docume
 - Removes orphaned OpenSearch documents not present in the DB (`delete_orphans=True`).
 - For large datasets (>10 000 documents), writes to a temporary index and performs an alias swap.
 
-### `weekly_comment_notifications` — Every Monday at 09:00
+### `weekly_comment_notifications` — Every Monday at 09:00 (Currently not functional)
 
 Checks documents modified in the last week for unresolved Google Docs comments and sends notification emails to the document owners.
 

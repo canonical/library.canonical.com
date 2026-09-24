@@ -1,6 +1,7 @@
 # Export Folder to PDF: Technical Guide
 
 This Google Apps Script performs a recursive merge of all Google Documents within a target Google Drive folder hierarchy, applies standardized Canonical Vanilla styling, optimizes web hyperlinks, and exports the merged output as a single PDF.
+To access and run the script, check [here](https://script.google.com/home/projects/12d3AD3fNNel-a_5Alt07IsVBur_NUI_0fOuOx-TaKRy-6L6BF-GZkXPw/edit) and click the run button.
 
 ---
 
@@ -10,14 +11,14 @@ The script operates through a **Depth-First Search (DFS)** folder traversal and 
 
 1. **Folder & File Navigation:**
    * In every folder level, the script fetches all native Google Docs.
-   * Documents are sorted using a custom comparator (`compareFilesWithIndexFirst`) that **prioritizes any file named `index` to the top** before sorting the remaining files alphabetically.
+   * Documents are sorted using a custom comparator (`compareFilesWithIndexFirst`) that **prioritizes any file named `index` to the top** before sorting the folder 'contents' or subfolder contents.
    * The script recursively traverses into subfolders, applying the same index-first alphabetical sorting to folder names.
 
 2. **Document Merging & Content Filtering:**
    * Every document is appended sequentially into a temporary primary document.
    * **Metadata Table Removal:** The script automatically skips the **first table** of every source document (typically used for internal document metadata).
    * **Page Breaks:** A page break is inserted after each merged document.
-   * **File Exclusion:** Specific files can be bypassed by name (currently set to ignore `"30-Leave booking guidance"`).
+   * **File Exclusion:** Specific files can be bypassed by name (currently set to ignore `"30-Leave booking guidance"`). If by any chance the script is runned in a folder without the folder, it will execute without any issues.
 
 3. **Vanilla Brand Styling:**
    * Global page margins are set to 36pt (0.5 inches).
@@ -27,7 +28,7 @@ The script operates through a **Depth-First Search (DFS)** folder traversal and 
      * **Headings (H1–H6):** Scaled from 24pt down to 13.5pt with bold toggles applied to odd-numbered headings.
 
 4. **High-Performance Link Optimization:**
-   * The script scans all hyperlinks pointing to `rootFolderPath`.
+   * The script scans all hyperlinks within the selected section.
    * **In-Memory Indexing:** To prevent Google Apps Script execution timeouts (6-minute limit), the entire document's text is indexed into a local JavaScript array in a single pass.
    * If a hyperlink points to a topic or heading **that now lives directly inside this merged document**, the hyperlink is stripped (`setLinkUrl(..., null)`), leaving plain text to prevent broken external links in a self-contained PDF.
    * If the target content is not in this document, the link remains intact as an active external link.
@@ -56,6 +57,8 @@ if (file.getName() != "30-Leave booking guidance") {
   primaryBody.appendPageBreak();
 }
 ```
+Replace "30-Leave booking guidance" in the if statement with the name of the file to be omitted.
+If you need more files to be omitted, you will need to modify the if condition.
 
 ---
 

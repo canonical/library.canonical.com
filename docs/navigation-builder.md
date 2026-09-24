@@ -78,7 +78,7 @@ For each file:
 
 ### `create_hierarchy(doc_objects, hide_folder) → dict`
 
-Nests the flat file list into a tree by placing each document under its parent's `children` dict.
+Nests the flat file list into a tree by placing each document within its parent's `children` dict.
 
 - Traverses `doc_objects` and looks up the parent in `doc_reference_dict`.
 - The root folder node is placed at the top level in `temp_hierarchy`.
