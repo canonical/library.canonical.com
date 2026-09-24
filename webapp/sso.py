@@ -67,6 +67,8 @@ def init_sso(app):
                 "/login?next=" + quote_plus(flask.request.path)
             )
 
+
+def init_headers(app):
     @app.after_request
     def add_headers(response):
         """

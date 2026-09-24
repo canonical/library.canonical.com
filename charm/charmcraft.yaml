@@ -44,6 +44,10 @@ config:
       type: boolean
       default: true
       description: "Enable Flask debug mode."
+    ENABLE_SSO:
+      type: boolean
+      default: true
+      description: "Enable Ubuntu SSO (Launchpad) login. Set to false to deploy without SSO."
     OPENID_LAUNCHPAD_TEAM:
       type: string
       default: "canonical-content-people"

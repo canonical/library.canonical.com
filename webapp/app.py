@@ -30,7 +30,7 @@ from threading import Thread
 from webapp.db_query import get_or_parse_document, parse_and_upsert_document
 from webapp.googledrive import GoogleDrive
 from webapp.navigation_builder import NavigationBuilder
-from webapp.sso import init_sso
+from webapp.sso import init_sso, init_headers
 from webapp.spreadsheet import GoggleSheet
 from flask_caching import Cache
 from webapp.db import db
@@ -57,6 +57,7 @@ DRAFTS_URL = (
     "https://drive.google.com/drive/folders/1cI2ClDWDzv3osp0Adn0w3Y7zJJ5h08ua"
 )
 HIDE_FOLDER = os.getenv("HIDE_FOLDER", "true").lower() == "true"
+ENABLE_SSO = os.getenv("ENABLE_SSO", "true").lower() == "true"
 
 # =========================
 # App and Extension Initialization
@@ -70,7 +71,11 @@ app = FlaskBase(
     static_folder="../static",
 )
 # Initialize the App SSO
-init_sso(app)
+init_headers(app)
+if ENABLE_SSO:
+    init_sso(app)
+else:
+    print("SSO disabled via ENABLE_SSO env var", flush=True)
 
 # Initialize Sentry SDK (separate from talisker's raven client)
 # Use SENTRY_DSN_SDK to avoid conflict with talisker's SENTRY_DSN
