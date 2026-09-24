@@ -43,7 +43,7 @@ Returns the complete list of files in the shared drive, handling pagination via 
 
 Fields fetched per file: `id`, `name`, `mimeType`, `parents`, `owners`, `modifiedTime`.
 
-- The URL spreadsheet file (identified by `URL_FILE`) is excluded from the list.
+- The URL redirects spreadsheet file (identified by `URL_FILE`) is excluded from the list.
 - Results are cached under the key `"docDic"`.
 - On API failure, falls back to the cached `"docDic"` if available; otherwise aborts with HTTP 503.
 

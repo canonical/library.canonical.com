@@ -6,7 +6,7 @@ The `NavigationBuilder` class lives in `webapp/navigation_builder.py`. It is res
 
 ## Construction Modes
 
-The constructor accepts two modes controlled by the `cache` parameter.
+The constructor accepts two modes controlled by the `cache` parameter, `fresh build` and `from cache`.
 
 ### Fresh build (`cache=False`, default)
 
