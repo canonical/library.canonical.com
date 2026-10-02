@@ -62,6 +62,8 @@ def init_sso(app):
             "/_status"
         ) or flask.request.path.startswith("/static"):
             return
+        if flask.request.path == "/webhook/watch-changes":
+            return
         if "openid" not in flask.session:
             return flask.redirect(
                 "/login?next=" + quote_plus(flask.request.path)

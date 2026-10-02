@@ -120,6 +120,14 @@ config:
     HIDE_FOLDER:
       type: boolean
       default: false
+    GOOGLE_DRIVE_WEBHOOK_URL:
+      type: string
+      default: ""
+      description: "Public HTTPS URL of /webhook/watch-changes for Drive push notifications. Empty disables channel registration."
+    GOOGLE_DRIVE_WEBHOOK_TOKEN:
+      type: string
+      default: ""
+      description: "Shared secret Drive sends in X-Goog-Channel-Token. Empty rejects all notifications."
     ANALYTICS_SHEET_ID:
       type: string
       default: ""

@@ -16,6 +16,8 @@ import binascii
 import textwrap
 import requests
 import time
+import threading
+import uuid
 from flask import jsonify, request, g, session, has_request_context
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import inspect, text
@@ -39,6 +41,7 @@ from webapp.models import Document, Analytics
 from webapp.notification_service import NotificationService
 from webapp import owner_registry
 from webapp.link_validator import validate_and_report
+from webapp.webhook import changed_paths, validate_drive_notification
 
 for key, value in os.environ.items():
     if key.startswith("FLASK_"):
@@ -222,6 +225,7 @@ nav_changes = None
 url_updated = False
 gdrive_instance = None
 initialized_executed = False
+changes_lock = threading.Lock()
 cache_warming_in_progress = False
 cache_navigation_data = None
 cache_updated = False
@@ -572,9 +576,52 @@ def scheduled_get_changes():
     the navigation data and the urls for redirects.
     """
     global nav_changes
-    google_drive = gdrive_instance
-    changes = google_drive.get_latest_changes()
-    nav_changes = process_changes(changes, nav_changes, gdrive_instance)
+    # Make sure only one thread modifies nav_changes at a time.
+    with changes_lock:
+        google_drive = gdrive_instance
+        changes = google_drive.get_latest_changes()
+        nav_changes = process_changes(changes, nav_changes, gdrive_instance)
+
+
+def run_scheduled_get_changes():
+    """Run scheduled_get_changes from a scheduler thread."""
+    with app.app_context():
+        scheduled_get_changes()
+
+
+def register_drive_channel(scheduler):
+    """Register a Drive webhook channel and schedule its replacement.
+
+    Each channel gets a fresh ID, so the replacement is registered an hour
+    before the old one expires; the overlap only duplicates notifications.
+    """
+    address = os.getenv("GOOGLE_DRIVE_WEBHOOK_URL")
+    token = os.getenv("GOOGLE_DRIVE_WEBHOOK_TOKEN")
+    if not (address and token):
+        print("Drive webhook not configured, skipping channel", flush=True)
+        return
+    try:
+        expiration = int((time.time() + 24 * 3600) * 1000)
+        channel = gdrive_instance.watch_changes(
+            address, f"library-{uuid.uuid4()}", token, expiration
+        )
+        expiration = datetime.fromtimestamp(int(channel["expiration"]) / 1000)
+        renew_at = max(
+            expiration - timedelta(hours=1),
+            datetime.now() + timedelta(minutes=1),
+        )
+        print(f"Drive channel {channel['id']} until {expiration}", flush=True)
+    except Exception as error:
+        print(f"Drive channel registration failed: {error}", flush=True)
+        renew_at = datetime.now() + timedelta(minutes=10)
+    scheduler.add_job(
+        register_drive_channel,
+        "date",
+        run_date=renew_at,
+        args=[scheduler],
+        id="drive_channel_renewal",
+        replace_existing=True,
+    )
 
 
 def process_changes(changes, navigation_data, google_drive):
@@ -585,22 +632,13 @@ def process_changes(changes, navigation_data, google_drive):
     has changed, update the URLs in the redirects file.
     """
     new_nav = NavigationBuilder(google_drive, ROOT, hide_folder=HIDE_FOLDER)
-    for change in changes:
-        if change["removed"]:
-            print("REMOVED")
-        else:
-            if "fileId" in change:
-                if change["fileId"] in navigation_data.doc_reference_dict:
-                    nav_item = navigation_data.doc_reference_dict[
-                        change["fileId"]
-                    ]
-                    new_nav_item = new_nav.doc_reference_dict[change["fileId"]]
-                    if nav_item["full_path"] != new_nav_item["full_path"]:
-                        # Location Change process
-                        old_path = nav_item["full_path"][1:]
-                        new_path = new_nav_item["full_path"][1:]
-                        GoggleSheet(old_path, new_path).update_urls()
-                        url_updated = True
+    # Compare every file, not only the changed ones: renaming or moving a
+    # folder reports only the folder, but all its descendants move too.
+    for old_path, new_path in changed_paths(
+        navigation_data.doc_reference_dict, new_nav.doc_reference_dict
+    ):
+        GoggleSheet(old_path[1:], new_path[1:]).update_urls()
+        url_updated = True
     return new_nav
 
 
@@ -609,20 +647,6 @@ def init_scheduler(app):
     Initialize the background scheduler
     for periodic tasks.
     """
-
-    def scheduled_task():
-        """
-        The task of checking for changes in
-        Google Drive should be run periodically
-        on a schedule, every 5 minutes.
-        """
-        global nav_changes
-        with app.app_context():
-            google_drive = gdrive_instance
-            navigation = nav_changes
-            changes = google_drive.get_latest_changes()
-            new_nav = process_changes(changes, navigation, google_drive)
-            nav_changes = new_nav
 
     def check_status_cache():
         """
@@ -1185,9 +1209,9 @@ def init_scheduler(app):
 
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_task)
+    scheduler.add_job(run_scheduled_get_changes)
+    scheduler.add_job(register_drive_channel, args=[scheduler])
     scheduler.add_job(update_db_all_documents)  # Run on load # Run on load
-    scheduler.add_job(scheduled_task, "interval", minutes=5)
     # Delay initial cache status/warm by 5 minutes to allow assets to be built
     scheduler.add_job(
         check_status_cache,
@@ -1253,6 +1277,25 @@ def init_scheduler(app):
 # =========================
 # Route Definitions
 # =========================
+@app.post("/webhook/watch-changes")
+def watch_changes():
+    """Accept Google Drive changes.watch notifications."""
+    if not validate_drive_notification(
+        request.headers, os.getenv("GOOGLE_DRIVE_WEBHOOK_TOKEN")
+    ):
+        return "", 401
+
+    state = request.headers["X-Goog-Resource-State"]
+    if state == "change" and scheduler is not None:
+        scheduler.add_job(
+            run_scheduled_get_changes,
+            id="drive_get_changes",
+            replace_existing=True,
+            max_instances=2,
+        )
+    return "", 200
+
+
 @app.route("/_status/health")
 def health():
     """
@@ -3003,7 +3046,9 @@ def initialized():
     and the navigation builder.
     This is executed only once per application context.
     """
-    global initialized_executed, gdrive_instance, nav_changes
+    global initialized_executed, gdrive_instance, nav_changes, scheduler
+    if request.path == "/webhook/watch-changes":
+        return
     if not initialized_executed:
         initialized_executed = True
         with app.app_context():
@@ -3012,7 +3057,7 @@ def initialized():
                 gdrive_instance, ROOT, hide_folder=HIDE_FOLDER
             )
             get_list_of_urls()
-            init_scheduler(app)
+            scheduler = init_scheduler(app)
 
 
 # =========================
