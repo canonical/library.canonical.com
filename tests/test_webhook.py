@@ -20,13 +20,17 @@ class TestProcessChanges(unittest.TestCase):
         old = nav({"folder": "/a", "child": "/a/doc", "same": "/c"})
         new = nav({"folder": "/b", "child": "/b/doc", "same": "/c"})
         with patch.object(
-            module, "NavigationBuilder", return_value=new
-        ), patch.object(module, "GoggleSheet") as sheet:
+            module, "construct_navigation_data", return_value=new
+        ), patch.object(module, "GoggleSheet") as sheet, patch.object(
+            module, "cache"
+        ) as cache:
             result = module.process_changes([{"fileId": "folder"}], old, None)
         self.assertIs(result, new)
         sheet.assert_any_call("a", "b")
         sheet.assert_any_call("a/doc", "b/doc")
         self.assertEqual(sheet.call_count, 2)
+        cache.delete_many.assert_any_call("view//a", "view//b")
+        cache.delete_many.assert_any_call("view//a/doc", "view//b/doc")
 
     def test_changed_paths_ignores_added_and_removed_files(self):
         old = {"kept": {"full_path": "/x"}, "gone": {"full_path": "/gone"}}
@@ -83,9 +87,11 @@ class TestRegisterDriveChannel(unittest.TestCase):
 
         self.module = module
         self.drive = Mock()
-        self.scheduler = Mock()
+        self.cache = Mock()
+        self.cache.add.return_value = True
         patches = [
             patch.object(module, "gdrive_instance", self.drive),
+            patch.object(module, "cache", self.cache),
             patch.dict(
                 module.os.environ,
                 {
@@ -98,47 +104,38 @@ class TestRegisterDriveChannel(unittest.TestCase):
             p.start()
             self.addCleanup(p.stop)
 
-    def test_registers_prefixed_channel_and_renews_before_expiry(self):
-        expiration = int((self.module.time.time() + 24 * 3600) * 1000)
+    def test_registers_prefixed_channel(self):
         self.drive.watch_changes.return_value = {
             "id": "library-x",
-            "expiration": str(expiration),
         }
-        self.module.register_drive_channel(self.scheduler)
+        self.module.register_drive_channel()
         address, channel_id, token, _ = self.drive.watch_changes.call_args.args
         self.assertEqual(address, "https://example.com/hook")
         self.assertTrue(channel_id.startswith("library-"))
         self.assertEqual(token, "secret")
-        run_date = self.scheduler.add_job.call_args.kwargs["run_date"]
-        hours_left = (
-            self.module.datetime.fromtimestamp(expiration / 1000) - run_date
-        ).total_seconds() / 3600
-        self.assertAlmostEqual(hours_left, 1, places=2)
 
     def test_each_registration_uses_a_new_channel_id(self):
         self.drive.watch_changes.return_value = {
             "id": "x",
-            "expiration": str(int(self.module.time.time() * 1000) + 10**8),
         }
-        self.module.register_drive_channel(self.scheduler)
-        self.module.register_drive_channel(self.scheduler)
+        self.module.register_drive_channel()
+        self.module.register_drive_channel()
         first, second = (
             c.args[1] for c in self.drive.watch_changes.call_args_list
         )
         self.assertNotEqual(first, second)
 
-    def test_failure_retries_later(self):
+    def test_failure_releases_lock(self):
         self.drive.watch_changes.side_effect = RuntimeError("down")
-        self.module.register_drive_channel(self.scheduler)
-        self.scheduler.add_job.assert_called_once()
+        self.module.register_drive_channel()
+        self.cache.delete.assert_called_once_with("drive_channel")
 
     def test_skips_when_not_configured(self):
         with patch.dict(
             self.module.os.environ, {"GOOGLE_DRIVE_WEBHOOK_URL": ""}
         ):
-            self.module.register_drive_channel(self.scheduler)
+            self.module.register_drive_channel()
         self.drive.watch_changes.assert_not_called()
-        self.scheduler.add_job.assert_not_called()
 
 
 class TestDriveWebhookValidation(unittest.TestCase):

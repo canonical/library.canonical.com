@@ -225,7 +225,7 @@ nav_changes = None
 url_updated = False
 gdrive_instance = None
 initialized_executed = False
-changes_lock = threading.Lock()
+scheduler = None
 cache_warming_in_progress = False
 cache_navigation_data = None
 cache_updated = False
@@ -576,11 +576,20 @@ def scheduled_get_changes():
     the navigation data and the urls for redirects.
     """
     global nav_changes
-    # Make sure only one thread modifies nav_changes at a time.
-    with changes_lock:
-        google_drive = gdrive_instance
-        changes = google_drive.get_latest_changes()
-        nav_changes = process_changes(changes, nav_changes, gdrive_instance)
+    cache.set("drive_sync_pending", True)
+    while cache.get("drive_sync_pending") and cache.add(
+        "drive_sync_running", True, timeout=600
+    ):
+        try:
+            cache.delete("drive_sync_pending")
+            google_drive = gdrive_instance
+            changes, token = google_drive.get_latest_changes()
+            nav_changes = process_changes(
+                changes, nav_changes, gdrive_instance
+            )
+            cache.set("startPageToken", token)
+        finally:
+            cache.delete("drive_sync_running")
 
 
 def run_scheduled_get_changes():
@@ -589,39 +598,24 @@ def run_scheduled_get_changes():
         scheduled_get_changes()
 
 
-def register_drive_channel(scheduler):
-    """Register a Drive webhook channel and schedule its replacement.
-
-    Each channel gets a fresh ID, so the replacement is registered an hour
-    before the old one expires; the overlap only duplicates notifications.
-    """
+def register_drive_channel():
+    """Register the Drive webhook channel shared by every process."""
     address = os.getenv("GOOGLE_DRIVE_WEBHOOK_URL")
     token = os.getenv("GOOGLE_DRIVE_WEBHOOK_TOKEN")
+    duration = int(os.getenv("GOOGLE_DRIVE_WEBHOOK_DURATION", 24 * 3600 * 7))
     if not (address and token):
-        print("Drive webhook not configured, skipping channel", flush=True)
+        return
+    if not cache.add("drive_channel", True, timeout=duration - duration // 100):
         return
     try:
-        expiration = int((time.time() + 24 * 3600) * 1000)
+        expiration = int((time.time() + duration) * 1000)
         channel = gdrive_instance.watch_changes(
             address, f"library-{uuid.uuid4()}", token, expiration
         )
-        expiration = datetime.fromtimestamp(int(channel["expiration"]) / 1000)
-        renew_at = max(
-            expiration - timedelta(hours=1),
-            datetime.now() + timedelta(minutes=1),
-        )
-        print(f"Drive channel {channel['id']} until {expiration}", flush=True)
+        print(f"Drive channel {channel['id']} registered", flush=True)
     except Exception as error:
+        cache.delete("drive_channel")
         print(f"Drive channel registration failed: {error}", flush=True)
-        renew_at = datetime.now() + timedelta(minutes=10)
-    scheduler.add_job(
-        register_drive_channel,
-        "date",
-        run_date=renew_at,
-        args=[scheduler],
-        id="drive_channel_renewal",
-        replace_existing=True,
-    )
 
 
 def process_changes(changes, navigation_data, google_drive):
@@ -631,13 +625,12 @@ def process_changes(changes, navigation_data, google_drive):
     locations from Google Drive. If a document's location
     has changed, update the URLs in the redirects file.
     """
-    new_nav = NavigationBuilder(google_drive, ROOT, hide_folder=HIDE_FOLDER)
-    # Compare every file, not only the changed ones: renaming or moving a
-    # folder reports only the folder, but all its descendants move too.
+    new_nav = construct_navigation_data()
     for old_path, new_path in changed_paths(
         navigation_data.doc_reference_dict, new_nav.doc_reference_dict
     ):
         GoggleSheet(old_path[1:], new_path[1:]).update_urls()
+        cache.delete_many(f"view/{old_path}", f"view/{new_path}")
         url_updated = True
     return new_nav
 
@@ -1210,7 +1203,8 @@ def init_scheduler(app):
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(run_scheduled_get_changes)
-    scheduler.add_job(register_drive_channel, args=[scheduler])
+    scheduler.add_job(register_drive_channel)
+    scheduler.add_job(register_drive_channel, "interval", seconds=int(os.getenv("GOOGLE_DRIVE_WEBHOOK_DURATION", 24 * 3600 * 7 - 1)))
     scheduler.add_job(update_db_all_documents)  # Run on load # Run on load
     # Delay initial cache status/warm by 5 minutes to allow assets to be built
     scheduler.add_job(

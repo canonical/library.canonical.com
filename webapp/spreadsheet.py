@@ -35,6 +35,15 @@ class GoggleSheet:
 
     def update_urls(self):
         try:
+            rows = (
+                self.service.spreadsheets()
+                .values()
+                .get(spreadsheetId=URL_DOC, range="A:B")
+                .execute()
+                .get("values", [])
+            )
+            if [self.old_url, self.new_url] in rows:
+                return self.old_url, self.new_url
             # Append data to the spreadsheet
             data_to_append = [[self.old_url, self.new_url]]
             append_request = (

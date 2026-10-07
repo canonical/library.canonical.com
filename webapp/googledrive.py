@@ -199,10 +199,8 @@ class GoogleDrive:
             print(f"{err}\n {error}, flush=True")
             abort(500, description=err)
 
-        # Store the latest startPageToken for future use
-        if next_page_token is None:
-            self.cache.set("startPageToken", last_usable_token)
-        return items
+        # The caller stores the token once the changes are processed.
+        return items, last_usable_token
 
     def watch_changes(self, address, channel_id, token, expiration):
         """Ask Drive to POST change notifications for the shared drive."""
