@@ -16,7 +16,6 @@ import binascii
 import textwrap
 import requests
 import time
-import threading
 import uuid
 from flask import jsonify, request, g, session, has_request_context
 from sqlalchemy.exc import IntegrityError
@@ -1204,7 +1203,7 @@ def init_scheduler(app):
     scheduler = BackgroundScheduler()
     scheduler.add_job(run_scheduled_get_changes)
     scheduler.add_job(register_drive_channel)
-    scheduler.add_job(register_drive_channel, "interval", seconds=int(os.getenv("GOOGLE_DRIVE_WEBHOOK_DURATION", 24 * 3600 * 7 - 1)))
+    scheduler.add_job(register_drive_channel, "interval", seconds=int(os.getenv("GOOGLE_DRIVE_WEBHOOK_DURATION", 24 * 3600 * 7 - 1000)))
     scheduler.add_job(update_db_all_documents)  # Run on load # Run on load
     # Delay initial cache status/warm by 5 minutes to allow assets to be built
     scheduler.add_job(
