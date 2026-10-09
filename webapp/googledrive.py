@@ -199,20 +199,33 @@ class GoogleDrive:
             print(f"{err}\n {error}, flush=True")
             abort(500, description=err)
 
-        # Store the latest startPageToken for future use
-        if next_page_token is None:
-            self.cache.set("startPageToken", last_usable_token)
-        # Filter changes from the last 5 minutes
-        five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
-        recent_changes = []
-        for item in items:
-            change_time = datetime.strptime(
-                item["time"], "%Y-%m-%dT%H:%M:%S.%fZ"
-            )
-            if change_time > five_minutes_ago:
-                recent_changes.append(item)
+        # The caller stores the token once the changes are processed.
+        return items, last_usable_token
 
-        return recent_changes
+    def watch_changes(self, address, channel_id, token, expiration):
+        """Ask Drive to POST change notifications for the shared drive."""
+        page_token = (
+            self.service.changes()
+            .getStartPageToken(driveId=TARGET_DRIVE, supportsAllDrives=True)
+            .execute()["startPageToken"]
+        )
+        return (
+            self.service.changes()
+            .watch(
+                pageToken=page_token,
+                driveId=TARGET_DRIVE,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                body={
+                    "id": channel_id,
+                    "type": "web_hook",
+                    "address": address,
+                    "token": token,
+                    "expiration": expiration,
+                },
+            )
+            .execute()
+        )
 
     def fetch_document(self, document_id):
         try:
