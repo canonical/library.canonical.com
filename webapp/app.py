@@ -224,7 +224,6 @@ nav_changes = None
 url_updated = False
 gdrive_instance = None
 initialized_executed = False
-scheduler = None
 cache_warming_in_progress = False
 cache_navigation_data = None
 cache_updated = False
@@ -604,7 +603,11 @@ def register_drive_channel():
     duration = int(os.getenv("GOOGLE_DRIVE_WEBHOOK_DURATION", 24 * 3600 * 7))
     if not (address and token):
         return
-    if not cache.add("drive_channel", True, timeout=duration - duration // 100):
+    if not cache.add(
+        "drive_channel",
+        True,
+        timeout=duration - duration // 100,
+    ):
         return
     try:
         expiration = int((time.time() + duration) * 1000)
@@ -1203,7 +1206,13 @@ def init_scheduler(app):
     scheduler = BackgroundScheduler()
     scheduler.add_job(run_scheduled_get_changes)
     scheduler.add_job(register_drive_channel)
-    scheduler.add_job(register_drive_channel, "interval", seconds=int(os.getenv("GOOGLE_DRIVE_WEBHOOK_DURATION", 24 * 3600 * 7 - 1000)))
+    scheduler.add_job(
+        register_drive_channel,
+        "interval",
+        seconds=int(
+            os.getenv("GOOGLE_DRIVE_WEBHOOK_DURATION", 24 * 3600 * 7 - 1000)
+        ),
+    )
     scheduler.add_job(update_db_all_documents)  # Run on load # Run on load
     # Delay initial cache status/warm by 5 minutes to allow assets to be built
     scheduler.add_job(
