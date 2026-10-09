@@ -1,5 +1,6 @@
 def changed_paths(old_references, new_references):
-    """Compare complete snapshots so folder moves include every descendant."""
+    """Compare complete snapshots so folder
+    moves include every descendant."""
     return sorted(
         (old["full_path"], new_references[file_id]["full_path"])
         for file_id, old in old_references.items()
@@ -11,9 +12,10 @@ def changed_paths(old_references, new_references):
 
 
 def validate_drive_notification(headers, expected_token):
-    """Return whether a Drive push notification carries our secret token."""
+    """Return whether a Drive push notification
+    carries our secret token."""
     if not expected_token or not headers:
         return False
     if headers.get("X-Goog-Resource-State") not in ("sync", "change"):
         return False
-    return (headers.get("X-Goog-Channel-Token") == expected_token)
+    return headers.get("X-Goog-Channel-Token") == expected_token
