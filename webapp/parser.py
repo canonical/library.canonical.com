@@ -494,7 +494,7 @@ class Parser:
             if next_sibling:
                 next_text = next_sibling.text
                 if next_text and not next_text[0].isspace():
-                    next_sibling.string = " " + next_text
+                    next_sibling.string = "" + next_text
 
     def clean_external_links(self, a_tag, external_path):
         if a_tag["href"].startswith(external_path):
